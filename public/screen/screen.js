@@ -113,65 +113,97 @@
   }
   function gameFlow() {
     const c = el('div');
-    c.appendChild(el('h1', { text: 'Spillets gang', style: 'font-size:5vw' }));
-    const steps = ['Pre-season', 'Warm-up', 'Auktion', 'Runde', 'Løb', 'Stilling', 'Finale', 'Afsløring'];
-    const flow = el('div.flow');
-    steps.forEach((s, i) => { flow.appendChild(el('div.step', { text: s })); if (i < steps.length - 1) flow.appendChild(el('div.arrow', { text: '→' })); });
-    c.appendChild(flow);
+    c.appendChild(el('h1', { text: 'Spillets gang', style: 'font-size:4.6vw;margin-bottom:2.2vh' }));
+    const steps = [
+      { t: 'Auktion', d: 'Byd på jeres øvelse', icon: 'hammer-auktion', color: '#6E1F2E' },
+      { t: 'Runde', d: 'Løs opgaver · tjen Staldollars', icon: 'puslespil-opgaver', color: '#C9A227' },
+      { t: 'Investér', d: 'Hest · jockey · stald', icon: 'diagram-investering', color: '#2D4A3D' },
+      { t: 'Løb', d: 'Slå terninger · vind præmier', icon: 'maalflag', color: '#B83232' },
+    ];
+    const loop = el('div', { style: 'display:flex;align-items:stretch;gap:.8vw' });
+    steps.forEach((s, i) => {
+      const card = el('div', { style: `flex:1;background:#fff;border-radius:18px;border-top:.55vh solid ${s.color};box-shadow:var(--shadow);padding:1.5vw 1.2vw;text-align:center` });
+      card.appendChild(el('div', { style: 'width:5.6vw;height:5.6vw;margin:0 auto .8vh', html: TG.assetTag(s.icon) }));
+      card.appendChild(el('div', { style: 'font-family:var(--font-display);font-weight:800;font-size:1.9vw;color:var(--navy)', text: (i + 1) + '. ' + s.t }));
+      card.appendChild(el('div', { style: 'font-size:1.15vw;color:var(--text-dim);margin-top:.3vh', text: s.d }));
+      loop.appendChild(card);
+      if (i < steps.length - 1) loop.appendChild(el('div', { style: 'align-self:center;color:var(--gold);font-size:2.6vw;font-weight:800', text: '→' }));
+    });
+    c.appendChild(loop);
+    const bottom = el('div', { style: 'display:flex;align-items:center;gap:1.4vw;margin-top:2.4vh' });
+    bottom.appendChild(el('div', { style: 'background:#fff;border:1px solid var(--line);border-radius:999px;padding:.7vw 1.4vw;font-size:1.35vw;font-weight:700;box-shadow:var(--shadow);white-space:nowrap', text: '🔁 Gentages hver runde' }));
+    const fin = el('div', { style: 'flex:1;background:var(--navy);color:#fff;border-radius:18px;padding:1.1vw 1.5vw;display:flex;align-items:center;gap:1.2vw;box-shadow:var(--shadow-lg)' });
+    fin.appendChild(el('div', { style: 'width:4vw;height:4vw;flex:none', html: TG.assetTag('pokal') }));
+    fin.appendChild(el('div', {}, [
+      el('div', { style: 'font-family:var(--font-display);font-weight:800;font-size:1.8vw', text: 'Til sidst: The Great Team Derby' }),
+      el('div', { style: 'font-size:1.15vw;opacity:.85', text: 'Væddemål, store præmier — og den mest værdifulde stald vinder' }),
+    ]));
+    bottom.appendChild(fin);
+    c.appendChild(bottom);
     return c;
   }
   function preseason() {
     if (window.__psTourTimer) { clearInterval(window.__psTourTimer); window.__psTourTimer = null; }
-    const PS_CSS = '.ps-wrap{display:flex;gap:2vw;align-items:stretch}.ps-board{flex:1.3;display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:1fr;gap:1vw;background:linear-gradient(160deg,#2b5d40,#1c4a30);border-radius:20px;padding:1.4vw;border:3px solid #163d29;box-shadow:var(--shadow-lg)}.ps-tile{cursor:pointer;background:var(--cream);border-radius:14px;padding:1.1vw 1.2vw;display:flex;flex-direction:column;gap:.3vw;justify-content:center;opacity:.5;transition:transform .45s cubic-bezier(.2,.9,.3,1),box-shadow .45s,opacity .45s}.ps-tile .n{font-size:.85vw;letter-spacing:2px;text-transform:uppercase;color:var(--burgundy);font-weight:700}.ps-tile .t{font-family:var(--font-display);font-weight:800;font-size:1.5vw;color:var(--navy);line-height:1.05}.ps-tile.active{opacity:1;transform:scale(1.05);box-shadow:0 0 0 4px var(--gold),0 14px 34px rgba(0,0,0,.32)}.ps-panel{flex:1;background:var(--navy);color:var(--on-navy);border-radius:20px;padding:2vw;display:flex;flex-direction:column;justify-content:center;box-shadow:var(--shadow-lg)}.ps-panel .pe{font-size:1vw;letter-spacing:3px;text-transform:uppercase;color:var(--gold-soft);font-weight:700;margin-bottom:1vh}.ps-panel .pt{font-family:var(--font-display);font-size:2.8vw;line-height:1.05;margin-bottom:1.4vh}.ps-panel .pd{font-size:1.5vw;line-height:1.5;opacity:.93}.ps-dots{display:flex;gap:.6vw;margin-top:2.4vh}.ps-dots i{width:.9vw;height:.9vw;border-radius:50%;background:rgba(255,255,255,.28);transition:background .3s}.ps-dots i.on{background:var(--gold)}';
-    const stations = [
-      { n: 'Din base', t: 'Stalden', color: '#1F3E63', icon: TG.assetTag('hest-silhuet'), eyebrow: 'Station 1 · Stalden', desc: 'Her bor jeres hest og jockey. Giv dem navne, og gør stalden klar til sæsonen.' },
-      { n: 'Hver runde', t: 'Auktionshuset', color: '#6E1F2E', icon: TG.assetTag('hammer-auktion'), eyebrow: 'Station 2 · Auktion', desc: 'I byder på 7 special-øvelser. I kan kun eje én ad gangen — men den kan sælges videre med gevinst.' },
-      { n: 'Tjen penge', t: 'Opgaverne', color: '#C9A227', icon: TG.assetTag('puslespil-opgaver'), eyebrow: 'Station 3 · Opgaver', desc: 'Tip en 13-er, Tidslinje og Dyst giver Staldollars. Byg puslespillet og få jeres Derby-licens.' },
-      { n: 'Bliv stærkere', t: 'Investering', color: '#2D4A3D', icon: TG.assetTag('diagram-investering'), eyebrow: 'Station 4 · Investering', desc: 'Køb op i hest (fart), jockey (stabilitet) eller stald (sikker værdi). Hesten løfter terningens top, jockeyen dens bund.' },
-      { n: 'Payoff', t: 'Væddeløbsbanen', color: '#B83232', icon: TG.assetTag('maalflag'), eyebrow: 'Station 5 · Løb', desc: 'Efter hver runde er der løb. I slår terninger — den bedste hest på banen vinder præmiepenge.' },
-      { n: 'Sådan vinder I', t: 'Staldværdien', color: '#C9A227', icon: TG.assetTag('pokal'), eyebrow: 'Station 6 · Vinderen', desc: 'Den mest værdifulde stald vinder til sidst: kontanter + hest + jockey + stald. Ikke nødvendigvis løbsvinderen!' },
+    const PS_CSS = '.ps-wrap{display:flex;gap:2.4vw;align-items:stretch}.ps-tablet{flex:1.1;background:#1c1c1e;border-radius:26px;padding:1vw;box-shadow:0 22px 50px rgba(0,0,0,.35)}.ps-screen{background:var(--cream);border-radius:16px;height:100%;display:flex;flex-direction:column;overflow:hidden}.ps-top{background:var(--navy);color:#fff;padding:.7vw 1vw;display:flex;align-items:center;gap:.7vw}.ps-top .b{width:2vw;height:2vw;border-radius:50%;background:var(--burgundy);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1vw}.ps-top .nm{font-family:var(--font-display);font-weight:800;font-size:1.2vw}.ps-top .m{margin-left:auto;text-align:right;font-size:.75vw;opacity:.85}.ps-top .m b{display:block;font-size:1.05vw;font-family:var(--font-num)}.ps-body{flex:1;padding:1vw;display:flex;flex-direction:column;gap:.7vw}.ps-body .bt{font-family:var(--font-display);font-weight:800;font-size:1.7vw;color:var(--navy)}.ps-skel{background:#fff;border:1px solid var(--line);border-radius:12px;padding:.8vw;display:flex;flex-direction:column;gap:.45vw}.ps-skel i{display:block;height:.7vw;border-radius:99px;background:#e7e0cc}.ps-skel i.w60{width:60%}.ps-skel i.w85{width:85%}.ps-skel .btn{height:1.7vw;border-radius:8px;background:var(--gold);opacity:.85}.ps-nav{display:flex;background:#fff;border-top:1px solid var(--line)}.ps-nav div{flex:1;text-align:center;padding:.65vw .2vw;font-size:.78vw;font-weight:700;color:var(--text-dim);border-top:3px solid transparent;transition:all .3s;cursor:pointer;white-space:nowrap}.ps-nav div.on{color:var(--navy);border-top-color:var(--gold);background:var(--cream)}.ps-panel{flex:1;background:var(--navy);color:var(--on-navy);border-radius:20px;padding:2vw;display:flex;flex-direction:column;justify-content:center;box-shadow:var(--shadow-lg)}.ps-panel .pe{font-size:1vw;letter-spacing:3px;text-transform:uppercase;color:var(--gold-soft);font-weight:700;margin-bottom:1vh}.ps-panel .pt{font-family:var(--font-display);font-size:2.7vw;line-height:1.05;margin-bottom:1.4vh}.ps-panel .pd{font-size:1.45vw;line-height:1.55;opacity:.93}.ps-dots{display:flex;gap:.6vw;margin-top:2.4vh}.ps-dots i{width:.9vw;height:.9vw;border-radius:50%;background:rgba(255,255,255,.28);transition:background .3s}.ps-dots i.on{background:var(--gold)}';
+    const tabs = [
+      { label: 'Opgaver', title: 'Opgaver', eyebrow: 'Fane 1 af 7', desc: 'Puslespillet, der giver jeres Derby-licens, og de kreative opgaver ligger her. Kald hosten, når I vil have noget godkendt.' },
+      { label: 'Min øvelse', title: 'Min øvelse', eyebrow: 'Fane 2 af 7', desc: 'Den auktionsøvelse I ejer. Kald instruktøren til et officielt forsøg — succes giver kontanter eller point til hest og jockey.' },
+      { label: 'Penge', title: 'Pengeopgaver', eyebrow: 'Fane 3 af 7', desc: 'Tip en 13\'er, Tidslinje og Dyst giver hurtige Staldollars. Der er cooldown — så fordel jer, og hav altid noget i gang.' },
+      { label: 'Byt', title: 'Byttehandel', eyebrow: 'Fane 4 af 7', desc: 'Byt jeres øvelse med en anden stald — evt. med penge oveni. Begge stalde skal acceptere handlen.' },
+      { label: 'Auktionshus', title: 'Auktionshus', eyebrow: 'Fane 5 af 7', desc: 'Fortrudt jeres køb? Byt til en ledig øvelse mod et gebyr på 50% af jeres købspris.' },
+      { label: 'Invester', title: 'Investering', eyebrow: 'Fane 6 af 7', desc: 'Hesten løfter terningens TOP, jockeyen løfter BUNDEN, stalden er sikker værdi. Max ét køb pr. mulighed — vælg klogt.' },
+      { label: 'Bank', title: 'Bank & stilling', eyebrow: 'Fane 7 af 7', desc: 'Jeres samlede staldværdi og stillingen. Husk: den mest værdifulde stald vinder — ikke nødvendigvis løbsvinderen.' },
     ];
     const wrap = el('div');
     wrap.appendChild(el('style', { html: PS_CSS }));
-    wrap.appendChild(el('div.eyebrow', { text: 'Pre-season · rundtur' }));
-    wrap.appendChild(el('h2', { text: 'Sådan spiller I', style: 'margin-bottom:2vh' }));
+    wrap.appendChild(el('div.eyebrow', { text: 'Pre-season · sådan ser jeres tablet ud' }));
+    wrap.appendChild(el('h2', { text: 'Én skærm — syv faner', style: 'margin-bottom:2vh' }));
     const row = el('div.ps-wrap');
-    const board = el('div.ps-board#psBoard');
-    stations.forEach((s, i) => {
-      const tile = el('div.ps-tile', { 'data-ps': String(i) }, [
-        el('div', { style: 'width:3vw;height:3vw', html: s.icon }),
-        el('div.n', { text: s.n }),
-        el('div.t', { text: s.t }),
-      ]);
-      tile.style.borderTop = '6px solid ' + s.color;
-      tile.addEventListener('click', () => setPsStep(i));
-      board.appendChild(tile);
-    });
+    // Tablet-mockup
+    const tablet = el('div.ps-tablet');
+    const screen = el('div.ps-screen');
+    const top = el('div.ps-top');
+    top.appendChild(el('div.b', { text: '3' }));
+    top.appendChild(el('div.nm', { text: 'Jeres stald' }));
+    top.appendChild(el('div.m', {}, [el('span', { text: 'KONTANT' }), el('b', { text: '4.500 SD' })]));
+    top.appendChild(el('div.m', {}, [el('span', { text: 'STALDVÆRDI' }), el('b', { text: '8.200 SD' })]));
+    screen.appendChild(top);
+    const body = el('div.ps-body');
+    body.appendChild(el('div.bt#psBodyTitle'));
+    const skel1 = el('div.ps-skel', {}, [el('i.w60'), el('i.w85'), el('i.w60'), el('div.btn')]);
+    const skel2 = el('div.ps-skel', {}, [el('i.w85'), el('i.w60')]);
+    body.appendChild(skel1); body.appendChild(skel2);
+    screen.appendChild(body);
+    const nav = el('div.ps-nav#psNav');
+    tabs.forEach((t, i) => { const b = el('div', { text: t.label, 'data-ps': String(i) }); b.addEventListener('click', () => setPsStep(i)); nav.appendChild(b); });
+    screen.appendChild(nav);
+    tablet.appendChild(screen);
+    // Forklarings-panel
     const panel = el('div.ps-panel');
     panel.appendChild(el('div.pe#psEye'));
     panel.appendChild(el('div.pt#psTitle'));
     panel.appendChild(el('div.pd#psDesc'));
     const dots = el('div.ps-dots#psDots');
-    stations.forEach(() => dots.appendChild(el('i')));
+    tabs.forEach(() => dots.appendChild(el('i')));
     panel.appendChild(dots);
-    row.appendChild(board); row.appendChild(panel);
+    row.appendChild(tablet); row.appendChild(panel);
     wrap.appendChild(row);
-    window.__psStations = stations; window.__psStep = 0;
+    window.__psStations = tabs; window.__psStep = 0;
     setTimeout(() => setPsStep(0), 0);
     window.__psTourTimer = setInterval(() => {
-      if (!document.getElementById('psBoard')) { clearInterval(window.__psTourTimer); window.__psTourTimer = null; return; }
-      setPsStep((window.__psStep + 1) % stations.length);
-    }, 4200);
+      if (!document.getElementById('psNav')) { clearInterval(window.__psTourTimer); window.__psTourTimer = null; return; }
+      setPsStep((window.__psStep + 1) % tabs.length);
+    }, 8500);
     return wrap;
   }
 
   function setPsStep(i) {
-    const stations = window.__psStations; if (!stations) return;
+    const tabs = window.__psStations; if (!tabs) return;
     window.__psStep = i;
-    document.querySelectorAll('.ps-tile').forEach((n) => n.classList.toggle('active', Number(n.getAttribute('data-ps')) === i));
-    const s = stations[i];
-    const eye = document.getElementById('psEye'); const ti = document.getElementById('psTitle'); const de = document.getElementById('psDesc');
-    if (eye) eye.textContent = s.eyebrow; if (ti) ti.textContent = s.t; if (de) de.textContent = s.desc;
+    document.querySelectorAll('#psNav div').forEach((n) => n.classList.toggle('on', Number(n.getAttribute('data-ps')) === i));
+    const s = tabs[i];
+    const eye = document.getElementById('psEye'); const ti = document.getElementById('psTitle'); const de = document.getElementById('psDesc'); const bt = document.getElementById('psBodyTitle');
+    if (eye) eye.textContent = s.eyebrow; if (ti) ti.textContent = s.title; if (de) de.textContent = s.desc; if (bt) bt.textContent = s.title;
     document.querySelectorAll('#psDots i').forEach((d, di) => d.classList.toggle('on', di === i));
   }
 
@@ -184,13 +216,9 @@
   function stableSetup() {
     const c = el('div');
     c.appendChild(el('h2', { text: 'Skab jeres stald' }));
-    const row = el('div.row', { style: 'gap:2vw;align-items:flex-start;margin-top:1vh' });
-    const grid = el('div.teamgrid', { style: 'flex:1' });
+    const grid = el('div.teamgrid', { style: 'grid-template-columns:repeat(3,1fr);margin-top:1.4vh' });
     S.teams.forEach((t) => grid.appendChild(teamCard(t)));
-    row.appendChild(grid);
-    const qr = el('div.qr.center'); qr.appendChild(el('img', { src: '/qr.png?data=' + encodeURIComponent(base + '/team') })); qr.appendChild(el('div', { style: 'font-weight:700;margin-top:.5vw;font-size:1vw', text: 'Scan for at tilslutte' }));
-    row.appendChild(qr);
-    c.appendChild(row);
+    c.appendChild(grid);
     return c;
   }
   function teamCard(t) {
@@ -217,17 +245,21 @@
   function auction() {
     const a = S.auction; const c = el('div');
     const cd = a.endsAt ? TG.countdown(a.endsAt) : '';
-    c.appendChild(el('div.row.between', {}, [el('h2', { text: a.status === 'resolved' ? 'Auktionen er afgjort' : a.status === 'closed' ? 'Auktionen er lukket' : 'Auktionen er åben' }), cd ? el('div.big-num', { style: 'font-size:4vw', text: cd, 'data-endsat': a.endsAt }) : null]));
+    c.appendChild(el('div.row.between', {}, [el('h2', { text: a.status === 'resolved' ? 'Auktionen er afgjort' : a.status === 'closed' ? 'Auktionen er lukket' : a.status === 'open' ? 'Auktionen er åben' : 'Auktionen åbner snart' }), cd ? el('div.big-num', { style: 'font-size:4vw', text: cd, 'data-endsat': a.endsAt }) : null]));
     if (a.status === 'resolved') {
       const list = el('div', { style: 'margin-top:1vh' });
       (a.results || []).forEach((r) => list.appendChild(el('div.reveal-row', {}, [el('span.num', { text: '' }), el('span', { text: r.stableName + ' → ' + r.exerciseName }), el('span.num', { text: sd(r.amount) })])));
       c.appendChild(list); return c;
     }
+    // Regler — synlige for alle under hele auktionen
+    const rules = el('div', { style: 'display:flex;gap:.8vw;margin:.8vh 0 1.2vh;flex-wrap:wrap' });
+    ['📱 Byd fra tabletten — nyt bud erstatter jeres gamle', '🏆 Højeste bud vinder · max én øvelse pr. stald', '💸 Køber I en ejet øvelse, får sælgeren 50% af buddet', '🔁 Fortryd med "Fjern bud" indtil auktionen lukker'].forEach((t) => rules.appendChild(el('div', { style: 'background:#fff;border:1px solid var(--line);border-radius:999px;padding:.45vw 1vw;font-size:1.02vw;font-weight:600;box-shadow:var(--shadow)', text: t })));
+    c.appendChild(rules);
     const topByEx = {}; (a.topBids || []).forEach((b) => { topByEx[b.exerciseId] = b; });
-    const grid = el('div.teamgrid', { style: 'grid-template-columns:repeat(4,1fr);margin-top:1vh' });
+    const grid = el('div.teamgrid', { style: 'grid-template-columns:repeat(4,1fr);margin-top:.4vh' });
     a.exercises.forEach((ex) => {
       const card = el('div.card', { style: 'display:flex;flex-direction:column;gap:.4vw' });
-      card.appendChild(el('div.cat ' + ex.category, { style: 'font-size:1.1vw;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--gold)', text: ex.name }));
+      card.appendChild(el('div', { class: 'cat ' + ex.category, style: 'font-size:1.1vw;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--gold)', text: ex.name }));
       card.appendChild(el('div', { style: 'font-size:.95vw;color:var(--text-dim);min-height:2.6vw', text: ex.short }));
       const top = topByEx[ex.id];
       const bidBox = el('div', { style: 'margin-top:auto;padding-top:.4vw;border-top:1px solid var(--line)' });
