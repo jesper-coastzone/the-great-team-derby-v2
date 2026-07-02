@@ -170,7 +170,10 @@ function auctionHouseExchange(game, team, targetExerciseId) {
   if (!target) return { ok: false, error: 'Ukendt øvelse.' };
   if (target.currentOwnerTeamId) return { ok: false, error: 'Øvelsen er ejet af et andet hold — brug byttehandel i stedet.' };
 
-  const fee = Math.round(team.ownedExercisePurchasePrice * cfg.auctionHouseExchangeRate);
+  // Fast gebyr er autoritativt; procent-sats bruges kun som fallback (kompatibilitet)
+  const fee = cfg.auctionHouseExchangeFee != null
+    ? cfg.auctionHouseExchangeFee
+    : Math.round(team.ownedExercisePurchasePrice * cfg.auctionHouseExchangeRate);
   if (fee > team.cash) return { ok: false, error: `I mangler ${fee - team.cash} ${cfg.currencyAbbr} til gebyret.` };
 
   const old = gs.exerciseById(game, team.ownedAuctionExerciseId);

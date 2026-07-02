@@ -130,6 +130,25 @@ function createGame(settings = {}) {
   };
 
   for (let i = 1; i <= s.numTeams; i++) game.teams.push(makeTeam(game, i));
+
+  // Bots: computerstyrede stalde — stærke tidligt, falder af til sidst (cfg.bots)
+  const botCfg = cfg.bots || {};
+  const wantedBots = Math.max(0, Math.min(Number(settings.numBots) || 0, botCfg.maxBots || 0));
+  const numBots = Math.min(wantedBots, Math.max(0, cfg.maxTeams - game.teams.length));
+  for (let b = 0; b < numBots; b++) {
+    const bot = makeTeam(game, game.teams.length + 1);
+    bot.isBot = true;
+    bot.joined = true;
+    bot.connected = true;
+    bot.ready = true;
+    bot.stableName = (botCfg.names || [])[b] || `Stald Bot ${b + 1} 🤖`;
+    bot.horseName = (botCfg.horseNames || [])[b] || `Bot-hest ${b + 1}`;
+    bot.jockeyName = (botCfg.jockeyNames || [])[b] || `Bot-jockey ${b + 1}`;
+    bot.botNextEarnAt = 0;
+    game.teams.push(bot);
+  }
+  s.numBots = numBots;
+
   game.auctionExercisePool = makeAuctionExercises();
 
   store.set(game.code, game);
@@ -207,6 +226,7 @@ function publicTeam(t) {
     ready: t.ready,
     joined: t.joined,
     connected: t.connected,
+    isBot: !!t.isBot,
     cash: Math.round(t.cash),
     horseValue: Math.round(t.horseValue),
     jockeyValue: Math.round(t.jockeyValue),
@@ -218,6 +238,8 @@ function publicTeam(t) {
     ownedAuctionExerciseId: t.ownedAuctionExerciseId,
     derbyLicense: t.derbyLicense,
     race: t.race,
+    // Tidslinje-stationen (egen tablet) skal kunne vise ejerens cooldown
+    tidslinjeCooldownUntil: (t.cooldowns || {}).tidslinje || 0,
   };
 }
 
@@ -291,6 +313,7 @@ function buildStateFor(game, role, teamId) {
     config: {
       investmentOptions: cfg.investmentOptions,
       auctionHouseExchangeRate: cfg.auctionHouseExchangeRate,
+      auctionHouseExchangeFee: cfg.auctionHouseExchangeFee != null ? cfg.auctionHouseExchangeFee : null,
       raceTrackLength: cfg.raceTrackLength,
       maxPurchasesPerOption: cfg.maxPurchasesPerOption || 0,
       roles: cfg.roles || [],

@@ -11,6 +11,7 @@ function pushState(game) {
   if (!io || !game) return;
   io.to(`${game.code}:host`).emit('state', gs.buildStateFor(game, 'host'));
   io.to(`${game.code}:screen`).emit('state', gs.buildStateFor(game, 'screen'));
+  io.to(`${game.code}:station`).emit('state', gs.buildStateFor(game, 'station'));
   for (const t of game.teams) {
     io.to(`${game.code}:team:${t.id}`).emit('state', gs.buildStateFor(game, 'team', t.id));
   }

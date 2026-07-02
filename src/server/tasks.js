@@ -6,6 +6,7 @@
  */
 const cfg = require('../../config/gameConfig');
 const { tip13Sets, tidslinjeSets, dystQuestions } = require('../../config/tasks');
+const mindpuzzle = require('../../config/mindpuzzleLevels');
 const { uid, now, shuffle, pick } = require('./util');
 const gs = require('./gameState');
 const econ = require('./economy');
@@ -49,30 +50,50 @@ function submitTip13(game, team, answers) {
 // =========================================================
 //  TIDSLINJE  (auto-rettet)
 // =========================================================
+// Tidslinjen er en fælles pengeopgave for ALLE hold, men løses KUN på
+// Tidslinje-stationen (egen tablet). Holdet lægger FYSISKE kort i kronologisk
+// rækkefølge og taster kortnumrene ind. Cooldown og sæt-rotation er pr. hold.
+// Årstal (facit) forlader aldrig serveren.
 function getTidslinje(game, team) {
   const st = ensureStatus(team, 'tidslinje');
-  if (onCooldown(team, 'tidslinje')) return { ok: false, error: 'Tidslinje er på cooldown.' };
+  const cdLeft = onCooldown(team, 'tidslinje') ? Math.ceil((team.cooldowns.tidslinje - now()) / 1000) : 0;
   const set = tidslinjeSets[(st.count || 0) % tidslinjeSets.length];
   st.currentSetId = set.id;
-  const items = set.items.map((it, i) => ({ id: i, label: it.label }));
-  return { ok: true, setId: set.id, title: set.title, items: shuffle(items) };
+  // Kun kortnumre — begivenhederne står KUN på de fysiske kort, så stationen
+  // ikke kan løses uden at holdet faktisk står med sættet i hånden.
+  const cards = set.items
+    .map((it, i) => ({ id: i, card: it.card }))
+    .sort((a, b) => a.card - b.card);
+  return {
+    ok: true, setId: set.id, title: set.title, cards,
+    nextReward: cfg.moneyTasks.tidslinje.rewardOnSuccess, cooldownLeft: cdLeft,
+  };
 }
 
 function submitTidslinje(game, team, orderedIds) {
+  if (onCooldown(team, 'tidslinje')) return { ok: false, error: 'Tidslinjen er på cooldown.' };
   const st = ensureStatus(team, 'tidslinje');
-  if (onCooldown(team, 'tidslinje')) return { ok: false, error: 'Tidslinje er på cooldown.' };
-  const set = tidslinjeSets.find((s) => s.id === st.currentSetId) || tidslinjeSets[0];
+  const set = tidslinjeSets.find((s) => s.id === st.currentSetId);
+  if (!set) return { ok: false, error: 'Hent opgaven igen.' };
+  if (!Array.isArray(orderedIds) || orderedIds.length !== set.items.length) return { ok: false, error: 'Angiv rækkefølgen af alle kort.' };
   const correctOrder = set.items
     .map((it, i) => ({ i, year: it.year }))
     .sort((a, b) => a.year - b.year)
     .map((x) => x.i);
   const success = JSON.stringify(orderedIds.map(Number)) === JSON.stringify(correctOrder);
-  const reward = success ? cfg.moneyTasks.tidslinje.rewardOnSuccess : cfg.moneyTasks.tidslinje.rewardOnFail;
-  if (reward) econ.addTransaction(game, team, reward, 'task', `Tidslinje: ${success ? 'korrekt' : 'forkert'}`);
   st.count = (st.count || 0) + 1;
+  st.currentSetId = null;
   setCooldown(team, 'tidslinje', cfg.moneyTasks.tidslinje.cooldownSeconds);
-  gs.logEvent(game, `${team.stableName} forsøgte Tidslinje (${success ? 'korrekt' : 'forkert'}).`);
-  return { ok: true, success, reward, correctOrder: correctOrder.map((i) => set.items[i].label) };
+  const reward = success ? cfg.moneyTasks.tidslinje.rewardOnSuccess : cfg.moneyTasks.tidslinje.rewardOnFail;
+  if (reward) econ.addTransaction(game, team, reward, 'task', `Tidslinjen (sæt ${set.id}) ${success ? 'korrekt' : 'forkert'}`);
+  gs.logEvent(game, `${team.stableName} forsøgte Tidslinjen, sæt ${set.id} (${success ? `korrekt, +${reward} ${cfg.currencyAbbr}` : 'forkert'}).`);
+  const res = { ok: true, success, reward: success ? reward : 0 };
+  if (success) {
+    // Facit vises kun ved succes (sættene roterer — ellers kan facit genbruges senere)
+    res.correctCards = correctOrder.map((i) => set.items[i].card);
+    res.correctLabels = correctOrder.map((i) => set.items[i].label);
+  }
+  return res;
 }
 
 // =========================================================
@@ -191,6 +212,106 @@ function requestExerciseAttempt(game, team, exerciseId, meta = {}) {
 }
 
 // =========================================================
+//  MIND PUZZLE (Horse Academy) — auto-godkendelse på tablet
+//  Kontrolspørgsmål genereres ud fra løsningen og kan kun
+//  besvares, hvis holdet fysisk har bygget banen korrekt.
+// =========================================================
+const MP_PENALTY_SECONDS = (cfg.mindpuzzleAuto && cfg.mindpuzzleAuto.penaltyCooldownSeconds) || 60;
+const MP_QUESTIONS_PER_CHECK = (cfg.mindpuzzleAuto && cfg.mindpuzzleAuto.questionsPerCheck) || 2;
+
+function mpCurrentLevel(team) {
+  const idx = team.mindPuzzleLevel || 0;
+  return mindpuzzle.LEVELS[idx] || null;
+}
+
+function mpBuildQuestion(levelDef, q) {
+  if (q.gate) {
+    return {
+      type: 'gate',
+      text: 'Ved hvilket bogstav på banens kant står den røde bom?',
+      options: mindpuzzle.GATE_LETTERS.map((l) => ({ id: l, label: l })),
+    };
+  }
+  // Farvemuligheder: farver der faktisk indgår i løsningen (kan ikke udelukkes
+  // ud fra opgavekortet) — suppleret op til 4 hvis niveauet har få farver.
+  const wrong = shuffle(levelDef.colors.filter((c) => c !== q.correct)).slice(0, 3);
+  while (wrong.length < 3) {
+    const extra = shuffle(Object.keys(mindpuzzle.COLOR_LABELS).filter((c) => c !== q.correct && !wrong.includes(c)))[0];
+    wrong.push(extra);
+  }
+  const options = shuffle([q.correct, ...wrong]);
+  return {
+    type: 'color',
+    text: `Hvilken forhindring står tættest på bogstavet ${q.letter} på jeres bane?`,
+    options: options.map((c) => ({ id: c, label: mindpuzzle.COLOR_LABELS[c] })),
+  };
+}
+
+// Hent nuværende niveau + friske kontrolspørgsmål (uden facit!)
+function getMindPuzzle(game, team) {
+  if (team.ownedAuctionExerciseId !== 'mindpuzzle') return { ok: false, error: 'I ejer ikke Mind Puzzle lige nu.' };
+  const ex = gs.exerciseById(game, 'mindpuzzle');
+  if (!ex) return { ok: false, error: 'Ukendt øvelse.' };
+  const levelDef = mpCurrentLevel(team);
+  if (!levelDef) return { ok: true, done: true, totalLevels: mindpuzzle.LEVELS.length };
+  const cdLeft = onCooldown(team, 'mindpuzzle') ? Math.ceil((team.cooldowns.mindpuzzle - now()) / 1000) : 0;
+
+  // Træk tilfældige spørgsmål og gem de valgte indexer på holdet (server-side facit)
+  const qIdx = shuffle(levelDef.questions.map((_, i) => i)).slice(0, MP_QUESTIONS_PER_CHECK);
+  const st = ensureStatus(team, 'mindpuzzle');
+  st.mpQuestionIdx = qIdx;
+
+  return {
+    ok: true,
+    level: levelDef.level,
+    totalLevels: mindpuzzle.LEVELS.length,
+    tier: levelDef.tier,
+    book: levelDef.book,
+    image: `/assets/mindpuzzle/challenge-${String(levelDef.book).padStart(2, '0')}.jpg`,
+    nextReward: gs.nextMoneyReward(ex),
+    cooldownLeft: cdLeft,
+    questions: qIdx.map((i) => mpBuildQuestion(levelDef, levelDef.questions[i])),
+  };
+}
+
+// Tjek svar. Rigtigt → belønning + næste niveau. Forkert → straf-cooldown.
+function submitMindPuzzle(game, team, answers) {
+  if (team.ownedAuctionExerciseId !== 'mindpuzzle') return { ok: false, error: 'I ejer ikke Mind Puzzle lige nu.' };
+  const ex = gs.exerciseById(game, 'mindpuzzle');
+  if (!ex) return { ok: false, error: 'Ukendt øvelse.' };
+  if (onCooldown(team, 'mindpuzzle')) return { ok: false, error: 'Mind Puzzle er på cooldown.' };
+  const levelDef = mpCurrentLevel(team);
+  if (!levelDef) return { ok: false, error: 'Alle niveauer er gennemført!' };
+  const st = ensureStatus(team, 'mindpuzzle');
+  const qIdx = st.mpQuestionIdx || [];
+  if (!qIdx.length || !Array.isArray(answers) || answers.length !== qIdx.length) {
+    return { ok: false, error: 'Hent spørgsmålene igen.' };
+  }
+
+  const allCorrect = qIdx.every((qi, i) => {
+    const q = levelDef.questions[qi];
+    return String(answers[i]) === String(q.correct);
+  });
+  st.mpQuestionIdx = null;
+
+  if (!allCorrect) {
+    setCooldown(team, 'mindpuzzle', MP_PENALTY_SECONDS);
+    gs.logEvent(game, `${team.stableName}: Mind Puzzle niveau ${levelDef.level} — kontrol fejlede (${MP_PENALTY_SECONDS}s pause).`);
+    return { ok: true, approved: false, penaltySeconds: MP_PENALTY_SECONDS };
+  }
+
+  const reward = gs.nextMoneyReward(ex);
+  econ.addTransaction(game, team, reward, 'exercise', `Mind Puzzle niveau ${levelDef.level} godkendt`);
+  ex.successCount += 1;
+  team.mindPuzzleLevel = (team.mindPuzzleLevel || 0) + 1;
+  ex.resultHistory.push({ teamId: team.id, reward, level: levelDef.level, at: now() });
+  setCooldown(team, 'mindpuzzle', ex.cooldownSeconds || cfg.auctionExerciseCooldownSeconds);
+  const done = team.mindPuzzleLevel >= mindpuzzle.LEVELS.length;
+  gs.logEvent(game, `${team.stableName} løste Mind Puzzle niveau ${levelDef.level} (${levelDef.tier}) — auto-godkendt (+${reward} ${cfg.currencyAbbr})${done ? '. ALLE 20 NIVEAUER FULDFØRT!' : ''}`);
+  return { ok: true, approved: true, reward, level: levelDef.level, done };
+}
+
+// =========================================================
 //  ALTID-TILGÆNGELIGE (puslespil + kreative) — team beder om godkendelse
 // =========================================================
 function requestTaskApproval(game, team, taskId) {
@@ -274,4 +395,5 @@ module.exports = {
   getTip13, submitTip13, getTidslinje, submitTidslinje,
   challengeDuel, respondDuel, submitDuel, duelsForTeam,
   requestExerciseAttempt, requestTaskApproval, hostResolveApproval, setCreativeBonus,
+  getMindPuzzle, submitMindPuzzle,
 };

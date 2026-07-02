@@ -6,7 +6,7 @@
  *        live-feed til storskærmen, position uden loft og delt plads ved dødt løb.
  */
 const cfg = require('../../config/gameConfig');
-const { uid, randomInt, now } = require('./util');
+const { uid, randomInt, now, shuffle } = require('./util');
 const gs = require('./gameState');
 const econ = require('./economy');
 
@@ -236,4 +236,71 @@ function finishRace(game) {
   return { ok: true, results };
 }
 
-module.exports = { startRace, setRolling, setFavorite, placeBet, rollForTeam, hostRollForTeam: rollForTeam, allRolled, finishRace, prizeFor };
+// ---------- Automatisk warm-up: scriptet løb der ender i dødt løb ----------
+
+// Plan: hvert hold får 4 slag der ALLE summer til 14, men i forskellig rækkefølge
+// (permutationer af [2,3,4,5]) — løbet ser levende ud, men alle ender på samme felt.
+function buildWarmupPlan(game) {
+  const base = [2, 3, 4, 5]; // sum = 14
+  const plan = {};
+  const seen = new Set();
+  for (const t of game.teams) {
+    let order = shuffle(base);
+    // Undgå identiske forløb så længe der er ubrugte permutationer (24 mulige);
+    // ved >24 hold genbruges rækkefølger.
+    let guard = 40;
+    while (seen.has(order.join(',')) && seen.size < 24 && guard-- > 0) order = shuffle(base);
+    seen.add(order.join(','));
+    plan[t.id] = order;
+  }
+  return plan;
+}
+
+// Scriptet slag: som rollForTeam, men uden validering/tilfældighed/events/catch-up.
+function applyScriptedRoll(game, team, value) {
+  const race = gs.currentRace(game);
+  if (!race) return { ok: false, error: 'Intet aktivt løb.' };
+  race.rolls[team.id].push(value);
+  race.positions[team.id] += value;
+  const rr = race.rolls[team.id];
+  team.race = {
+    position: race.positions[team.id], rolls: rr.slice(),
+    lastRoll: value, rollSum: rr.reduce((a, b) => a + b, 0),
+    done: rr.length >= race.allowed[team.id], hasRolled: true, allowed: race.allowed[team.id],
+  };
+  pushFeed(race, {
+    kind: 'roll', teamId: team.id, stableName: team.stableName,
+    base: value, catchup: 0, fanBoost: 0, event: null,
+    roll: value, position: race.positions[team.id],
+    text: `🎲 ${team.stableName} slår ${value} → rykker ${value} felter`,
+  });
+  return { ok: true, roll: value, position: race.positions[team.id], done: team.race.done };
+}
+
+// Afslut auto-warm-up som dødt løb: alle hold på 1. plads, INGEN præmier.
+function finishWarmupTie(game) {
+  const race = gs.currentRace(game);
+  if (!race) return { ok: false, error: 'Intet aktivt løb.' };
+  race.rollingOpen = false;
+  race.status = 'finished';
+  race.prizesApplied = true; // ingen transaktioner — spærrer også dobbelt-finish
+  race.results = game.teams.map((t) => {
+    const rr = race.rolls[t.id] || [];
+    return {
+      teamId: t.id, stableName: t.stableName,
+      position: race.positions[t.id],
+      lastRoll: rr.length ? rr[rr.length - 1] : 0,
+      rollSum: rr.reduce((a, b) => a + b, 0),
+      place: 1, prize: 0, deadHeat: true,
+    };
+  });
+  pushFeed(race, { kind: 'finish', text: '🏁 Dødt løb! Alle stalde slutter side om side — alle får startkapital.' });
+  gs.logEvent(game, 'Warm-up løb afsluttet: dødt løb — alle stalde side om side.');
+  return { ok: true, results: race.results };
+}
+
+module.exports = {
+  startRace, setRolling, setFavorite, placeBet, rollForTeam, hostRollForTeam: rollForTeam,
+  allRolled, finishRace, prizeFor,
+  buildWarmupPlan, applyScriptedRoll, finishWarmupTie,
+};
