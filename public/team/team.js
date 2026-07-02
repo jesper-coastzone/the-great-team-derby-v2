@@ -22,13 +22,19 @@
 
   // ---------- render ----------
   function render() {
+    // Skriv færdig i fred: re-render ikke setup-formularen, mens et felt har fokus
+    if (S && S.me && S.slide && S.slide.tabletMode === 'stable-setup' && ui.renderedMode === 'stable-setup') {
+      const ae = document.activeElement;
+      if (ae && ae.tagName === 'INPUT' && root.contains(ae)) return;
+    }
     clear(root);
-    if (!S || !S.me) { root.appendChild(joinView()); return; }
+    if (!S || !S.me) { root.appendChild(joinView()); ui.renderedMode = null; return; }
     root.appendChild(topbar());
     const app = el('div.app');
     app.appendChild(bodyForMode());
     root.appendChild(app);
     if (S.slide.tabletMode === 'round-dashboard') root.appendChild(navbar());
+    ui.renderedMode = S.slide.tabletMode;
     incomingTradeToast();
   }
 
@@ -64,7 +70,7 @@
     switch (S.slide.tabletMode) {
       case 'welcome': return centerMsg('Velkommen til<br>The Great Team Derby', 'Vent på værten…');
       case 'stable-setup': return setupView();
-      case 'ready-wait': return centerMsg('I er klar!', 'Vent på de andre stalde…');
+      case 'ready-wait': return readyWaitView();
       case 'pre-season': return preseasonView();
       case 'warmup-race': return warmupView();
       case 'auction': return auctionView();
@@ -91,30 +97,46 @@
     c.appendChild(el('div.eyebrow', { text: 'Skab jeres stald' }));
     c.appendChild(el('h1', { text: 'Navngiv jer', style: 'margin:6px 0 18px' }));
     const f = {};
-    const mk = (lbl, key, val) => { const i = el('input', { type: 'text', value: val || '' }); f[key] = i; return el('label.field', {}, [el('span.lbl', { text: lbl }), i]); };
+    // Kladde overlever re-renders (state-pushes fra andre hold nulstiller ellers felterne)
+    const d = ui.setupDraft || (ui.setupDraft = {});
+    const mk = (lbl, key, val) => {
+      const i = el('input', { type: 'text', value: d[key] != null ? d[key] : (val || ''), oninput: () => { d[key] = i.value; } });
+      f[key] = i;
+      return el('label.field', {}, [el('span.lbl', { text: lbl }), i]);
+    };
     c.appendChild(mk('Staldnavn', 'stableName', me.stableName));
     c.appendChild(mk('Hestens navn', 'horseName', me.horseName));
     c.appendChild(mk('Jockeyens navn', 'jockeyName', me.jockeyName));
-    // Rollekort: alle på holdet skal have en funktion
-    const roleDefs = (S.config && S.config.roles) || [];
-    const roleInputs = {};
-    if (roleDefs.length) {
-      c.appendChild(el('div.eyebrow', { text: 'Rollekort — hvem gør hvad?', style: 'margin-top:14px' }));
-      roleDefs.forEach((r) => {
-        const i = el('input', { type: 'text', value: (me.roles || {})[r.id] || '', placeholder: 'Navn(e)' });
-        roleInputs[r.id] = i;
-        const lbl = el('label.field', {}, [el('span.lbl', { text: r.label }), i]);
-        lbl.appendChild(el('span.muted', { style: 'font-size:12px', text: r.desc }));
-        c.appendChild(lbl);
-      });
-    }
-    const saveRoles = () => { const roles = {}; Object.entries(roleInputs).forEach(([k, i]) => { if (i.value.trim()) roles[k] = i.value; }); if (Object.keys(roles).length) TG.emit('team:setRoles', { roles }); };
     const save = el('button.btn.block', { text: 'Gem' });
-    save.addEventListener('click', () => { saveRoles(); TG.emit('team:setStable', { stableName: f.stableName.value, horseName: f.horseName.value, jockeyName: f.jockeyName.value }).then(() => toast('Gemt', 'ok')); });
+    save.addEventListener('click', () => TG.emit('team:setStable', { stableName: f.stableName.value, horseName: f.horseName.value, jockeyName: f.jockeyName.value }).then((r) => { if (r.ok) { ui.setupDraft = {}; toast('Gemt', 'ok'); } }));
     const ready = el('button.btn.gold.block', { text: me.ready ? '✓ Vi er klar (tryk for at fortryde)' : 'Vi er klar!' , style: 'margin-top:10px' });
-    ready.addEventListener('click', () => { saveRoles(); TG.emit('team:setStable', { stableName: f.stableName.value, horseName: f.horseName.value, jockeyName: f.jockeyName.value, ready: !me.ready }); });
+    ready.addEventListener('click', () => TG.emit('team:setStable', { stableName: f.stableName.value, horseName: f.horseName.value, jockeyName: f.jockeyName.value, ready: !me.ready }).then((r) => { if (r.ok) ui.setupDraft = {}; }));
     c.appendChild(save); c.appendChild(ready);
     return c;
+  }
+
+  // ---------- READY-CHECK ----------
+  function readyWaitView() {
+    const me = S.me;
+    const w = el('div.big-center');
+    if (me.ready) {
+      const c = el('div', { style: 'text-align:center' });
+      c.appendChild(el('h1', { html: 'I er klar! ✓' }));
+      c.appendChild(el('p.muted', { style: 'margin-top:12px;font-size:18px', text: 'Vent på de andre stalde…' }));
+      const un = el('button.btn.sm.ghost', { text: 'Fortryd klar', style: 'margin-top:18px' });
+      un.addEventListener('click', () => TG.emit('team:ready', { ready: false }));
+      c.appendChild(un);
+      w.appendChild(c);
+      return w;
+    }
+    const card = el('div.card', { style: 'max-width:460px;width:100%;text-align:center' });
+    card.appendChild(el('h1', { text: 'Er I klar?', style: 'font-size:30px' }));
+    card.appendChild(el('p.muted', { style: 'margin:10px 0 16px', html: `<b>${me.stableName}</b><br>Hest: <b>${me.horseName || '—'}</b> · Jockey: <b>${me.jockeyName || '—'}</b>` }));
+    const b = el('button.btn.gold.block.lg', { text: 'Vi er klar!' });
+    b.addEventListener('click', () => TG.emit('team:ready', { ready: true }).then(check));
+    card.appendChild(b);
+    w.appendChild(card);
+    return w;
   }
 
   // ---------- PRE-SEASON ----------
@@ -253,6 +275,7 @@
   function tasksView() {
     const me = S.me;
     const c = el('div.col');
+    c.appendChild(myStableCard());
     c.appendChild(head('Opgaver', 'Altid tilgængelige — prioritér frit.'));
     c.appendChild(rolesCard());
     const defs = [['puzzle', 'Puslespil', 'Fuldfør for Derby-licens.'], ['horseStyling', 'Pynt jeres hest', 'Bedømmes i showcase.'], ['stableSign', 'Design jeres staldskilt', 'Bedømmes i showcase.']];
@@ -265,6 +288,37 @@
       c.appendChild(card);
     });
     return c;
+  }
+
+  // Visuelt overblik over stalden — hest, jockey, stald og terning
+  function myStableCard() {
+    const me = S.me;
+    const stars = (lvl) => '★'.repeat(lvl) + '☆'.repeat(Math.max(0, 4 - lvl));
+    const card = el('div.card', { style: `border-top:6px solid ${me.color.hex};background:linear-gradient(150deg,#fff 55%,#faf6ea)` });
+    const top = el('div.row', { style: 'gap:14px;align-items:center' });
+    top.appendChild(TG.tintedAsset('hest-silhuet', me.color.hex, { style: 'width:74px;height:74px;flex:none' }));
+    const info = el('div', { style: 'flex:1;min-width:0' });
+    info.appendChild(el('div', { style: 'font-family:var(--font-display);font-weight:800;font-size:22px;color:var(--navy);line-height:1.1', text: me.stableName }));
+    info.appendChild(el('div.muted', { style: 'font-size:13px;margin-top:2px', text: `${me.horseName || 'Hesten'} & ${me.jockeyName || 'jockeyen'}` }));
+    info.appendChild(el('div', { style: 'margin-top:6px' }, [el('span.chip.gold', { text: `🎲 Terning ${me.dice.min}–${me.dice.max}` })]));
+    top.appendChild(info);
+    card.appendChild(top);
+    card.appendChild(el('div.finish-stripe', { style: 'margin:12px 0' }));
+    const grid = el('div.grid', { style: 'grid-template-columns:1fr 1fr 1fr;gap:8px' });
+    const cell = (label, star, value) => el('div', { style: 'text-align:center;background:#fff;border:1px solid var(--line);border-radius:12px;padding:8px 4px' }, [
+      el('div', { style: 'font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text-faint);font-weight:700', text: label }),
+      star != null ? el('div', { style: 'color:var(--gold);font-size:14px;letter-spacing:2px', text: star }) : el('div', { style: 'height:4px' }),
+      el('div', { style: 'font-family:var(--font-num);font-weight:800;font-size:16px;color:var(--navy)', text: money(value) }),
+    ]);
+    grid.appendChild(cell('Hest', stars(me.horseLevel), me.horseValue));
+    grid.appendChild(cell('Jockey', stars(me.jockeyLevel), me.jockeyValue));
+    grid.appendChild(cell('Stald', null, me.stableValue));
+    card.appendChild(grid);
+    const foot = el('div.row.between', { style: 'margin-top:10px;align-items:baseline' });
+    foot.appendChild(el('span.muted', { style: 'font-size:12px', text: me.derbyLicense ? '🎫 Derby-licens i hus' : 'Ingen Derby-licens endnu — byg puslespillet!' }));
+    foot.appendChild(el('span', { style: 'font-family:var(--font-num);font-weight:800;font-size:18px;color:var(--burgundy)', text: 'Total ' + sd(me.totalValue) }));
+    card.appendChild(foot);
+    return card;
   }
 
   function rolesCard() {
