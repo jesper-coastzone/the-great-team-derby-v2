@@ -3,6 +3,8 @@
   const { el, clear, sd, money, toast, check } = TG;
   const root = document.getElementById('root');
   let S = null; const ORIGIN = location.origin;
+  // Multi-spil: hvilken spilkode konsollen viser lige nu, og om vi er i opret-flowet.
+  const ui = { creating: false, expectCode: TG.load('tg_host_code') || null };
 
   // (Re)bootstrap ved hver forbindelse: log ind med gemt kodeord, gen-join spillet.
   function bootstrap() {
@@ -18,7 +20,11 @@
   TG.socket.on('connect', bootstrap);
   if (TG.socket.connected) bootstrap();
 
-  TG.onState((st) => { S = st; render(); });
+  TG.onState((st) => {
+    if (ui.creating) return; // opret-formularen er åben — ignorér state-pushes
+    if (ui.expectCode && st.code !== ui.expectCode) return; // state fra et andet spil
+    S = st; render();
+  });
 
   function loginForm() {
     clear(root);
@@ -63,9 +69,18 @@
         roundLengthSeconds: Number(f.roundMin.value) * 60, auctionLengthSeconds: Number(f.auctionSec.value),
         includeWarmup: cb.checked,
       };
-      TG.emit('host:createGame', settings).then((r) => { if (r.ok) { TG.save('tg_host_code', r.code); toast('Spil oprettet: ' + r.code, 'ok'); } else check(r); });
+      TG.emit('host:createGame', settings).then((r) => {
+        if (r.ok) { TG.save('tg_host_code', r.code); ui.expectCode = r.code; ui.creating = false; toast('Spil oprettet: ' + r.code, 'ok'); }
+        else check(r);
+      });
     });
     card.appendChild(btn);
+    // Kom man hertil fra et aktivt spil, kan man fortryde og gå tilbage.
+    if (ui.creating && S) {
+      const back = el('button.btn.ghost.block', { text: '← Tilbage til ' + (ui.expectCode || 'aktivt spil'), style: 'margin-top:8px' });
+      back.addEventListener('click', () => { ui.creating = false; render(); });
+      card.appendChild(back);
+    }
     wrap.appendChild(card);
     root.appendChild(wrap);
   }
@@ -235,9 +250,48 @@
     col.appendChild(approvalsPanel());
     col.appendChild(teamsPanel());
     col.appendChild(tradesPanel());
+    col.appendChild(gamesPanel());
     col.appendChild(toolsPanel());
     col.appendChild(logPanel());
     return col;
+  }
+
+  // ---------- MULTI-SPIL: opret nyt, se liste, skift ----------
+  function gamesPanel() {
+    const c = el('div.card.sec');
+    const head = el('div.row.between');
+    head.appendChild(el('h3', { text: 'Spil (' + (S ? S.code : '—') + ')' }));
+    const newBtn = el('button.btn.sm.gold', { text: '➕ Nyt spil' });
+    newBtn.addEventListener('click', () => { ui.creating = true; createForm(); });
+    head.appendChild(newBtn);
+    c.appendChild(head);
+    c.appendChild(el('p.mini', { text: 'Kør flere events samme dag — hvert spil har sin egen kode. Skærm og tablets følger den kode, de er forbundet til.' }));
+    const box = el('div');
+    const load = el('button.btn.sm.ghost', { text: 'Vis alle spil på serveren' });
+    load.addEventListener('click', () => TG.emit('host:listGames').then((r) => {
+      if (!r.ok) return check(r);
+      clear(box);
+      if (!r.games.length) box.appendChild(el('p.mini', { text: 'Ingen aktive spil.' }));
+      r.games.forEach((g) => {
+        const row = el('div.row.between', { style: 'padding:5px 0;border-bottom:1px dashed var(--line);align-items:center;gap:6px' });
+        row.appendChild(el('span.mini', { style: 'flex:1', html: `<b>${g.code}</b> · ${g.eventName}<br>${g.teamsJoined}/${g.numTeams} hold · fase: ${g.phase}${g.round ? ' · runde ' + g.round : ''}` }));
+        if (S && g.code === S.code) row.appendChild(el('span.chip.turf', { text: 'Aktivt' }));
+        else { const b = el('button.btn.sm', { text: 'Skift til' }); b.addEventListener('click', () => switchGame(g.code)); row.appendChild(b); }
+        box.appendChild(row);
+      });
+    }));
+    c.appendChild(load);
+    c.appendChild(box);
+    return c;
+  }
+
+  function switchGame(code) {
+    TG.emit('join', { role: 'host', code }).then((r) => {
+      if (!r.ok) return check(r);
+      TG.save('tg_host_code', code);
+      ui.expectCode = code;
+      toast('Skiftet til spil ' + code, 'ok');
+    });
   }
 
   function approvalsPanel() {
