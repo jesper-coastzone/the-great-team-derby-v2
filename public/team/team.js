@@ -95,10 +95,24 @@
     c.appendChild(mk('Staldnavn', 'stableName', me.stableName));
     c.appendChild(mk('Hestens navn', 'horseName', me.horseName));
     c.appendChild(mk('Jockeyens navn', 'jockeyName', me.jockeyName));
+    // Rollekort: alle på holdet skal have en funktion
+    const roleDefs = (S.config && S.config.roles) || [];
+    const roleInputs = {};
+    if (roleDefs.length) {
+      c.appendChild(el('div.eyebrow', { text: 'Rollekort — hvem gør hvad?', style: 'margin-top:14px' }));
+      roleDefs.forEach((r) => {
+        const i = el('input', { type: 'text', value: (me.roles || {})[r.id] || '', placeholder: 'Navn(e)' });
+        roleInputs[r.id] = i;
+        const lbl = el('label.field', {}, [el('span.lbl', { text: r.label }), i]);
+        lbl.appendChild(el('span.muted', { style: 'font-size:12px', text: r.desc }));
+        c.appendChild(lbl);
+      });
+    }
+    const saveRoles = () => { const roles = {}; Object.entries(roleInputs).forEach(([k, i]) => { if (i.value.trim()) roles[k] = i.value; }); if (Object.keys(roles).length) TG.emit('team:setRoles', { roles }); };
     const save = el('button.btn.block', { text: 'Gem' });
-    save.addEventListener('click', () => TG.emit('team:setStable', { stableName: f.stableName.value, horseName: f.horseName.value, jockeyName: f.jockeyName.value }).then(() => toast('Gemt', 'ok')));
+    save.addEventListener('click', () => { saveRoles(); TG.emit('team:setStable', { stableName: f.stableName.value, horseName: f.horseName.value, jockeyName: f.jockeyName.value }).then(() => toast('Gemt', 'ok')); });
     const ready = el('button.btn.gold.block', { text: me.ready ? '✓ Vi er klar (tryk for at fortryde)' : 'Vi er klar!' , style: 'margin-top:10px' });
-    ready.addEventListener('click', () => TG.emit('team:setStable', { stableName: f.stableName.value, horseName: f.horseName.value, jockeyName: f.jockeyName.value, ready: !me.ready }));
+    ready.addEventListener('click', () => { saveRoles(); TG.emit('team:setStable', { stableName: f.stableName.value, horseName: f.horseName.value, jockeyName: f.jockeyName.value, ready: !me.ready }); });
     c.appendChild(save); c.appendChild(ready);
     return c;
   }
@@ -240,6 +254,7 @@
     const me = S.me;
     const c = el('div.col');
     c.appendChild(head('Opgaver', 'Altid tilgængelige — prioritér frit.'));
+    c.appendChild(rolesCard());
     const defs = [['puzzle', 'Puslespil', 'Fuldfør for Derby-licens.'], ['horseStyling', 'Pynt jeres hest', 'Bedømmes i showcase.'], ['stableSign', 'Design jeres staldskilt', 'Bedømmes i showcase.']];
     defs.forEach(([id, name, desc]) => {
       const st = me.taskStatus[id] || {};
@@ -250,6 +265,42 @@
       c.appendChild(card);
     });
     return c;
+  }
+
+  function rolesCard() {
+    const me = S.me;
+    const roleDefs = (S.config && S.config.roles) || [];
+    if (!roleDefs.length) return el('span');
+    const hasRoles = Object.keys(me.roles || {}).length > 0;
+    const rotationDue = hasRoles && (S.currentRound || 0) >= 2 && (me.rolesRound || 0) < S.currentRound;
+    const card = el('div.card');
+    if (rotationDue) card.style.border = '2px solid var(--gold)';
+    const editBtn = el('button.btn.sm.ghost', { text: ui.editRoles ? 'Luk' : (hasRoles ? 'Rotér' : 'Fordel roller') });
+    editBtn.addEventListener('click', () => { ui.editRoles = !ui.editRoles; render(); });
+    card.appendChild(el('div.row.between', {}, [el('h3', { text: 'Rollekort' }), editBtn]));
+    if (rotationDue) card.appendChild(el('div.chip.gold', { style: 'margin:6px 0', text: `Runde ${S.currentRound} — tid til at rotere rollerne!` }));
+    if (ui.editRoles) {
+      const inputs = {};
+      roleDefs.forEach((r) => {
+        const i = el('input', { type: 'text', value: (me.roles || {})[r.id] || '', placeholder: r.desc });
+        inputs[r.id] = i;
+        card.appendChild(el('label.field', { style: 'margin-top:6px' }, [el('span.lbl', { text: r.label }), i]));
+      });
+      const save = el('button.btn.gold.block', { text: 'Gem roller', style: 'margin-top:8px' });
+      save.addEventListener('click', () => {
+        const roles = {}; Object.entries(inputs).forEach(([k, i]) => { if (i.value.trim()) roles[k] = i.value; });
+        TG.emit('team:setRoles', { roles }).then((r) => { check(r); if (r.ok) { ui.editRoles = false; toast('Roller gemt', 'ok'); } });
+      });
+      card.appendChild(save);
+    } else if (hasRoles) {
+      roleDefs.forEach((r) => {
+        const name = (me.roles || {})[r.id];
+        if (name) card.appendChild(el('div.row.between', { style: 'font-size:14px;padding:4px 0;border-bottom:1px dashed var(--line)' }, [el('span.muted', { text: r.label }), el('b', { text: name })]));
+      });
+    } else {
+      card.appendChild(el('p.muted', { style: 'margin-top:6px', text: 'Fordel rollerne, så alle har en funktion — og rotér dem hver runde.' }));
+    }
+    return card;
   }
 
   function exerciseView() {
@@ -469,10 +520,11 @@
       const card = el('div.card');
       card.appendChild(el('h3', { text: label }));
       ((S.config.investmentOptions || {})[type] || []).forEach((p) => {
+        const bought = (S.me.investmentsMade || {})[p.id] >= (S.config.maxPurchasesPerOption || 1);
         const row = el('div.row.between', { style: 'padding:8px 0;border-bottom:1px dashed var(--line)' });
         row.appendChild(el('div', {}, [el('b', { text: p.label }), el('div.muted', { style: 'font-size:13px', text: `+${money(p.valueIncrease)} værdi${p.performancePoints ? ' · +' + p.performancePoints + ' point' : ''}` })]));
-        const b = el('button.btn.sm', { text: money(p.cost) + ' SD' });
-        b.addEventListener('click', () => TG.emit('team:invest', { assetType: type, productId: p.id }).then((r) => { check(r); if (r.ok) toast('Investeret', 'ok'); }));
+        const b = el('button.btn.sm', { text: bought ? '✓ Købt' : money(p.cost) + ' SD', disabled: bought ? 'true' : null });
+        if (!bought) b.addEventListener('click', () => TG.emit('team:invest', { assetType: type, productId: p.id }).then((r) => { check(r); if (r.ok) toast('Investeret', 'ok'); }));
         row.appendChild(b); card.appendChild(row);
       });
       c.appendChild(card);
@@ -502,8 +554,10 @@
   function raceView() {
     const me = S.me; const race = S.race;
     const c = el('div.col');
-    c.appendChild(head(S.slide.title, race ? (race.rollingOpen ? 'Rolling er åben — slå jeres terning!' : 'Vent på at værten åbner for rolling…') : 'Klargør…'));
+    c.appendChild(head(S.slide.title, race ? (race.rollingOpen ? 'Løbet er i gang — slå jeres terning!' : 'Vent på at værten åbner for rolling…') : 'Klargør…'));
     if (!race) return c;
+    if (race.favoriteTeamId === me.id && !race.favoriteUsed) c.appendChild(el('div.chip.gold', { style: 'align-self:center;font-size:15px;padding:8px 14px', text: '📣 I er publikumsfavorit — fan-boost på næste slag!' }));
+    if (race.type === 'final' && (S.config.finalBetting || {}).enabled) c.appendChild(betCard());
     const used = (me.race.rolls || []).length; const allowed = me.race.allowed || race.rollsPerTeam;
     const card = el('div.card.center');
     card.appendChild(el('div.stat.big', {}, [el('div.k', { text: 'Position' }), el('div.v', { text: me.race.position + ' / ' + race.trackLength })]));
@@ -511,11 +565,66 @@
     card.appendChild(el('p.muted', { text: `Slag brugt: ${used}/${allowed} · terning ${me.dice.min}–${me.dice.max}` }));
     const canRoll = race.rollingOpen && used < allowed;
     const b = el('button.btn.gold.xl', { text: canRoll ? 'SLÅ TERNING' : (used >= allowed ? 'Alle slag brugt' : 'Vent…'), disabled: canRoll ? null : 'true', style: 'margin-top:14px' });
-    b.addEventListener('click', () => TG.emit('team:roll').then((r) => check(r)));
+    b.addEventListener('click', () => TG.emit('team:roll').then((r) => {
+      check(r); if (!r.ok) return;
+      if (r.event) toast(`${r.event.emoji || ''} ${r.event.label}! ${r.event.effect > 0 ? '+' : ''}${r.event.effect} felter`, r.event.effect > 0 ? 'ok' : 'err');
+      if (r.fanBoost) toast(`📣 Fan-boost! +${r.fanBoost} felter`, 'ok');
+      if (r.catchup) toast(`🔥 Opløbsfight! +${r.catchup} felt`, 'ok');
+    }));
     card.appendChild(b);
     c.appendChild(card);
-    if (race.results && race.results.length) { const res = el('div.card'); res.appendChild(el('h3', { text: 'Resultat' })); race.results.forEach((r) => res.appendChild(el('div.row.between', { style: 'padding:5px 0' }, [el('span', { text: `${r.place}. ${r.stableName}` }), el('span.num', { text: '+' + money(r.prize) })]))); c.appendChild(res); }
+    c.appendChild(miniTrack());
+    if (race.results && race.results.length) { const res = el('div.card'); res.appendChild(el('h3', { text: 'Resultat' })); race.results.forEach((r) => res.appendChild(el('div.row.between', { style: 'padding:5px 0' }, [el('span', { text: `${r.place}. ${r.stableName}${r.deadHeat ? ' (dødt løb)' : ''}` }), el('span.num', { text: '+' + money(r.prize) })]))); c.appendChild(res); }
     return c;
+  }
+
+  function betCard() {
+    const me = S.me; const race = S.race;
+    const myBet = (race.bets || {})[me.id];
+    const odds = (race.odds || {})[me.id] || '?';
+    const card = el('div.card');
+    card.appendChild(el('h3', { text: '💰 Bookmakeren: sats på jeres hest' }));
+    if (myBet) {
+      const potential = Math.round(myBet.amount * myBet.odds);
+      if (race.status === 'finished') {
+        card.appendChild(el('p', { style: 'margin-top:6px', html: myBet.payout ? `I vandt væddemålet: <b>+${money(myBet.payout)} SD</b> 🎉` : `Væddemålet tabt (−${money(myBet.amount)} SD).` }));
+      } else {
+        card.appendChild(el('div.chip.gold', { style: 'margin-top:6px', text: `Satset: ${money(myBet.amount)} SD til odds ${myBet.odds}` }));
+        card.appendChild(el('p.muted', { style: 'margin-top:6px', text: `Vind løbet og få ${money(potential)} SD tilbage!` }));
+      }
+      return card;
+    }
+    if (race.rollingOpen || race.status === 'finished') {
+      card.appendChild(el('p.muted', { style: 'margin-top:6px', text: 'Væddemålene er lukket — løbet er i gang.' }));
+      return card;
+    }
+    card.appendChild(el('p.muted', { style: 'margin:6px 0', text: `Jeres odds: ${odds} (sat efter stillingen — jo længere bagud, jo højere odds). Vinder I løbet, får I indsatsen × ${odds}. Taber I, er den tabt.` }));
+    const inp = el('input', { type: 'number', min: '1', placeholder: `Indsats i SD (max ${me.cash})` });
+    const b = el('button.btn.gold.block', { text: `Sats til odds ${odds}`, style: 'margin-top:8px' });
+    b.addEventListener('click', () => TG.emit('team:bet', { amount: Number(inp.value) }).then((r) => { check(r); if (r.ok) toast('Væddemål registreret!', 'ok'); }));
+    card.appendChild(inp); card.appendChild(b);
+    return card;
+  }
+
+  function miniTrack() {
+    const race = S.race; const me = S.me;
+    const card = el('div.card');
+    card.appendChild(el('h3', { text: 'Banen lige nu' }));
+    const sorted = [...S.teams].filter((t) => t.joined).sort((a, b) => (race.positions[b.id] || 0) - (race.positions[a.id] || 0));
+    sorted.forEach((t) => {
+      const pos = race.positions[t.id] || 0;
+      const pct = Math.min(100, (pos / race.trackLength) * 100);
+      const row = el('div', { style: 'margin:8px 0' });
+      row.appendChild(el('div.row.between', { style: 'font-size:13px;margin-bottom:3px' }, [
+        el('span', { html: `<b style="color:${t.color.hex}">●</b> ${t.stableName}${t.id === me.id ? ' (jer)' : ''}${race.favoriteTeamId === t.id ? ' 📣' : ''}` }),
+        el('span.num', { text: String(pos) }),
+      ]));
+      const bar = el('div', { style: 'height:8px;background:var(--cream);border-radius:99px;overflow:hidden' });
+      bar.appendChild(el('div', { style: `height:100%;width:${pct}%;background:${t.color.hex};border-radius:99px;transition:width .6s ease` }));
+      row.appendChild(bar);
+      card.appendChild(row);
+    });
+    return card;
   }
 
   // ---------- FINAL ----------
@@ -542,8 +651,16 @@
     if (pending.length && pending[0].createdAt > lastIncoming) { lastIncoming = pending[0].createdAt; toast('Nyt byttetilbud fra ' + pending[0].fromStable + '!', 'ok'); }
   }
 
-  // opdater cooldown/tid-labels uden fuld re-render
+  // opdater cooldown-labels hvert sekund; fuld re-render når en cooldown udløber
   setInterval(() => {
-    document.querySelectorAll('[data-cooldown]').forEach((n) => { const k = n.getAttribute('data-cooldown'); const left = S && S.me ? cooldownLeft(k) : null; if (!left) { render(); } });
+    if (!S || !S.me) return;
+    let expired = false;
+    document.querySelectorAll('[data-cooldown]').forEach((n) => {
+      const k = n.getAttribute('data-cooldown');
+      const left = cooldownLeft(k);
+      if (left) n.textContent = 'Cooldown ' + left;
+      else expired = true;
+    });
+    if (expired) render();
   }, 1000);
 })();
