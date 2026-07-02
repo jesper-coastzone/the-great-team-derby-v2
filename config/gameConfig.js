@@ -34,7 +34,43 @@ const gameConfig = {
   diceBaseMin: 2,               // diceMin = diceBaseMin + jockeyLevel
   diceBaseMax: 5,               // diceMax = diceBaseMax + horseLevel
   normalRacePrizes: { 1: 1200, 2: 900, 3: 700, 4: 500, default: 300 },
-  finalRacePrizes: { 1: 3000, 2: 2400, 3: 1800, 4: 1200, default: 700 },
+  // Finalen skal kunne flytte stillingen — spænd 5.000 SD (ekspert-review pkt. 3)
+  finalRacePrizes: { 1: 6000, 2: 4200, 3: 3000, 4: 1800, default: 1000 },
+
+  // ---- Finale-væddemål: sats på egen sejr med omvendte odds (comeback-mekanik) ----
+  finalBetting: {
+    enabled: true,
+    minOdds: 1.5,               // odds for holdet der fører
+    maxOdds: 4,                 // odds for holdet der ligger sidst
+  },
+
+  // ---- Løbs-events (tilfældige overraskelser pr. slag) ----
+  raceEvents: {
+    enabled: true,
+    chancePerRoll: 0.16,        // sandsynlighed for event på hvert slag
+    maxPerTeamPerRace: 1,       // højst ét event pr. hold pr. løb
+    types: [
+      { id: 'vet',      label: 'Dyrlægetjek',   emoji: '🩺', effect: -2, weight: 2 },
+      { id: 'headwind', label: 'Modvind',       emoji: '💨', effect: -1, weight: 3 },
+      { id: 'tailwind', label: 'Medvind',       emoji: '🌬️', effect: 2,  weight: 3 },
+      { id: 'crowd',    label: 'Publikum løfter taget', emoji: '📣', effect: 1, weight: 3 },
+    ],
+  },
+
+  // ---- Catch-up: hold langt bagud får et lille nøk ----
+  catchup: {
+    enabled: true,
+    behindBy: 7,                // felter bagud ift. føreren før bonus
+    bonus: 1,                   // lægges til slaget
+    label: 'Opløbsfight',
+  },
+
+  // ---- Publikumsfavorit: host udpeger ét hold, som får ét fan-boost ----
+  audienceFavorite: {
+    enabled: true,
+    bonus: 2,                   // engangsbonus på holdets NÆSTE slag
+    label: 'Publikumsfavorit',
+  },
 
   // ---- Performance-point → niveauer ----
   // Antal point krævet for at nå niveau 1,2,3,4
@@ -48,27 +84,37 @@ const gameConfig = {
 
   // Point pr. resultatniveau i performance-øvelser
   performancePoints: { pass: 1, bronze: 2, silver: 3, gold: 5 },
+  // Kontant udbetaling pr. medalje — balancerer performance-øvelser mod penge-øvelser
+  // (ekspert-review pkt. 1: uden dette tjener penge-øvelser ~4x mere)
+  performanceRewards: { pass: 200, bronze: 400, silver: 600, gold: 1000 },
 
   // ---- Investeringer (direkte køb) ----
   // valueIncrease = hvor meget aktivets værdi stiger. performancePoints = point til niveau.
+  // Hvert produkt kan købes max så mange gange pr. hold (lukker degenereret slutspil)
+  maxPurchasesPerOption: 1,
   investmentOptions: {
+    // Hest/jockey: værdineutrale (1000→1000) men point-tunge — ægte valg mellem
+    // likviditet + terninger nu vs. stald-afkast til sidst (ekspert-review pkt. 5)
     horse: [
-      { id: 'horse-1', label: 'Bedre foder', cost: 1000, valueIncrease: 800, performancePoints: 2 },
-      { id: 'horse-2', label: 'Elitetræning', cost: 2000, valueIncrease: 1700, performancePoints: 4 },
+      { id: 'horse-1', label: 'Bedre foder', cost: 1000, valueIncrease: 1000, performancePoints: 3 },
+      { id: 'horse-2', label: 'Elitetræning', cost: 2000, valueIncrease: 2000, performancePoints: 5 },
     ],
     jockey: [
-      { id: 'jockey-1', label: 'Ridekursus', cost: 1000, valueIncrease: 800, performancePoints: 2 },
-      { id: 'jockey-2', label: 'Mentaltræning', cost: 2000, valueIncrease: 1700, performancePoints: 4 },
+      { id: 'jockey-1', label: 'Ridekursus', cost: 1000, valueIncrease: 1000, performancePoints: 3 },
+      { id: 'jockey-2', label: 'Mentaltræning', cost: 2000, valueIncrease: 2000, performancePoints: 5 },
     ],
     stable: [
-      // Stald = sikker investering: værdi stiger MERE end prisen.
-      { id: 'stable-1', label: 'Ny boks', cost: 1000, valueIncrease: 1200, performancePoints: 0 },
-      { id: 'stable-2', label: 'Staldudvidelse', cost: 2000, valueIncrease: 2500, performancePoints: 0 },
+      // Stald = sikker værdi med lille afkast; max 1 køb pr. option holder det i skak.
+      { id: 'stable-1', label: 'Ny boks', cost: 1000, valueIncrease: 1100, performancePoints: 0 },
+      { id: 'stable-2', label: 'Staldudvidelse', cost: 2000, valueIncrease: 2300, performancePoints: 0 },
     ],
   },
 
   // ---- Auktion ----
   auctionHouseExchangeRate: 0.5, // gebyr = 50% af oprindelig købspris ved bytte i auktionshus
+  // Ved videresalg på auktion får forrige ejer kun denne andel af buddet — resten går til
+  // banken. Dæmper rich-get-richer (ekspert-review pkt. 2). 1 = alt til forrige ejer.
+  auctionResaleSplit: 0.5,
 
   // ---- Cooldowns (sekunder) ----
   defaultCooldownSeconds: 300,   // 5 min for pengeopgaver
@@ -103,11 +149,21 @@ const gameConfig = {
 
   // ---- Kreative opgaver (host scorer manuelt) ----
   creative: {
-    horseStyling: { label: 'Pynt jeres hest', maxBonus: 1500 },
-    stableSign: { label: 'Design jeres staldskilt', maxBonus: 1500 },
+    // Max sænket 1500→800 så host-skøn ikke kan overdøve spillets egne mekanikker
+    // (ekspert-review pkt. 9: procedural fairness).
+    horseStyling: { label: 'Pynt jeres hest', maxBonus: 800 },
+    stableSign: { label: 'Design jeres staldskilt', maxBonus: 800 },
     // Bonus gives som staldværdi (påvirker totalværdi men ikke kontanter).
     bonusAsStableValue: true,
   },
+
+  // ---- Rollekort (teamdynamik: alle skal have en funktion, rotation mellem runder) ----
+  roles: [
+    { id: 'staldchef', label: 'Staldchef', desc: 'Fører ordet ved auktionen og har sidste ord i køb og bud.' },
+    { id: 'bookmaker', label: 'Bookmaker', desc: 'Styrer tabletten: pengeopgaver, investeringer og væddemål.' },
+    { id: 'traener', label: 'Træner', desc: 'Leder de fysiske øvelser og fordeler holdet på dem.' },
+    { id: 'staldkarl', label: 'Staldkarl', desc: 'Driver puslespillet og de kreative opgaver fremad.' },
+  ],
 };
 
 module.exports = gameConfig;

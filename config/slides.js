@@ -90,6 +90,9 @@ function buildDeck(settings) {
   push({ kind: 'final-reveal', phase: PHASES.REVEAL, title: 'Vinderafsløring',
     screenTitle: 'Vinderen er…', tabletMode: 'final-result',
     hostHint: 'Afslør total staldværdi og vinderstalden.' });
+  push({ kind: 'debrief', phase: PHASES.REVEAL, title: 'Debrief',
+    screenTitle: 'Hvad skete der egentlig?', tabletMode: 'final-result',
+    hostHint: 'Kør refleksionen: Hvem traf beslutningerne ved auktionen? Hvornår ændrede I strategi? Hvad ville I gøre om?' });
 
   // Tildel id + index
   return slides.map((s, i) => ({ index: i, id: `s${i}`, ...s }));
