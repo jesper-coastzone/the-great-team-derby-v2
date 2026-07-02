@@ -29,6 +29,22 @@ function register(io) {
       else ack(cb, { ok: false, error: 'Forkert kodeord.' });
     });
 
+    // Liste over alle aktive spil på serveren — så man kan køre flere events
+    // samme dag og skifte imellem dem fra host-konsollen.
+    socket.on('host:listGames', (_, cb) => {
+      if (!socket.data.hostAuthed) return ack(cb, { ok: false, error: 'Log ind som host først.' });
+      const games = [...gs.store.values()].map((g) => ({
+        code: g.code,
+        eventName: g.settings.eventName,
+        createdAt: g.createdAt,
+        teamsJoined: g.teams.filter((t) => t.joined).length,
+        numTeams: g.teams.length,
+        phase: g.currentPhase,
+        round: g.currentRound,
+      })).sort((a, b) => b.createdAt - a.createdAt);
+      ack(cb, { ok: true, games });
+    });
+
     // Kør en mutation og broadcast bagefter.
     const mut = (fn, cb) => {
       const game = gameOf();
