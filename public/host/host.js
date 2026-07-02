@@ -165,9 +165,35 @@
     wrap.appendChild(row);
     if (race) {
       wrap.appendChild(el('div.mini', { text: `Status: ${race.status} · rolling ${race.rollingOpen ? 'ÅBEN' : 'lukket'} · ${race.rollsPerTeam} slag` }));
+
+      // Publikumsfavorit: engangsboost — brug det til drama eller til at hjælpe et hold bagud.
+      const favRow = el('div.row.wrap', { style: 'margin-top:6px;align-items:center' });
+      const favSel = el('select', { style: 'flex:1;min-width:140px' });
+      favSel.appendChild(el('option', { value: '', text: 'Publikumsfavorit…' }));
+      S.teams.filter((t) => t.joined).forEach((t) => { const o = el('option', { value: t.id, text: t.stableName }); if (race.favoriteTeamId === t.id) o.selected = true; favSel.appendChild(o); });
+      const favBtn = el('button.btn.sm.gold', { text: '📣 Udpeg' });
+      favBtn.addEventListener('click', () => TG.emit('host:setFavorite', { teamId: favSel.value || null }).then(check));
+      favRow.appendChild(favSel); favRow.appendChild(favBtn);
+      if (race.favoriteTeamId) favRow.appendChild(el('span.mini', { text: race.favoriteUsed ? '(boost brugt)' : '(boost klar)' }));
+      wrap.appendChild(favRow);
+
+      // Slag-status pr. hold + manuelt slag
       const man = el('div.row.wrap', { style: 'margin-top:6px' });
-      S.teams.forEach((t) => { const rolls = (race.positions[t.id] != null) ? race.positions[t.id] : 0; const x = el('button.btn.sm.ghost', { text: `🎲 ${t.stableName} (${rolls})` }); x.addEventListener('click', () => TG.emit('host:rollFor', { teamId: t.id }).then(check)); man.appendChild(x); });
-      wrap.appendChild(el('details', {}, [el('summary', { text: 'Slå manuelt for hold' }), man]));
+      S.teams.forEach((t) => {
+        const prog = (race.progress || {})[t.id] || { used: 0, allowed: race.rollsPerTeam };
+        const pos = race.positions[t.id] != null ? race.positions[t.id] : 0;
+        const x = el('button.btn.sm.ghost', { text: `🎲 ${t.stableName} · ${prog.used}/${prog.allowed} slag · pos ${pos}` });
+        x.addEventListener('click', () => TG.emit('host:rollFor', { teamId: t.id }).then(check));
+        man.appendChild(x);
+      });
+      wrap.appendChild(el('details', { open: 'true' }, [el('summary', { text: 'Slag-status / slå manuelt' }), man]));
+
+      // Seneste hændelser
+      if (race.feed && race.feed.length) {
+        const feed = el('div', { style: 'margin-top:6px' });
+        race.feed.slice(-4).reverse().forEach((f) => feed.appendChild(el('div.mini', { text: f.text })));
+        wrap.appendChild(feed);
+      }
     }
     return wrap;
   }
@@ -190,12 +216,14 @@
 
   function creativePanel() {
     const c = el('div.col');
-    c.appendChild(el('div.mini', { text: 'Kreativ showcase — giv bonus (staldværdi) pr. hold:' }));
+    c.appendChild(el('div.mini', { text: 'Kreativ showcase — giv bonus (staldværdi) pr. hold. Brug knapperne som niveauer: OK 300 · Flot 500 · Vildt 800.' }));
+    const give = (t, amount) => TG.emit('host:creativeBonus', { teamId: t.id, taskId: 'creative', amount }).then((r) => { check(r); if (r.ok) toast(`${t.stableName}: +${money(amount)} SD bonus`, 'ok'); });
     S.teams.filter((t) => t.joined).forEach((t) => {
-      const row = el('div.row', { style: 'gap:6px' });
-      row.appendChild(el('span', { style: 'flex:1;font-size:13px', text: t.stableName }));
-      const inp = el('input', { type: 'number', placeholder: 'SD', style: 'width:90px' });
-      const b = el('button.btn.sm.gold', { text: 'Giv' }); b.addEventListener('click', () => { TG.emit('host:creativeBonus', { teamId: t.id, taskId: 'creative', amount: Number(inp.value || 0) }).then((r) => { check(r); if (r.ok) toast('Bonus givet', 'ok'); }); });
+      const row = el('div.row', { style: 'gap:6px;align-items:center;flex-wrap:wrap' });
+      row.appendChild(el('span', { style: 'flex:1;min-width:110px;font-size:13px', text: t.stableName }));
+      [300, 500, 800].forEach((a) => { const b = el('button.btn.sm.ghost', { text: String(a) }); b.addEventListener('click', () => give(t, a)); row.appendChild(b); });
+      const inp = el('input', { type: 'number', placeholder: 'SD', style: 'width:80px' });
+      const b = el('button.btn.sm.gold', { text: 'Giv' }); b.addEventListener('click', () => give(t, Number(inp.value || 0)));
       row.appendChild(inp); row.appendChild(b); c.appendChild(row);
     });
     return c;
@@ -213,9 +241,11 @@
   }
 
   function approvalsPanel() {
+    const n = (S.pendingApprovals || []).length;
     const c = el('div.card.sec');
-    c.appendChild(el('h3', { text: 'Godkendelser (' + (S.pendingApprovals || []).length + ')' }));
-    if (!(S.pendingApprovals || []).length) { c.appendChild(el('p.mini', { text: 'Ingen ventende godkendelser.' })); return c; }
+    if (n) c.style.cssText = 'border:2px solid var(--gold);box-shadow:0 0 0 3px rgba(201,162,39,.2)';
+    c.appendChild(el('h3', { text: 'Godkendelser (' + n + ')' + (n ? ' ⚠️' : '') }));
+    if (!n) { c.appendChild(el('p.mini', { text: 'Ingen ventende godkendelser.' })); return c; }
     S.pendingApprovals.forEach((p) => {
       const box = el('div.approve');
       box.appendChild(el('div', {}, [el('b', { text: p.stableName }), el('span', { text: ' — ' + (p.meta.exerciseName || taskLabel(p.taskId)) })]));
@@ -237,9 +267,13 @@
 
   function teamsPanel() {
     const c = el('div.card.sec');
-    c.appendChild(el('h3', { text: 'Stalde (' + S.teams.filter((t) => t.joined).length + ')' }));
+    const online = S.teams.filter((t) => t.joined && t.connected).length;
+    const joined = S.teams.filter((t) => t.joined).length;
+    c.appendChild(el('div.row.between', {}, [el('h3', { text: `Stalde (${joined})` }), el('span.mini', { text: `${online}/${joined} online` })]));
     S.teams.forEach((t) => {
       const line = el('div.teamline');
+      const dot = el('span', { title: t.connected ? 'Online' : 'Offline', style: `width:10px;height:10px;border-radius:50%;flex:none;background:${t.joined ? (t.connected ? '#2E7D4F' : '#B83232') : 'var(--line)'}` });
+      line.appendChild(dot);
       line.appendChild(el('div.badge', { style: `background:${t.color.hex};width:28px;height:28px;font-size:14px`, text: String(t.teamNumber) }));
       const info = el('div', {}, [el('b', { text: t.stableName }), el('div.mini', { text: `${money(t.cash)} kontant · total ${money(t.totalValue)} · H${t.horseLevel}/J${t.jockeyLevel}${t.derbyLicense ? ' · 🎫' : ''}` })]);
       line.appendChild(info);
