@@ -35,6 +35,12 @@ function invest(game, team, assetType, productId) {
   if (!product) return { ok: false, error: 'Ukendt produkt.' };
   if (!canAfford(team, product.cost)) return { ok: false, error: 'I har ikke nok kontanter.' };
 
+  // Loft: hvert produkt kan kun købes et begrænset antal gange (lukker degenereret slutspil)
+  team.investmentsMade = team.investmentsMade || {};
+  const maxBuys = cfg.maxPurchasesPerOption || Infinity;
+  if ((team.investmentsMade[productId] || 0) >= maxBuys) return { ok: false, error: 'I har allerede købt denne investering.' };
+  team.investmentsMade[productId] = (team.investmentsMade[productId] || 0) + 1;
+
   addTransaction(game, team, -product.cost, 'invest', `Investering: ${product.label}`);
   if (assetType === 'horse') {
     team.horseValue += product.valueIncrease;

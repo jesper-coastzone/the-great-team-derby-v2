@@ -235,10 +235,13 @@ function hostResolveApproval(game, teamId, taskId, approve, extra = {}) {
     const points = perf.resultLevelToPoints(level);
     const which = ex.category === 'jockey' ? 'jockey' : 'horse';
     perf.addPerformancePoints(game, team, which, points);
+    // Kontant udbetaling pr. medalje — balancerer performance mod penge-øvelser
+    const payout = (cfg.performanceRewards || {})[level] || 0;
+    if (payout) econ.addTransaction(game, team, payout, 'exercise', `${ex.name}: ${level}`);
     ex.resultHistory.push({ teamId: team.id, level, points, at: now() });
     setCooldown(team, ex.id, ex.cooldownSeconds || 60);
-    gs.logEvent(game, `${team.stableName}: ${ex.name} = ${level} (+${points} ${which}-point).`);
-    return { ok: true, approved: true, level, points };
+    gs.logEvent(game, `${team.stableName}: ${ex.name} = ${level} (+${points} ${which}-point${payout ? `, +${payout} ${cfg.currencyAbbr}` : ''}).`);
+    return { ok: true, approved: true, level, points, payout };
   }
 
   // altid-tilgængelige

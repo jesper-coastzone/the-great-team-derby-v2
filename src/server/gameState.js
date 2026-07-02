@@ -64,6 +64,10 @@ function makeTeam(game, number) {
     derbyLicense: false,
     creativeBonusGiven: false,
 
+    investmentsMade: {},        // productId -> antal køb (loft i cfg.maxPurchasesPerOption)
+    roles: {},                  // roleId -> navn (rollekort)
+    rolesRound: 0,              // hvilken runde rollerne senest blev sat i (rotation)
+
     race: { position: 0, rolls: [], lastRoll: 0, rollSum: 0, done: false, hasRolled: false },
 
     taskStatus: {},
@@ -288,6 +292,9 @@ function buildStateFor(game, role, teamId) {
       investmentOptions: cfg.investmentOptions,
       auctionHouseExchangeRate: cfg.auctionHouseExchangeRate,
       raceTrackLength: cfg.raceTrackLength,
+      maxPurchasesPerOption: cfg.maxPurchasesPerOption || 0,
+      roles: cfg.roles || [],
+      finalBetting: cfg.finalBetting || { enabled: false },
     },
     phase: game.currentPhase,
     currentRound: game.currentRound,
@@ -301,6 +308,12 @@ function buildStateFor(game, role, teamId) {
       id: race.id, type: race.type, status: race.status, rollingOpen: race.rollingOpen,
       rollsPerTeam: race.rollsPerTeam, trackLength: cfg.raceTrackLength,
       positions: race.positions, results: race.results || [],
+      feed: (race.feed || []).slice(-14),
+      favoriteTeamId: race.favoriteTeamId || null,
+      favoriteUsed: !!race.favoriteUsed,
+      progress: Object.fromEntries(game.teams.map((t) => [t.id, { used: (race.rolls[t.id] || []).length, allowed: race.allowed[t.id] || race.rollsPerTeam }])),
+      odds: race.odds || {},
+      bets: race.bets || {},
     } : null,
     warmupPaid: game.warmupPaid,
     role,
@@ -324,6 +337,11 @@ function buildStateFor(game, role, teamId) {
     state.deck = game.deck.map((s) => ({ index: s.index, title: s.title, phase: s.phase }));
   }
 
+  // Debrief-data (kun beregnet når debrief-slidet er aktivt)
+  if ((role === 'screen' || role === 'host') && state.slide.kind === 'debrief') {
+    state.debrief = debriefStats(game);
+  }
+
   if (role === 'team' && me) {
     state.me = {
       ...publicTeam(me),
@@ -334,12 +352,34 @@ function buildStateFor(game, role, teamId) {
       taskStatus: me.taskStatus,
       cooldowns: me.cooldowns,
       recentTransactions: me.recentTransactions.slice(0, 8),
+      investmentsMade: me.investmentsMade || {},
+      roles: me.roles || {},
+      rolesRound: me.rolesRound || 0,
     };
     state.trades = game.trades.filter((tr) => tr.fromTeamId === teamId || tr.toTeamId === teamId);
     state.duels = require('./tasks').duelsForTeam(game, teamId);
   }
 
   return state;
+}
+
+// Auto-genererede datapunkter pr. hold til debrief-slidet
+function debriefStats(game) {
+  return game.teams.filter((t) => t.joined).map((t) => {
+    const tx = game.transactions.filter((x) => x.teamId === t.id);
+    const sumAbs = (type, neg) => tx.filter((x) => x.type === type && (neg ? x.amount < 0 : x.amount > 0)).reduce((a, x) => a + Math.abs(x.amount), 0);
+    return {
+      teamId: t.id, stableName: t.stableName, color: t.color,
+      biggestBid: Math.max(0, ...tx.filter((x) => x.type === 'auction' && x.amount < 0).map((x) => -x.amount)),
+      trades: game.trades.filter((tr) => tr.status === 'accepted' && [tr.fromTeamId, tr.toTeamId].includes(t.id)).length,
+      invested: sumAbs('invest', true),
+      earnedTasks: sumAbs('task') + sumAbs('exercise'),
+      racePrizes: sumAbs('race'),
+      betOutcome: sumAbs('bet') - sumAbs('bet', true),
+      cash: Math.round(t.cash),
+      totalValue: totalStableValue(t),
+    };
+  });
 }
 
 function collectPendingApprovals(game) {

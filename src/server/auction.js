@@ -130,12 +130,15 @@ function resolveAuction(game) {
     if (!ex || !winner) continue;
     const prevOwnerId = ex.currentOwnerTeamId;
 
-    // betaling
+    // betaling — forrige ejer får kun en andel af buddet, resten går til banken
+    // (dæmper rich-get-richer; styres af cfg.auctionResaleSplit)
     econ.addTransaction(game, winner, -w.amount, 'auction', `Købte ${ex.name} på auktion`, ex.id);
     if (prevOwnerId && prevOwnerId !== winner.id) {
       const prev = gs.getTeam(game, prevOwnerId);
       if (prev) {
-        econ.addTransaction(game, prev, w.amount, 'auction-sale', `Solgte ${ex.name} på auktion`, ex.id);
+        const split = cfg.auctionResaleSplit != null ? cfg.auctionResaleSplit : 1;
+        const sellerShare = Math.round(w.amount * split);
+        econ.addTransaction(game, prev, sellerShare, 'auction-sale', `Solgte ${ex.name} på auktion (${Math.round(split * 100)}% af buddet)`, ex.id);
         prev.ownedAuctionExerciseId = null;
         prev.ownedExercisePurchasePrice = 0;
       }

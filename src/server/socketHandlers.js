@@ -93,6 +93,7 @@ function register(io) {
     socket.on('host:closeRolling', (_, cb) => hostMut((g) => races.setRolling(g, false), cb));
     socket.on('host:rollFor', (p, cb) => hostMut((g) => { const t = gs.getTeam(g, p.teamId); return t ? races.rollForTeam(g, t) : { ok: false }; }, cb));
     socket.on('host:finishRace', (_, cb) => hostMut((g) => races.finishRace(g), cb));
+    socket.on('host:setFavorite', (p, cb) => hostMut((g) => races.setFavorite(g, p && p.teamId), cb));
 
     // ---------- HOST: godkendelser & scoring ----------
     socket.on('host:approve', (p, cb) => hostMut((g) => tasks.hostResolveApproval(g, p.teamId, p.taskId, p.approve, p.extra || {}), cb));
@@ -162,6 +163,19 @@ function register(io) {
 
     // ---------- TEAM: løb ----------
     socket.on('team:roll', (_, cb) => mut((g) => { const t = teamOf(); return t ? races.rollForTeam(g, t) : { ok: false }; }, cb));
+    socket.on('team:bet', (p, cb) => mut((g) => { const t = teamOf(); return t ? races.placeBet(g, t, p && p.amount) : { ok: false }; }, cb));
+
+    // ---------- TEAM: rollekort ----------
+    socket.on('team:setRoles', (p, cb) => mut((g) => {
+      const t = teamOf(); if (!t) return { ok: false };
+      const roles = p && p.roles ? p.roles : {};
+      t.roles = {};
+      for (const [k, v] of Object.entries(roles)) {
+        if (typeof k === 'string' && typeof v === 'string' && v.trim()) t.roles[k.slice(0, 20)] = v.trim().slice(0, 30);
+      }
+      t.rolesRound = g.currentRound || 0;
+      return { ok: true };
+    }, cb));
 
     // ---------- TEAM: quiz-motorer (ack med data, ingen broadcast af facit) ----------
     socket.on('team:tip13Get', (_, cb) => { const g = gameOf(); const t = teamOf(); ack(cb, g && t ? tasks.getTip13(g, t) : { ok: false }); });

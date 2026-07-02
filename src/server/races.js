@@ -1,11 +1,12 @@
 /*
- * races.js — løbslogik.
+ * races.js — løbslogik (v2).
  *  - terning: min = 2 + jockeyLevel, max = 5 + horseLevel
  *  - normal: 4 slag pr. hold · finale: 5 slag
- *  - tie-break: højeste sidste slag → højeste slagsum → delt placering
+ *  - v2: løbs-events (dyrlæge/vind/publikum), catch-up-bonus, publikumsfavorit,
+ *        live-feed til storskærmen, position uden loft og delt plads ved dødt løb.
  */
 const cfg = require('../../config/gameConfig');
-const { uid, randomInt } = require('./util');
+const { uid, randomInt, now } = require('./util');
 const gs = require('./gameState');
 const econ = require('./economy');
 
@@ -21,11 +22,25 @@ function startRace(game, type, round) {
     status: 'ready', rollingOpen: false,
     rollsPerTeam: type === 'final' ? cfg.finalRaceRolls : cfg.normalRaceRolls,
     positions: {}, rolls: {}, allowed: {}, results: null, prizesApplied: false,
+    feed: [],                 // kronologisk hændelsesfeed (nyeste sidst)
+    eventCount: {},           // antal tilfældige events pr. hold
+    favoriteTeamId: null,     // publikumsfavorit (host udpeger)
+    favoriteUsed: false,      // fan-boost er en engangsbonus
+    bets: {},                 // teamId -> { amount, odds, resolved, payout }
+    odds: {},                 // teamId -> odds (fastlåst ved løbsstart, omvendt af stillingen)
   };
+  // Finale-væddemål: odds omvendt af stillingen — føreren får minOdds, sidstepladsen maxOdds
+  if (type === 'final' && cfg.finalBetting && cfg.finalBetting.enabled) {
+    const ranked = [...game.teams].sort((a, b) => gs.totalStableValue(b) - gs.totalStableValue(a));
+    const n = Math.max(1, ranked.length - 1);
+    const { minOdds, maxOdds } = cfg.finalBetting;
+    ranked.forEach((t, i) => { race.odds[t.id] = Math.round((minOdds + (maxOdds - minOdds) * (i / n)) * 10) / 10; });
+  }
   for (const t of game.teams) {
     race.positions[t.id] = 0;
     race.rolls[t.id] = [];
     race.allowed[t.id] = allowedRollsFor(game, t, type);
+    race.eventCount[t.id] = 0;
     t.race = { position: 0, rolls: [], lastRoll: 0, rollSum: 0, done: false, hasRolled: false, allowed: race.allowed[t.id] };
   }
   game.races.push(race);
@@ -42,6 +57,57 @@ function setRolling(game, open) {
   return { ok: true };
 }
 
+function setFavorite(game, teamId) {
+  const race = gs.currentRace(game);
+  if (!race) return { ok: false, error: 'Intet aktivt løb.' };
+  if (race.status === 'finished') return { ok: false, error: 'Løbet er slut.' };
+  const team = teamId ? gs.getTeam(game, teamId) : null;
+  race.favoriteTeamId = team ? team.id : null;
+  race.favoriteUsed = false;
+  if (team) {
+    pushFeed(race, { kind: 'favorite', teamId: team.id, stableName: team.stableName, text: `📣 ${team.stableName} er publikumsfavorit!` });
+    gs.logEvent(game, `${team.stableName} er publikumsfavorit.`);
+  }
+  return { ok: true };
+}
+
+function pushFeed(race, entry) {
+  race.feed.push({ ...entry, t: now() });
+  if (race.feed.length > 60) race.feed.shift();
+}
+
+// Finale-væddemål: sats på egen sejr FØR rolling åbner. Indsats trækkes straks.
+function placeBet(game, team, amount) {
+  const race = gs.currentRace(game);
+  if (!race) return { ok: false, error: 'Intet aktivt løb.' };
+  if (race.type !== 'final') return { ok: false, error: 'Der kan kun væddes på finaleløbet.' };
+  if (!(cfg.finalBetting && cfg.finalBetting.enabled)) return { ok: false, error: 'Væddemål er slået fra.' };
+  if (race.rollingOpen || race.status === 'finished') return { ok: false, error: 'Væddemål er lukket — løbet er i gang.' };
+  if (race.bets[team.id]) return { ok: false, error: 'I har allerede satset.' };
+  amount = Math.round(amount);
+  if (!(amount > 0)) return { ok: false, error: 'Indsatsen skal være større end 0.' };
+  if (amount > team.cash) return { ok: false, error: 'I kan ikke satse mere end I har på kontoen.' };
+  const odds = race.odds[team.id] || cfg.finalBetting.minOdds;
+  econ.addTransaction(game, team, -amount, 'bet', `Væddemål: ${amount} ${cfg.currencyAbbr} på sejr (odds ${odds})`, race.id);
+  race.bets[team.id] = { amount, odds, resolved: false, payout: 0 };
+  pushFeed(race, { kind: 'bet', teamId: team.id, stableName: team.stableName, text: `💰 ${team.stableName} satser ${amount} ${cfg.currencyAbbr} på sejr til odds ${odds}!` });
+  gs.logEvent(game, `${team.stableName} satsede ${amount} ${cfg.currencyAbbr} på sejr (odds ${odds}).`);
+  return { ok: true, amount, odds };
+}
+
+function pickRandomEvent() {
+  const types = (cfg.raceEvents && cfg.raceEvents.types) || [];
+  const total = types.reduce((a, e) => a + (e.weight || 1), 0);
+  if (!total) return null;
+  let r = Math.random() * total;
+  for (const e of types) { r -= (e.weight || 1); if (r <= 0) return e; }
+  return types[types.length - 1];
+}
+
+function leaderPosition(race) {
+  return Math.max(0, ...Object.values(race.positions));
+}
+
 function rollForTeam(game, team) {
   const race = gs.currentRace(game);
   if (!race) return { ok: false, error: 'Intet aktivt løb.' };
@@ -51,17 +117,56 @@ function rollForTeam(game, team) {
 
   const min = cfg.diceBaseMin + team.jockeyLevel;
   const max = Math.max(cfg.diceBaseMax + team.horseLevel, min);
-  const roll = randomInt(min, max);
-  race.rolls[team.id].push(roll);
-  race.positions[team.id] = Math.min(race.positions[team.id] + roll, cfg.raceTrackLength);
+  const base = randomInt(min, max);
+
+  // Catch-up: langt bagud → lille nøk
+  let catchup = 0;
+  const cu = cfg.catchup || {};
+  if (cu.enabled && leaderPosition(race) - race.positions[team.id] >= (cu.behindBy || 7)) catchup = cu.bonus || 1;
+
+  // Publikumsfavorit: engangs fan-boost på næste slag
+  let fanBoost = 0;
+  const af = cfg.audienceFavorite || {};
+  if (af.enabled && race.favoriteTeamId === team.id && !race.favoriteUsed) {
+    fanBoost = af.bonus || 2;
+    race.favoriteUsed = true;
+  }
+
+  // Tilfældigt event (dyrlæge, vind, publikum) — max N pr. hold pr. løb
+  let event = null;
+  const re = cfg.raceEvents || {};
+  if (re.enabled && race.eventCount[team.id] < (re.maxPerTeamPerRace || 1) && Math.random() < (re.chancePerRoll || 0)) {
+    event = pickRandomEvent();
+    if (event) race.eventCount[team.id] += 1;
+  }
+
+  const eventEffect = event ? event.effect : 0;
+  const total = Math.max(0, base + catchup + fanBoost + eventEffect);
+  race.rolls[team.id].push(total);
+  race.positions[team.id] += total; // intet loft — dødt løb skal være sjældent og ægte
 
   const rr = race.rolls[team.id];
   team.race = {
     position: race.positions[team.id], rolls: rr.slice(),
-    lastRoll: roll, rollSum: rr.reduce((a, b) => a + b, 0),
+    lastRoll: total, rollSum: rr.reduce((a, b) => a + b, 0),
     done: rr.length >= race.allowed[team.id], hasRolled: true, allowed: race.allowed[team.id],
   };
-  return { ok: true, roll, position: race.positions[team.id], done: team.race.done };
+
+  // Feed til storskærm/kommentator
+  const bits = [];
+  if (fanBoost) bits.push(`📣 fan-boost +${fanBoost}`);
+  if (catchup) bits.push(`🔥 ${cu.label || 'Opløbsfight'} +${catchup}`);
+  if (event) bits.push(`${event.emoji || ''} ${event.label} ${event.effect > 0 ? '+' : ''}${event.effect}`);
+  pushFeed(race, {
+    kind: event ? 'event' : 'roll',
+    teamId: team.id, stableName: team.stableName,
+    base, catchup, fanBoost,
+    event: event ? { id: event.id, label: event.label, emoji: event.emoji, effect: event.effect } : null,
+    roll: total, position: race.positions[team.id],
+    text: `🎲 ${team.stableName} slår ${base}${bits.length ? ' · ' + bits.join(' · ') : ''} → rykker ${total} felter`,
+  });
+
+  return { ok: true, roll: total, base, catchup, fanBoost, event: event ? { label: event.label, emoji: event.emoji, effect: event.effect } : null, position: race.positions[team.id], done: team.race.done };
 }
 
 function allRolled(game) {
@@ -88,30 +193,47 @@ function finishRace(game) {
       lastRoll: rr.length ? rr[rr.length - 1] : 0,
       rollSum: rr.reduce((a, b) => a + b, 0),
     };
-  }).sort((a, b) => b.position - a.position || b.lastRoll - a.lastRoll || b.rollSum - a.rollSum);
+  }).sort((a, b) => b.position - a.position);
 
-  // placeringer med delt plads ved fuldt lige
+  // Delt plads ved præcis samme distance — dødt løb deler placeringen (og præmien).
   const results = [];
-  let place = 0, prevKey = null, prevPlace = 0;
+  let prevPos = null, prevPlace = 0;
   ranked.forEach((r, idx) => {
-    const key = `${r.position}|${r.lastRoll}|${r.rollSum}`;
-    place = key === prevKey ? prevPlace : idx + 1;
-    prevKey = key; prevPlace = place;
+    const place = r.position === prevPos ? prevPlace : idx + 1;
+    prevPos = r.position; prevPlace = place;
     const prize = prizeFor(place, race.type);
-    results.push({ ...r, place, prize });
+    results.push({ ...r, place, prize, deadHeat: false });
   });
+  // markér dødt løb
+  results.forEach((r) => { r.deadHeat = results.some((o) => o !== r && o.place === r.place); });
 
   for (const r of results) {
     const team = gs.getTeam(game, r.teamId);
-    econ.addTransaction(game, team, r.prize, 'race', `${race.type === 'final' ? 'Finaleløb' : 'Løb'}: ${r.place}. plads`, race.id);
+    econ.addTransaction(game, team, r.prize, 'race', `${race.type === 'final' ? 'Finaleløb' : 'Løb'}: ${r.place}. plads${r.deadHeat ? ' (dødt løb)' : ''}`, race.id);
   }
 
   race.results = results;
   race.prizesApplied = true;
   race.rollingOpen = false;
   race.status = 'finished';
+  pushFeed(race, { kind: 'finish', text: `🏁 Løbet er slut! ${results[0].stableName} vinder${results[0].deadHeat ? ' (dødt løb!)' : ''}.` });
+
+  // Afgør væddemål: vandt holdet løbet (plads 1), udbetales indsats × odds
+  for (const [teamId, bet] of Object.entries(race.bets || {})) {
+    if (bet.resolved) continue;
+    bet.resolved = true;
+    const res = results.find((r) => r.teamId === teamId);
+    const team = gs.getTeam(game, teamId);
+    if (res && team && res.place === 1) {
+      bet.payout = Math.round(bet.amount * bet.odds);
+      econ.addTransaction(game, team, bet.payout, 'bet', `Væddemål vundet! (odds ${bet.odds})`, race.id);
+      pushFeed(race, { kind: 'bet', teamId, stableName: team.stableName, text: `💰 ${team.stableName} vandt væddemålet: +${bet.payout} ${cfg.currencyAbbr}!` });
+    } else if (team) {
+      pushFeed(race, { kind: 'bet', teamId, stableName: team.stableName, text: `💸 ${team.stableName} tabte væddemålet (${bet.amount} ${cfg.currencyAbbr}).` });
+    }
+  }
   gs.logEvent(game, `Løb afsluttet. Vinder på banen: ${results[0].stableName}.`);
   return { ok: true, results };
 }
 
-module.exports = { startRace, setRolling, rollForTeam, hostRollForTeam: rollForTeam, allRolled, finishRace, prizeFor };
+module.exports = { startRace, setRolling, setFavorite, placeBet, rollForTeam, hostRollForTeam: rollForTeam, allRolled, finishRace, prizeFor };
