@@ -1,4 +1,58 @@
-# Team Galoppen — The Great Team Derby
+# The Great Team Derby — v2
+
+> **Dette er v2** — en videreudviklet kopi af den kørende app. Den gamle version i `team-galoppen/`
+> er urørt og kan stadig bruges til events, mens v2 testes.
+
+## Nyt i v2
+
+**Løbsmodulet (det store payoff-moment)**
+- Levende løb på storskærmen: hestene galoperer (animation), glider frem for hvert slag og viser slag-boblen (+6) ved hesten. Slag-status vises som prikker pr. bane.
+- **Kommentator-feed** nederst på skærmen: "🎲 Lynhurtig slår 6 → rykker 6 felter".
+- **Løbs-events**: Dyrlægetjek (-2), Modvind (-1), Medvind (+2) og Publikum (+1) rammer tilfældigt (16% pr. slag, max 1 pr. hold pr. løb) med stort banner på skærmen. Slås til/fra i `gameConfig.raceEvents`.
+- **Catch-up**: hold 7+ felter bagud får +1 på slaget ("Opløbsfight") — holder løbene tætte. Config: `gameConfig.catchup`.
+- **Publikumsfavorit**: host udpeger ét hold, som får +2 engangsboost på næste slag. Config: `gameConfig.audienceFavorite`.
+- **Fair dødt løb**: position har ikke længere loft på 30, og ved præcis samme distance deles placeringen (og præmien) i stedet for tilfældig tie-break.
+- Konfetti og podie ved målstregen.
+
+**Spilbalance**
+- Staldinvestering er ikke længere en gratis pengemaskine: afkast sænket fra +200/+500 til +100/+300 SD, så valget mellem sikker værdi og løbs-power er ægte.
+
+**Tablets**
+- Cooldown-nedtælling tæller nu faktisk ned sekund for sekund (før frøs den).
+- Løbsvisning med "Banen lige nu" — mini-bane med alle stalde, live positioner og favorit-markering.
+- Toast-beskeder når holdet rammes af events, fan-boost eller opløbsfight.
+
+**Host-konsollen**
+- Online-status (grøn/rød prik) pr. stald + "x/y online"-tæller.
+- Godkendelseskøen lyser gult op, når noget venter.
+- Kreativ-scoring med niveauknapper (500/1000/1500) + valgfrit beløb.
+- Løbspanel med favorit-vælger, slag-status pr. hold (2/4 slag · pos 13) og seneste hændelser.
+
+Alle nye mekanikker kan justeres eller slås fra i `config/gameConfig.js` uden at røre koden.
+
+## Nyt i v2.1 — spildynamik (fra ekspert-review, se `Ekspert-review_Spildynamik_v2.md`)
+
+**Grafik**
+- Løbsbanen: turf-striber med dybde, distancemarkører (5/10/15/20/25) og MÅL-portal.
+- Vinderafsløring: pulserende guld-spotlight med hesten i vinderens staldfarve, pokal og konfetti.
+
+**Balance (review pkt. 1-5)**
+- Performance-øvelser udbetaler nu også kontanter pr. medalje: pass/bronze/sølv/guld = 200/400/600/1000 SD (`performanceRewards`) — balancerer dem mod penge-øvelserne.
+- Finale-præmier hævet til 6000/4200/3000/1800/1000 SD, så finalen reelt kan flytte stillingen.
+- Ved videresalg på auktion får forrige ejer kun 50% af buddet — resten går til banken (`auctionResaleSplit`). Dæmper rich-get-richer.
+- Investeringer: max 1 køb pr. option (`maxPurchasesPerOption`); hest/jockey er nu værdineutrale men point-tunge (1000 → +1000 værdi +3 point).
+- Kreativ-bonus max sænket 1500 → 800 (fairness: host-skøn må ikke overdøve spillets mekanikker).
+
+**Finale-væddemål (comeback-mekanik)**
+- Før finaleløbet kan hvert hold satse kontanter på egen sejr. Odds sættes omvendt af stillingen: føreren 1,5x, sidstepladsen 4x (`finalBetting`). Indsats trækkes straks; vinder holdet løbet, udbetales indsats × odds. Sammen med de større præmier gør det comeback muligt — og finalen nervepirrende for alle.
+
+**Rollekort (teamdynamik)**
+- Fire roller fordeles ved stald-setup: Staldchef, Bookmaker, Træner, Staldkarl (`roles` i config). Tabletten minder holdet om at rotere rollerne, når en ny runde starter.
+
+**Debrief-slide**
+- Nyt sidste slide efter vinderafsløringen med auto-genererede datapunkter pr. hold (højeste bud, byttehandler, investeret, tjent på opgaver, løbspræmier) og tre refleksionsspørgsmål — så eventet også leverer læring, ikke kun fest.
+
+---
 
 Et realtime **live event-system** til CoastZones teambuildingkoncept. Én host-maskine kører en
 indbygget præsentation; storskærm og team-tablets følger automatisk med, når host skifter slide/fase.
