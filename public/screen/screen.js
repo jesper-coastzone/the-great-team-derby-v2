@@ -25,6 +25,11 @@
 
   function render() {
     if (!S) return;
+    // Løbs-slides opdateres in-place, så hestene glider i stedet for at hoppe.
+    if (['warmup-race', 'race', 'final-race'].includes(S.slide.kind) && S.race && !S.screenMessageOverride) {
+      const existing = document.getElementById('raceStage');
+      if (existing && existing.getAttribute('data-race-id') === S.race.id) { updateRace(); return; }
+    }
     clear(root);
     const stage = el('div.stage');
     stage.appendChild(el('div.corner-motif', { html: TG.motif.horse('#C9A227') }));
@@ -33,6 +38,7 @@
     content.appendChild(slideContent());
     stage.appendChild(content);
     root.appendChild(stage);
+    if (document.getElementById('raceStage')) updateRace();
   }
 
   function brandbar() {
@@ -64,6 +70,7 @@
       case 'derby-readiness': return readiness();
       case 'final-race': return raceTrack('The Great Team Derby');
       case 'final-reveal': return reveal();
+      case 'debrief': return debrief();
       default: return el('div', {}, [el('h1', { text: S.slide.screenTitle })]);
     }
   }
@@ -257,29 +264,137 @@
     return box;
   }
 
-  // ---- race track ----
+  // ---- race track (v2: levende løb med feed, events og konfetti) ----
   function raceTrack(title) {
-    const c = el('div', { style: 'display:flex;flex-direction:column;height:100%' });
     const race = S.race;
-    c.appendChild(el('div.row.between', {}, [el('h2', { text: title }), race ? el('span.chip' + (race.rollingOpen ? '.turf' : ''), { text: race.rollingOpen ? 'Rolling åben' : (race.status === 'finished' ? 'Afsluttet' : 'Afventer') }) : null]));
-    if (!race) { c.appendChild(el('p.lead', { text: 'Klargør løb…' })); return c; }
+    const c = el('div', { style: 'display:flex;flex-direction:column;height:100%' });
+    if (!race) { c.appendChild(el('h2', { text: title })); c.appendChild(el('p.lead', { text: 'Klargør løb…' })); return c; }
+    c.id = 'raceStage';
+    c.setAttribute('data-race-id', race.id);
+    c.appendChild(el('div.row.between', {}, [el('h2', { text: title }), el('span.chip#raceChip', { text: '' })]));
+    const marks = [5, 10, 15, 20, 25];
+    const trackWrap = el('div.track-wrap');
+    const dist = el('div.dist-row');
+    marks.forEach((m) => dist.appendChild(el('span', { style: `left:${pctFor(m, race.trackLength)}%`, text: String(m) })));
+    trackWrap.appendChild(dist);
     const track = el('div.track');
     S.teams.forEach((t) => {
-      const pos = race.positions[t.id] || 0; const pct = Math.min(100, (pos / race.trackLength) * 92);
-      const lane = el('div.lane');
-      lane.appendChild(el('div.tag', { text: t.stableName }));
+      const lane = el('div.lane', { 'data-lane': t.id });
+      marks.forEach((m) => lane.appendChild(el('div.marker', { style: `left:${pctFor(m, race.trackLength)}%` })));
+      lane.appendChild(el('div.tag', { text: laneLabel(t) }));
+      const dots = el('div.dots');
+      const prog = (race.progress || {})[t.id] || { used: 0, allowed: race.rollsPerTeam };
+      for (let i = 0; i < prog.allowed; i++) dots.appendChild(el('i'));
+      lane.appendChild(dots);
       lane.appendChild(el('div.finish'));
-      const horse = el('div.horse', { style: `left:${pct}%` }); horse.appendChild(TG.tintedAsset('hest-markoer-silhuet', t.color.hex, { style: 'width:100%;height:100%' }));
+      lane.appendChild(el('div.roll-bubble'));
+      const horse = el('div.horse');
+      const sil = TG.tintedAsset('hest-markoer-silhuet', t.color.hex, { style: 'width:100%;height:100%' });
+      sil.classList.add('silhouette');
+      horse.appendChild(sil);
       lane.appendChild(horse);
       track.appendChild(lane);
     });
-    c.appendChild(track);
-    if (race.results && race.results.length) {
-      const podium = el('div.row', { style: 'gap:1.4vw;margin-top:1vh;justify-content:center' });
-      race.results.slice(0, 3).forEach((r) => podium.appendChild(el('div.chip.gold', { style: 'font-size:1.4vw;padding:.6vw 1.2vw', text: `${r.place}. ${r.stableName} · +${money(r.prize)} SD` })));
-      c.appendChild(podium);
-    }
+    trackWrap.appendChild(track);
+    const portal = el('div.goal-portal');
+    portal.appendChild(el('div.beam'));
+    portal.appendChild(el('div.sign', { text: 'MÅL' }));
+    trackWrap.appendChild(portal);
+    c.appendChild(trackWrap);
+    c.appendChild(el('div.feedbar#raceFeed'));
+    c.appendChild(el('div#racePodium', { style: 'min-height:5vh' }));
+    c.appendChild(el('div.race-banner#raceBanner'));
     return c;
+  }
+
+  function laneLabel(t) {
+    const fav = S.race && S.race.favoriteTeamId === t.id ? ' 📣' : '';
+    return t.stableName + fav;
+  }
+
+  function pctFor(pos, trackLength) {
+    return Math.min(93, (pos / trackLength) * 92) + 1;
+  }
+
+  function updateRace() {
+    const race = S.race; if (!race) return;
+    const chip = document.getElementById('raceChip');
+    if (chip) {
+      chip.className = 'chip' + (race.rollingOpen ? ' turf' : '');
+      chip.id = 'raceChip';
+      chip.textContent = race.rollingOpen ? 'Løbet er i gang!' : (race.status === 'finished' ? 'Afsluttet' : 'Afventer start');
+    }
+    S.teams.forEach((t) => {
+      const lane = document.querySelector(`[data-lane="${t.id}"]`); if (!lane) return;
+      const pos = race.positions[t.id] || 0;
+      const pct = pctFor(pos, race.trackLength);
+      const horse = lane.querySelector('.horse');
+      const bubble = lane.querySelector('.roll-bubble');
+      if (horse) horse.style.left = pct + '%';
+      lane.classList.toggle('galloping', !!race.rollingOpen && race.status !== 'finished');
+      const tag = lane.querySelector('.tag'); if (tag) tag.textContent = laneLabel(t);
+      const prog = (race.progress || {})[t.id];
+      if (prog) lane.querySelectorAll('.dots i').forEach((d, i) => d.classList.toggle('used', i < prog.used));
+      const lastRoll = t.race && t.race.lastRoll;
+      if (bubble) {
+        bubble.style.left = pct + '%';
+        if (lastRoll) { bubble.textContent = '+' + lastRoll; bubble.classList.add('show'); }
+        else bubble.classList.remove('show');
+      }
+    });
+    // feed (nyeste øverst)
+    const feedEl = document.getElementById('raceFeed');
+    const feed = race.feed || [];
+    if (feedEl) {
+      feedEl.innerHTML = '';
+      feed.slice(-4).reverse().forEach((f) => feedEl.appendChild(el('div.fe', { text: f.text })));
+      if (!feed.length) feedEl.appendChild(el('div.fe', { text: 'Hestene står klar i boksene…' }));
+    }
+    // banner ved nye events
+    const key = race.id + ':' + feed.length;
+    if (window.__raceFeedKey !== key) {
+      window.__raceFeedKey = key;
+      const last = feed[feed.length - 1];
+      if (last && (last.kind === 'event' || last.kind === 'favorite' || last.kind === 'finish')) showBanner(bannerText(last));
+    }
+    // resultater + konfetti
+    const podium = document.getElementById('racePodium');
+    if (podium) {
+      podium.innerHTML = '';
+      if (race.results && race.results.length) {
+        const row = el('div.row', { style: 'gap:1.4vw;margin-top:1vh;justify-content:center' });
+        race.results.slice(0, 3).forEach((r) => row.appendChild(el('div.chip.gold', { style: 'font-size:1.4vw;padding:.6vw 1.2vw', text: `${r.place}. ${r.stableName}${r.deadHeat ? ' (dødt løb)' : ''} · +${money(r.prize)} SD` })));
+        podium.appendChild(row);
+        if (window.__confettiRace !== race.id) { window.__confettiRace = race.id; confetti(); }
+      }
+    }
+  }
+
+  function bannerText(f) {
+    if (f.kind === 'finish') return f.text;
+    if (f.kind === 'favorite') return '📣 Publikumsfavorit: ' + f.stableName + '!';
+    if (f.event) return `${f.event.emoji || ''} ${f.event.label}! ${f.stableName} ${f.event.effect > 0 ? '+' : ''}${f.event.effect}`;
+    return f.text;
+  }
+
+  let bannerTimer = null;
+  function showBanner(text) {
+    const b = document.getElementById('raceBanner'); if (!b) return;
+    b.textContent = text;
+    b.classList.add('show');
+    if (bannerTimer) clearTimeout(bannerTimer);
+    bannerTimer = setTimeout(() => b.classList.remove('show'), 2600);
+  }
+
+  function confetti() {
+    const colors = ['#C9A227', '#6E1F2E', '#1F3E63', '#2D4A3D', '#B83232', '#FAF6EA'];
+    for (let i = 0; i < 90; i++) {
+      const p = el('div.confetti');
+      const size = 6 + Math.random() * 9;
+      p.style.cssText += `left:${Math.random() * 100}vw;width:${size}px;height:${size * 0.45}px;background:${colors[i % colors.length]};animation-duration:${2.4 + Math.random() * 2.4}s;animation-delay:${Math.random() * 1.4}s;border-radius:2px;`;
+      document.body.appendChild(p);
+      setTimeout(() => p.remove(), 7000);
+    }
   }
 
   // ---- leaderboard ----
@@ -314,18 +429,51 @@
     return c;
   }
 
-  // ---- final reveal ----
+  // ---- final reveal (v2: guld-spotlight + konfetti) ----
   function reveal() {
     const winner = (S.ranking || [])[0];
     const c = el('div.winner-hero');
     if (!winner) return el('h1', { text: 'Afsløring' });
-    const crown = el('div.crown'); crown.appendChild(TG.assetImg('pokal', { style: 'width:6vw;height:6vw' })); c.appendChild(crown);
+    const spot = el('div.spotlight');
+    const horse = TG.tintedAsset('hest-silhuet', winner.color ? winner.color.hex : '#6E1F2E', { style: 'width:100%;height:100%' });
+    const hw = el('div.heroH'); hw.appendChild(horse); spot.appendChild(hw);
+    const pk = el('div.pokal'); pk.appendChild(TG.assetImg('pokal', { style: 'width:100%;height:100%' })); spot.appendChild(pk);
+    c.appendChild(spot);
     c.appendChild(el('div.eyebrow', { text: 'Vinderen af The Great Team Derby' }));
     c.appendChild(el('h1', { text: winner.stableName, style: 'font-size:6vw' }));
-    c.appendChild(el('div.big-num', { text: sd(winner.totalValue), style: 'margin:1vh 0' }));
+    c.appendChild(el('div.big-num', { text: sd(winner.totalValue), style: 'margin:1vh 0;font-size:6vw' }));
     const bd = el('div.row', { style: 'justify-content:center;gap:1.4vw;margin-top:1vh' });
     [['Kontant', winner.cash], ['Hest', winner.horseValue], ['Jockey', winner.jockeyValue], ['Stald', winner.stableValue]].forEach(([k, v]) => bd.appendChild(el('div.chip', { style: 'font-size:1.4vw;padding:.6vw 1.2vw', text: `${k}: ${money(v)}` })));
     c.appendChild(bd);
+    if (window.__confettiReveal !== S.code) { window.__confettiReveal = S.code; setTimeout(confetti, 400); }
+    return c;
+  }
+
+  // ---- debrief (refleksion med auto-data) ----
+  function debrief() {
+    const c = el('div');
+    c.appendChild(el('div.eyebrow', { text: 'Debrief' }));
+    c.appendChild(el('h2', { text: 'Hvad skete der egentlig?' }));
+    const stats = S.debrief || [];
+    const grid = el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fit,minmax(18vw,1fr));gap:1vw;margin-top:1.5vh' });
+    stats.forEach((s) => {
+      const card = el('div.card', { style: 'padding:1vw' });
+      card.appendChild(el('div.row', { style: 'align-items:center;gap:.6vw;margin-bottom:.6vh' }, [
+        el('span', { style: `display:inline-block;width:1.2vw;height:1.2vw;border-radius:50%;background:${s.color.hex}` }),
+        el('b', { style: 'font-size:1.3vw', text: s.stableName }),
+      ]));
+      [['Højeste bud', s.biggestBid], ['Byttehandler', s.trades], ['Investeret', s.invested], ['Tjent på opgaver', s.earnedTasks], ['Løbspræmier', s.racePrizes]].forEach(([k, v]) => {
+        card.appendChild(el('div.row.between', { style: 'font-size:1vw;padding:.25vh 0;border-bottom:1px dashed var(--line)' }, [el('span', { style: 'color:var(--text-dim)', text: k }), el('span.num', { text: typeof v === 'number' && k !== 'Byttehandler' ? money(v) : String(v) })]));
+      });
+      grid.appendChild(card);
+    });
+    c.appendChild(grid);
+    const qs = el('div', { style: 'margin-top:2.5vh' });
+    qs.appendChild(el('div.eyebrow', { text: 'Tal om det ved bordene' }));
+    ['Hvem traf beslutningerne ved auktionen — og hvordan?', 'Hvornår ændrede I strategi — og hvad udløste det?', 'Hvad ville I gøre anderledes, hvis runde 1 kom igen?'].forEach((q, i) => {
+      qs.appendChild(el('div.row', { style: 'font-size:1.7vw;padding:.6vh 0;gap:1vw' }, [el('span', { style: 'color:var(--gold);font-weight:800', text: String(i + 1) + '.' }), el('span', { text: q })]));
+    });
+    c.appendChild(qs);
     return c;
   }
 

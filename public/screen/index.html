@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Team Galoppen — Storskærm</title>
+<title>The Great Team Derby — Storskærm</title>
 <meta name="theme-color" content="#1F3E63">
 <link rel="icon" href="/icon.png?size=64">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -34,14 +34,40 @@
   .big-num { font-family: var(--font-num); font-weight: 800; font-size: 9vw; color: var(--navy); line-height: 1; }
   .qr { background: #fff; padding: 1vw; border-radius: 14px; box-shadow: var(--shadow); }
   .qr img { width: 12vw; display: block; }
-  .track { flex: 1; display: flex; flex-direction: column; gap: .6vh; justify-content: center; }
-  .lane { position: relative; height: 6.2vh; background: linear-gradient(90deg, #26533c, #2E7D4F); border-radius: 10px; border: 2px solid #17402c; overflow: hidden; }
+  .track-wrap { position: relative; flex: 1; display: flex; flex-direction: column; justify-content: center; }
+  .track { display: flex; flex-direction: column; gap: .6vh; }
+  .dist-row { position: relative; height: 2.4vh; margin-bottom: .2vh; }
+  .dist-row span { position: absolute; transform: translateX(-50%); font-size: 1.5vh; color: var(--text-faint); font-weight: 700; font-family: var(--font-num); }
+  .lane { position: relative; height: 6.2vh; background: repeating-linear-gradient(90deg, #2E7D4F 0 5vw, #27653f 5vw 10vw); border-radius: 10px; border: 2px solid #17402c; overflow: hidden; box-shadow: inset 0 .8vh 1.6vh rgba(0,0,0,.25), inset 0 -.4vh 1vh rgba(255,255,255,.05); }
+  .lane .marker { position: absolute; top: 0; bottom: 0; width: 2px; background: rgba(255,255,255,.13); }
   .lane .finish { position: absolute; right: 3%; top: 0; bottom: 0; width: 6px; background-image: repeating-linear-gradient(180deg,#fff 0 8px,#111 8px 16px); }
-  .lane .horse { position: absolute; top: 50%; transform: translateY(-50%); left: 1%; width: 4vh; height: 4vh; transition: left .5s cubic-bezier(.2,.7,.3,1); }
-  .lane .tag { position: absolute; left: .6vw; top: .4vh; color: #fff; font-weight: 800; font-size: 1vw; text-shadow: 0 1px 2px rgba(0,0,0,.4); }
+  .goal-portal { position: absolute; right: 3%; top: 0; bottom: 0; width: 0; z-index: 5; }
+  .goal-portal .beam { position: absolute; left: -1px; top: 0; bottom: 0; width: 3px; background: rgba(250,246,234,.35); }
+  .goal-portal .sign { position: absolute; top: -3.2vh; left: 50%; transform: translateX(-50%); background: #1F3E63; color: #FAF6EA; font-family: var(--font-display); font-weight: 900; font-size: 1.8vh; letter-spacing: 4px; padding: .35vh 1.1vw; border-radius: 8px; border: 2px solid var(--gold); white-space: nowrap; box-shadow: 0 6px 18px rgba(0,0,0,.25); }
+  .lane .horse { position: absolute; top: 50%; transform: translateY(-50%); left: 1%; width: 4vh; height: 4vh; transition: left .9s cubic-bezier(.25,.8,.35,1); }
+  .lane .horse .silhouette { width: 100%; height: 100%; }
+  .lane.galloping .horse .silhouette { animation: gallop .5s ease-in-out infinite; }
+  @keyframes gallop { 0%,100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-.6vh) rotate(-3deg); } }
+  .lane .roll-bubble { position: absolute; top: 50%; transform: translate(-110%,-50%); background: var(--gold); color: #1c1c1c; font-family: var(--font-num); font-weight: 800; font-size: 1.6vh; border-radius: 999px; padding: .2vh .7vh; opacity: 0; transition: opacity .3s, left .9s cubic-bezier(.25,.8,.35,1); white-space: nowrap; box-shadow: 0 2px 6px rgba(0,0,0,.35); z-index: 3; }
+  .lane .roll-bubble.show { opacity: 1; }
+  .lane .tag { position: absolute; left: .6vw; top: .4vh; color: #fff; font-weight: 800; font-size: 1vw; text-shadow: 0 1px 2px rgba(0,0,0,.4); z-index: 2; }
+  .lane .dots { position: absolute; left: .6vw; bottom: .5vh; display: flex; gap: .3vw; z-index: 2; }
+  .lane .dots i { width: .55vw; height: .55vw; border-radius: 50%; background: rgba(255,255,255,.35); }
+  .lane .dots i.used { background: var(--gold); }
+  .feedbar { margin-top: 1vh; background: rgba(31,62,99,.94); color: #fff; border-radius: 12px; padding: .8vh 1.2vw; min-height: 9vh; display: flex; flex-direction: column; justify-content: center; gap: .3vh; box-shadow: var(--shadow); }
+  .feedbar .fe { font-size: 1.35vw; line-height: 1.35; opacity: .5; }
+  .feedbar .fe:first-child { opacity: 1; font-weight: 700; font-size: 1.55vw; }
+  .race-banner { position: fixed; left: 50%; top: 38%; transform: translate(-50%,-50%) scale(.8); background: var(--burgundy); color: #fff; font-family: var(--font-display); font-weight: 900; font-size: 3.2vw; padding: 1.6vh 3vw; border-radius: 18px; border: 4px solid var(--gold); box-shadow: 0 20px 60px rgba(0,0,0,.45); opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s; z-index: 50; text-align: center; }
+  .race-banner.show { opacity: 1; transform: translate(-50%,-50%) scale(1); }
+  .confetti { position: fixed; top: -4vh; z-index: 40; pointer-events: none; animation: confetti-fall linear forwards; }
+  @keyframes confetti-fall { to { transform: translateY(115vh) rotate(720deg); } }
   .reveal-row { display: grid; grid-template-columns: auto 1fr auto; gap: 1vw; align-items: center; padding: 1vh 0; border-bottom: 1px dashed var(--line); font-size: 1.8vw; }
   .winner-hero { text-align: center; }
   .winner-hero .crown { font-size: 6vw; }
+  .winner-hero .spotlight { position: relative; width: 30vh; height: 26vh; margin: 0 auto; display: flex; align-items: flex-end; justify-content: center; background: radial-gradient(circle at 50% 62%, rgba(201,162,39,.45) 0%, rgba(201,162,39,.16) 52%, rgba(201,162,39,0) 72%); animation: spot-pulse 2.6s ease-in-out infinite; }
+  @keyframes spot-pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.04); } }
+  .winner-hero .spotlight .heroH { width: 20vh; height: 20vh; }
+  .winner-hero .spotlight .pokal { position: absolute; top: -1vh; left: 50%; transform: translateX(-50%); width: 7vh; height: 7vh; }
   .lb-row { display: grid; grid-template-columns: auto 1fr auto; gap: 1.4vw; align-items: center; padding: 1.1vh 0; border-bottom: 1px solid var(--line); font-size: 2vw; }
   .lb-row .num { font-size: 2.4vw; }
 </style>
