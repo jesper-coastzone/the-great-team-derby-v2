@@ -1,5 +1,5 @@
 /*
- * auctionExercises.js — de 7 special-øvelser der handles på auktion.
+ * auctionExercises.js — de 8 special-øvelser der handles på auktion.
  * category: 'money' | 'jockey' | 'horse'
  *   money   → giver SD (aftagende belønning + cooldown)
  *   jockey  → giver jockey-performance-point (resultatniveau)
@@ -24,11 +24,11 @@ const auctionExercises = [
     id: 'mindpuzzle',
     name: 'Mind Puzzle',
     category: 'money',
-    short: 'Løs stigende sværhedsgrader.',
+    short: 'Løs stigende sværhedsgrader — tabletten godkender selv.',
     description:
-      'Progressive puslespil-niveauer. I starter på niveau 1; hvert løst niveau låser det næste op. ' +
-      'Niveauerne bliver sværere — og belønningen falder. På et tidspunkt kan det bedre betale sig at ' +
-      'bytte øvelsen væk.',
+      'Horse Academy-puslespil i 20 stigende niveauer (Starter → Wizard). Opgaven vises på tabletten; ' +
+      'byg banen fysisk, og tabletten godkender jeres løsning med kontrolspørgsmål — ingen instruktør. ' +
+      'Belønningen falder pr. niveau. På et tidspunkt kan det bedre betale sig at bytte øvelsen væk.',
     gives: 'Staldollars pr. gennemført niveau (aftagende).',
     reward: { start: 1000, decreasePerSuccess: 100, min: 300 },
     cooldownSeconds: 180,
@@ -43,6 +43,20 @@ const auctionExercises = [
       'Byg et hus/tårn af hestesko. Succeskriterie: mindst 20 cm højt. Når det er godkendt, får I SD. ' +
       'Belønningen falder for hver succes.',
     gives: 'Staldollars — aftagende belønning.',
+    reward: { start: 1000, decreasePerSuccess: 50, min: 400 },
+    cooldownSeconds: 180,
+  },
+  {
+    id: 'jockeyguidning',
+    name: 'Jockey Guidning',
+    category: 'money',
+    short: 'Blind tillid — bogstaveligt talt.',
+    description:
+      'Én fra stalden er jockey: bind for øjnene og op på kæphesten. Jockeyen skal ride gennem ' +
+      'forhindringsbanen — uden at kunne se noget som helst. Resten af stalden guider hest og jockey ' +
+      'gennem banen — KUN ved hjælp af snorene. Kald på en instruktør for et officielt forsøg. ' +
+      'Succes: hele banen gennemføres.',
+    gives: 'Staldollars — belønningen falder for hver succes.',
     reward: { start: 1000, decreasePerSuccess: 50, min: 400 },
     cooldownSeconds: 180,
   },
