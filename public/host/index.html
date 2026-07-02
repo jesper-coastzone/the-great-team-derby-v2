@@ -25,7 +25,8 @@
   .deck-list .d { padding: 7px 10px; font-size: 13px; cursor: pointer; border-bottom: 1px solid var(--line); display: flex; gap: 8px; }
   .deck-list .d:hover { background: var(--cream); }
   .deck-list .d.active { background: #eef3d9; font-weight: 700; }
-  .teamline { display: grid; grid-template-columns: 32px 1fr auto auto; gap: 8px; align-items: center; padding: 7px 0; border-bottom: 1px dashed var(--line); font-size: 14px; }
+  .teamline { display: grid; grid-template-columns: 12px 32px minmax(0, 1fr) auto auto; gap: 8px; align-items: center; padding: 7px 0; border-bottom: 1px dashed var(--line); font-size: 14px; }
+  .teamline b { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .sec { margin-bottom: 16px; }
   .sec h3 { margin-bottom: 8px; }
   .approve { border: 2px solid var(--gold); border-radius: 12px; padding: 10px; margin-bottom: 8px; }
