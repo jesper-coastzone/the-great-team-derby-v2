@@ -36,7 +36,7 @@ function buildDeck(settings) {
     hostHint: 'Gennemgå dagens program.' });
   push({ kind: 'derby-intro', phase: PHASES.INTRO, title: 'The Great Team Derby',
     screenTitle: 'The Great Team Derby', tabletMode: 'welcome',
-    hostHint: 'Introducér universet: samarbejde, strategi, investeringer, performance.' });
+    hostHint: 'Introducér universet: samarbejde, strategi, investeringer, performance — og evnen til at skifte kurs, når spillet gør det.' });
   push({ kind: 'how-to-win', phase: PHASES.INTRO, title: 'Sådan vinder I',
     screenTitle: 'Sådan vinder I', tabletMode: 'welcome',
     hostHint: 'Forklar: den mest værdifulde stald vinder — ikke nødvendigvis løbsvinderen.' });
@@ -92,7 +92,7 @@ function buildDeck(settings) {
     hostHint: 'Afslør total staldværdi og vinderstalden.' });
   push({ kind: 'debrief', phase: PHASES.REVEAL, title: 'Debrief',
     screenTitle: 'Hvad skete der egentlig?', tabletMode: 'final-result',
-    hostHint: 'Kør refleksionen: Hvem traf beslutningerne ved auktionen? Hvornår ændrede I strategi? Hvad ville I gøre om?' });
+    hostHint: 'Kør refleksionen: Hvem traf beslutningerne ved auktionen? Hvornår ændrede I strategi? Hvordan reagerede I, da planen blev væltet? Hvad ville I gøre om?' });
 
   // Tildel id + index
   return slides.map((s, i) => ({ index: i, id: `s${i}`, ...s }));

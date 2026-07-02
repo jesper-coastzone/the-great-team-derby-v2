@@ -111,10 +111,23 @@ const gameConfig = {
   },
 
   // ---- Auktion ----
-  auctionHouseExchangeRate: 0.5, // gebyr = 50% af oprindelig købspris ved bytte i auktionshus
+  auctionHouseExchangeFee: 100,  // FAST byttegebyr i auktionshuset (autoritativ)
+  auctionHouseExchangeRate: 0.5, // (kompatibilitet) andel af købspris — bruges kun hvis fast gebyr mangler
   // Ved videresalg på auktion får forrige ejer kun denne andel af buddet — resten går til
   // banken. Dæmper rich-get-richer (ekspert-review pkt. 2). 1 = alt til forrige ejer.
   auctionResaleSplit: 0.5,
+
+  // ---- Bots: computerstyrede stalde (stærke tidligt, falder af til sidst) ----
+  bots: {
+    maxBots: 3,
+    names: ['Stald Kometen 🤖', 'Stald Tordenhov 🤖', 'Stald Guldfaksen 🤖'],
+    horseNames: ['Komet', 'Tordenhov', 'Guldfaks'],
+    jockeyNames: ['Robo-Rita', 'Auto-Anders', 'Mekaniske Mads'],
+    earnIntervalSeconds: 40,           // hvor ofte en bot tjener under en runde
+    earnPerMinuteByRound: [460, 150],  // runde 1: stærk · runde 2+: falder af (index = min(runde-1, længde-1))
+    earnJitter: 0.25,                  // ±25% tilfældighed pr. udbetaling
+    raceRollChancePerTick: 0.22,       // sandsynlighed pr. sekund for at botten slår i åbent løb
+  },
 
   // ---- Cooldowns (sekunder) ----
   defaultCooldownSeconds: 300,   // 5 min for pengeopgaver
@@ -126,6 +139,8 @@ const gameConfig = {
       rewardPerCorrect: 100,     // 13/13 = 1300 SD
       cooldownSeconds: 300,
     },
+    // Tidslinje: fælles pengeopgave for ALLE hold — løses ved Tidslinje-stationen
+    // (egen tablet + fysiske kort). Cooldown og sæt-rotation er pr. hold.
     tidslinje: {
       rewardOnSuccess: 300,
       rewardOnFail: 0,
@@ -137,6 +152,12 @@ const gameConfig = {
       questionsPerDuel: 3,
       cooldownSeconds: 300,
     },
+  },
+
+  // ---- Mind Puzzle (Horse Academy) — auto-godkendelse på tablet ----
+  mindpuzzleAuto: {
+    questionsPerCheck: 2,        // antal kontrolspørgsmål pr. godkendelse
+    penaltyCooldownSeconds: 60,  // pause ved forkert svar (nye spørgsmål bagefter)
   },
 
   // ---- Puslespil / Derby-licens ----

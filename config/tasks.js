@@ -3,7 +3,7 @@
  *
  *  - creativeTasks / puzzle: godkendes manuelt af host.
  *  - tip13:   auto-rettet quiz. Flere sæt roteres, så samme spørgsmål ikke gentages.
- *  - tidslinje: auto-rettet. Items har 'year' → korrekt rækkefølge udledes.
+ *  - tidslinje: fælles pengeopgave — løses KUN på Tidslinje-stationen (egen tablet + fysiske kort).
  *  - dyst:    hold-mod-hold estimering. Nærmeste svar vinder hvert spørgsmål, bedst af 3.
  */
 
@@ -88,29 +88,98 @@ const tip13Sets = [
   },
 ];
 
-// ---------- Tidslinje ----------
-// Items med 'year'. Motoren blander dem; korrekt rækkefølge = sorteret efter år.
+// ---------- Tidslinje (Tidslinje-stationen — egen tablet + fysiske kort) ----------
+// Hvert item har 'year' (facit, kun på serveren) og 'card' = nummeret trykt på det
+// FYSISKE kort. Kortnumrene er bevidst blandede, så rækkefølgen 1-5 IKKE er kronologisk.
+// Holdet lægger de fysiske kort i rækkefølge og taster kortnumrene ind på stationen.
+// Årstal må aldrig sendes til klienten eller stå på kortene.
 const tidslinjeSets = [
   {
     id: 'A',
-    title: 'Sæt begivenhederne i kronologisk rækkefølge',
+    title: 'Verdensbegivenheder',
     items: [
-      { label: 'Den første mand på Månen', year: 1969 },
-      { label: 'Berlinmurens fald', year: 1989 },
-      { label: 'Danmark vinder EM i fodbold', year: 1992 },
-      { label: 'Den første iPhone', year: 2007 },
-      { label: 'COVID-19-pandemien starter', year: 2020 },
+      { card: 4, label: 'Den første mand på Månen', year: 1969 },
+      { card: 1, label: 'Berlinmurens fald', year: 1989 },
+      { card: 3, label: 'Danmark vinder EM i fodbold', year: 1992 },
+      { card: 5, label: 'Den første iPhone', year: 2007 },
+      { card: 2, label: 'COVID-19-pandemien starter', year: 2020 },
     ],
   },
   {
     id: 'B',
-    title: 'Sæt opfindelserne i kronologisk rækkefølge',
+    title: 'Opfindelser',
     items: [
-      { label: 'Bogtrykkerkunsten', year: 1440 },
-      { label: 'Dampmaskinen', year: 1712 },
-      { label: 'Glødepæren', year: 1879 },
-      { label: 'Fjernsynet', year: 1927 },
-      { label: 'World Wide Web', year: 1989 },
+      { card: 2, label: 'Bogtrykkerkunsten', year: 1440 },
+      { card: 5, label: 'Dampmaskinen', year: 1712 },
+      { card: 1, label: 'Glødepæren', year: 1879 },
+      { card: 4, label: 'Fjernsynet', year: 1927 },
+      { card: 3, label: 'World Wide Web', year: 1989 },
+    ],
+  },
+  {
+    id: 'C',
+    title: 'Danmarkshistorie',
+    items: [
+      { card: 3, label: 'Jellingstenen rejses', year: 965 },
+      { card: 1, label: 'Grundloven underskrives', year: 1849 },
+      { card: 4, label: 'Kvinder får valgret i Danmark', year: 1915 },
+      { card: 5, label: 'Danmark besættes 9. april', year: 1940 },
+      { card: 2, label: 'Øresundsbroen åbner', year: 2000 },
+    ],
+  },
+  {
+    id: 'D',
+    title: 'Film & underholdning',
+    items: [
+      { card: 5, label: 'Snehvide — Disneys første tegnefilm i spillefilmslængde', year: 1937 },
+      { card: 2, label: 'Den første Star Wars-film har premiere', year: 1977 },
+      { card: 4, label: 'Titanic har premiere', year: 1997 },
+      { card: 1, label: 'Ringenes Herre: Eventyret om Ringen har premiere', year: 2001 },
+      { card: 3, label: 'Frost (Frozen) har premiere', year: 2013 },
+    ],
+  },
+  {
+    id: 'E',
+    title: 'Sportshistorie',
+    items: [
+      { card: 2, label: 'De første moderne Olympiske Lege', year: 1896 },
+      { card: 4, label: 'Den første Tour de France', year: 1903 },
+      { card: 1, label: 'Det første VM i fodbold', year: 1930 },
+      { card: 3, label: 'Den første Super Bowl', year: 1967 },
+      { card: 5, label: 'Caroline Wozniacki bliver nr. 1 i verden', year: 2010 },
+    ],
+  },
+  {
+    id: 'F',
+    title: 'Musikhistorie',
+    items: [
+      { card: 3, label: 'The Beatles går i opløsning', year: 1970 },
+      { card: 1, label: 'MTV går i luften', year: 1981 },
+      { card: 5, label: 'Spice Girls udgiver Wannabe', year: 1996 },
+      { card: 2, label: 'Spotify lanceres', year: 2008 },
+      { card: 4, label: 'Gangnam Style rammer 1 mia. visninger', year: 2012 },
+    ],
+  },
+  {
+    id: 'G',
+    title: 'Teknologi',
+    items: [
+      { card: 4, label: 'Den første e-mail sendes', year: 1971 },
+      { card: 1, label: 'Google grundlægges', year: 1998 },
+      { card: 3, label: 'Facebook lanceres', year: 2004 },
+      { card: 5, label: 'Netflix begynder at streame film', year: 2007 },
+      { card: 2, label: 'ChatGPT lanceres', year: 2022 },
+    ],
+  },
+  {
+    id: 'H',
+    title: 'Heste & væddeløb',
+    items: [
+      { card: 2, label: 'Mennesket tæmmer hesten på stepperne', year: -3500 },
+      { card: 3, label: 'Det første Epsom Derby rides i England', year: 1780 },
+      { card: 4, label: 'Ridebanespringning bliver olympisk disciplin', year: 1900 },
+      { card: 5, label: 'Klampenborg Galopbane åbner', year: 1910 },
+      { card: 1, label: 'Secretariat vinder Triple Crown i rekordtid', year: 1973 },
     ],
   },
 ];
