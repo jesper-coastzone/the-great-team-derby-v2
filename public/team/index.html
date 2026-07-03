@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Team Galoppen — Tablet</title>
+<title>The Great Team Derby — Tablet</title>
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="theme-color" content="#1F3E63">
 <meta name="mobile-web-app-capable" content="yes">
@@ -33,6 +33,16 @@
   .ex-tile.owned { border-color: var(--gold); box-shadow: 0 0 0 3px #f6eec9; }
   .cat { font-size: 11px; letter-spacing: 1px; text-transform: uppercase; font-weight: 800; }
   .cat.money { color: var(--gold); } .cat.jockey { color: var(--turf); } .cat.horse { color: var(--burgundy); }
+  /* Kategorifarvede topkanter på kort og øvelses-fliser */
+  .cat-top-money { border-top: 5px solid var(--gold) !important; }
+  .cat-top-jockey { border-top: 5px solid var(--turf) !important; }
+  .cat-top-horse { border-top: 5px solid var(--burgundy) !important; }
+  /* Pre-season fanebjælke (spejler runde-navbaren, men inline og interaktiv) */
+  .ps-tabs { display: flex; overflow-x: auto; background: #fff; border: 1px solid var(--line); border-radius: 14px; margin-bottom: 12px; box-shadow: var(--shadow); }
+  .ps-tabs button { flex: 1 0 auto; min-width: 92px; border: 0; background: none; padding: 12px 10px; font-weight: 700; color: var(--text-dim); font-size: 13px; cursor: pointer; border-bottom: 3px solid transparent; }
+  .ps-tabs button.active { color: var(--navy); border-bottom-color: var(--gold); background: var(--cream); }
+  /* Guld-accent under sektionsoverskrifter */
+  .head-accent { width: 46px; height: 4px; border-radius: 99px; background: var(--gold); margin: 6px 0 4px; }
   .list-move { user-select: none; }
   .list-move .item { display: flex; align-items: center; gap: 10px; padding: 12px; border: 2px solid var(--line); border-radius: 12px; background: #fff; margin-bottom: 8px; }
   .dice { font-family: var(--font-num); font-weight: 700; font-size: 64px; color: var(--navy); }

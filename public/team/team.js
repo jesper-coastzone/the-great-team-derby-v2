@@ -3,7 +3,7 @@
   const { el, clear, sd, money, toast, check } = TG;
   const root = document.getElementById('root');
   let S = null;              // seneste server-state
-  const ui = { sub: 'tasks', bids: {}, tradeTo: null, tradeExtra: 0, tip13: null, tidslinje: null, dyst: {} };
+  const ui = { sub: 'tasks', bids: {}, tradeTo: null, tradeExtra: 0, tip13: null, dyst: {}, mindpuzzle: null };
 
   // ---------- connection ----------
   const urlCode = new URLSearchParams(location.search).get('code');
@@ -140,58 +140,85 @@
   }
 
   // ---------- PRE-SEASON ----------
+  // Samme 7 faner som under runderne (og som vises på storskærmen) — men interaktivt:
+  // tryk rundt, læs om funktionerne. Ingen belønninger endnu.
+  const PS_TABS = [['tasks', 'Opgaver'], ['exercise', 'Min øvelse'], ['money', 'Penge'], ['trade', 'Byt'], ['house', 'Auktionshus'], ['invest', 'Invester'], ['bank', 'Bank']];
   function preseasonView() {
-    if (ui.psDetail) return preseasonDetail();
     const c = el('div.col');
-    c.appendChild(head('Pre-season', 'Tryk ind på en funktion for at læse om den. Ingen belønninger endnu — brug tiden på at planlægge.'));
-    const groups = psInfo();
-    Object.keys(groups).forEach((g) => {
-      c.appendChild(el('div.eyebrow', { text: g, style: 'margin-top:8px' }));
+    c.appendChild(head('Pre-season', 'Sådan ser jeres tablet ud under runderne. Tryk rundt i fanerne og læg jeres plan — ingen belønninger endnu.'));
+    const nav = el('div.ps-tabs');
+    const active = ui.psTab || 'tasks';
+    PS_TABS.forEach(([k, l]) => {
+      const b = el('button' + (active === k ? '.active' : ''), { text: l });
+      b.addEventListener('click', () => { ui.psTab = k; ui.psDetail = null; render(); });
+      nav.appendChild(b);
+    });
+    c.appendChild(nav);
+    c.appendChild(psTabContent(active));
+    return c;
+  }
+
+  function psCard(title, desc, extra) {
+    const card = el('div.card');
+    card.appendChild(el('h3', { text: title }));
+    card.appendChild(el('p.muted', { text: desc, style: 'margin:6px 0' }));
+    if (extra) card.appendChild(extra);
+    return card;
+  }
+
+  function psTabContent(tab) {
+    const c = el('div.col');
+    if (tab === 'tasks') {
+      c.appendChild(psCard('📋 Opgaver', 'Her ligger de opgaver, der altid er åbne — de kræver godkendelse af hosten, når I er færdige.'));
+      c.appendChild(psCard('Puslespil', 'Et langt team-puslespil. Fuldfør det før finalen og få jeres Derby-licens — uden den mister I et slag i finaleløbet.'));
+      c.appendChild(psCard('Pynt jeres hest', 'Dekorér jeres hobbyhest. Bedømmes i den kreative showcase og giver bonus til staldværdien.'));
+      c.appendChild(psCard('Design jeres staldskilt', 'Staldens våbenskjold. Bedømmes også i showcasen.'));
+    } else if (tab === 'exercise') {
+      if (ui.psDetail) {
+        const ex = (S.auction.exercises || []).find((e) => e.id === ui.psDetail);
+        if (ex) {
+          c.appendChild(backBtn(() => { ui.psDetail = null; render(); }));
+          const card = el('div.card', { class: 'cat-top-' + ex.category });
+          card.appendChild(el('span', { class: 'cat ' + ex.category, text: catName(ex.category) }));
+          card.appendChild(el('h2', { text: ex.name, style: 'margin:4px 0' }));
+          card.appendChild(el('div.finish-stripe', { style: 'margin:8px 0' }));
+          card.appendChild(el('p', { text: ex.description }));
+          if (ex.gives) card.appendChild(el('p.muted', { style: 'margin-top:8px', text: 'Giver: ' + ex.gives }));
+          if (ex.thresholds) card.appendChild(thresholdInfo(ex));
+          c.appendChild(card);
+          return c;
+        }
+      }
+      c.appendChild(psCard('🎯 Min øvelse', 'På auktionen byder I på én af de 8 specialøvelser herunder. Den I vinder, bliver JERES — og ligger så i denne fane, hvor I kalder instruktøren til officielle forsøg. Tryk på en øvelse for detaljer.'));
       const grid = el('div.grid', { style: 'grid-template-columns:1fr 1fr' });
-      groups[g].forEach((it) => {
-        const card = el('div.ex-tile');
-        if (it.cat) card.appendChild(el('span.cat.' + it.cat, { text: catName(it.cat) }));
-        card.appendChild(el('h3', { text: it.name, style: 'margin:2px 0' }));
-        card.appendChild(el('p.muted', { text: (it.desc || '').slice(0, 58) + '…', style: 'font-size:13px' }));
-        card.addEventListener('click', () => { ui.psDetail = it.id; render(); });
-        grid.appendChild(card);
+      (S.auction.exercises || []).forEach((ex) => {
+        const t = el('div', { class: 'ex-tile cat-top-' + ex.category });
+        t.appendChild(el('span', { class: 'cat ' + ex.category, text: catName(ex.category) }));
+        t.appendChild(el('h3', { text: ex.name, style: 'margin:4px 0 2px' }));
+        t.appendChild(el('p.muted', { text: ex.short, style: 'font-size:13px' }));
+        t.addEventListener('click', () => { ui.psDetail = ex.id; render(); });
+        grid.appendChild(t);
       });
       c.appendChild(grid);
-    });
+    } else if (tab === 'money') {
+      c.appendChild(psCard('💰 Pengeopgaver', 'Hurtige kontanter med cooldown — fordel jer, så I altid har noget i gang.'));
+      c.appendChild(psCard('Tip en 13\'er', '13 spørgsmål på tabletten — 100 SD pr. rigtigt svar.'));
+      c.appendChild(psCard('🕰️ Tidslinjen', 'Læg de fysiske kort i kronologisk rækkefølge ved Tidslinje-stationens tablet — 300 SD pr. korrekt tidslinje.'));
+      c.appendChild(psCard('⚔️ Dysten', 'Udfordr en anden stald til en estimerings-duel (bedst af 3). Vinderen får 500 SD.'));
+    } else if (tab === 'trade') {
+      c.appendChild(psCard('🔁 Byttehandel', 'Byt jeres auktionsøvelse med en anden stald — evt. med Staldollars oveni. Begge stalde skal acceptere handlen. Brug det, når jeres øvelse er ved at være tømt for værdi, eller når en anden øvelse passer bedre til holdet.'));
+    } else if (tab === 'house') {
+      c.appendChild(psCard('🏛️ Auktionshus', 'Fortrudt jeres køb? Her kan I bytte jeres øvelse til en LEDIG øvelse mod et fast gebyr på 100 SD. Hurtigt og billigt — men kun til øvelser, ingen andre ejer.'));
+    } else if (tab === 'invest') {
+      c.appendChild(psCard('📈 Investering', 'Brug kontanter på at gøre stalden stærkere. Max ét køb pr. mulighed — vælg klogt.'));
+      c.appendChild(psCard('Hest', 'Køb fart: hesten løfter terningens TOP — bedre chance for høje slag i løbene.'));
+      c.appendChild(psCard('Jockey', 'Køb stabilitet: jockeyen løfter terningens BUND — færre dårlige slag.'));
+      c.appendChild(psCard('Stald', 'Sikker værdi: staldværdien stiger lidt mere end prisen, men hjælper ikke i løbet.'));
+    } else if (tab === 'bank') {
+      c.appendChild(psCard('🏦 Bank & stilling', 'Her følger I jeres samlede staldværdi (kontanter + hest + jockey + stald) og stillingen mod de andre stalde.'));
+      c.appendChild(psCard('Sådan vinder I', 'Den mest værdifulde stald vinder til sidst — IKKE nødvendigvis løbsvinderen. Løbene giver præmiepenge, men det er totalværdien, der tæller.'));
+    }
     return c;
-  }
-
-  function preseasonDetail() {
-    const all = [].concat.apply([], Object.keys(psInfo()).map((k) => psInfo()[k]));
-    const it = all.find((x) => x.id === ui.psDetail) || all[0];
-    const c = el('div.col');
-    c.appendChild(el('button.btn.sm.ghost', { text: '← Tilbage', onclick: () => { ui.psDetail = null; render(); } }));
-    const card = el('div.card');
-    if (it.cat) card.appendChild(el('span.cat.' + it.cat, { text: catName(it.cat) }));
-    card.appendChild(el('h1', { text: it.name, style: 'font-size:30px;margin:4px 0' }));
-    card.appendChild(el('div.finish-stripe', { style: 'margin:10px 0' }));
-    card.appendChild(el('p', { text: it.desc }));
-    if (it.gives) card.appendChild(el('p.muted', { style: 'margin-top:8px', text: 'Giver: ' + it.gives }));
-    if (it.thresholds) card.appendChild(thresholdInfo(it));
-    c.appendChild(card);
-    return c;
-  }
-
-  function psInfo() {
-    const g = { 'Overblik': [], 'Auktionsøvelser': [], 'Pengeopgaver': [], 'Altid tilgængelige': [], 'Investering': [] };
-    g['Overblik'].push({ id: 'win', name: 'Sådan vinder I', desc: 'Den mest værdifulde stald vinder til sidst: kontanter + hest + jockey + stald. Løbsvinderen er ikke nødvendigvis den samlede vinder.' });
-    g['Overblik'].push({ id: 'flow', name: 'Spillets gang', desc: 'Hver runde: auktion → opgaver og handel → løb → stilling. Til sidst det store finaleløb og vinderafsløring.' });
-    (S.auction.exercises || []).forEach((ex) => g['Auktionsøvelser'].push({ id: ex.id, name: ex.name, cat: ex.category, desc: ex.description, gives: ex.gives, thresholds: ex.thresholds, lowerIsBetter: ex.lowerIsBetter }));
-    g['Pengeopgaver'].push({ id: 'tip13', name: 'Tip en 13\'er', desc: '13 spørgsmål. I får kontanter pr. rigtige svar. Cooldown mellem forsøg.' });
-    g['Pengeopgaver'].push({ id: 'tidslinje', name: 'Tidslinje', desc: 'Sæt 5 begivenheder i korrekt kronologisk rækkefølge for en kontant belønning.' });
-    g['Pengeopgaver'].push({ id: 'dyst', name: 'Dyst', desc: 'Udfordr en anden stald til en estimerings-duel — bedst af 3. Vinderen får kontanter.' });
-    g['Altid tilgængelige'].push({ id: 'puzzle', name: 'Puslespil', desc: 'Et langt team-puslespil. Fuldfør det før finalen for at få jeres Derby-licens.' });
-    g['Altid tilgængelige'].push({ id: 'horseStyling', name: 'Pynt jeres hest', desc: 'Dekorér jeres hobbyhest. Bedømmes i den kreative showcase — giver bonus til staldværdien.' });
-    g['Altid tilgængelige'].push({ id: 'stableSign', name: 'Staldskilt', desc: 'Design jeres staldskilt eller våbenskjold. Bedømmes i showcasen.' });
-    g['Investering'].push({ id: 'inv-horse', name: 'Hest', desc: 'Køb fart. Hesten løfter terningens TOP — bedre chance for høje slag i løbet.' });
-    g['Investering'].push({ id: 'inv-jockey', name: 'Jockey', desc: 'Køb stabilitet. Jockeyen løfter terningens BUND — færre dårlige slag.' });
-    g['Investering'].push({ id: 'inv-stable', name: 'Stald', desc: 'Sikker investering: staldværdien stiger typisk mere end prisen. Påvirker ikke løbet.' });
-    return g;
   }
 
   // ---------- WARM-UP ----------
@@ -223,7 +250,7 @@
     const top = (a.topBids || []).find((b) => b.exerciseId === ex.id);
     const iLead = top && top.teamId === me.id;
     const outbid = myBid && top && !iLead && top.amount > myBid.amount;
-    const t = el('div.ex-tile' + (ex.currentOwnerTeamId === me.id ? '.owned' : '') + (outbid ? '.outbid' : ''));
+    const t = el('div.ex-tile.cat-top-' + ex.category + (ex.currentOwnerTeamId === me.id ? '.owned' : '') + (outbid ? '.outbid' : ''));
     t.appendChild(el('div.row.between', {}, [el('span.cat.' + ex.category, { text: catName(ex.category) }), ex.currentOwnerTeamId ? el('span.chip', { text: ownerName(ex.currentOwnerTeamId) }) : el('span.chip.gold', { text: 'Ledig' })]));
     t.appendChild(el('h3', { text: ex.name, style: 'margin:6px 0 2px' }));
     t.appendChild(el('p.muted', { text: ex.short, style: 'font-size:13px;min-height:34px' }));
@@ -255,7 +282,7 @@
   // ---------- DASHBOARD ----------
   function navbar() {
     const nav = el('div.navbar');
-    const tabs = [['tasks', 'Opgaver'], ['exercise', 'Min øvelse'], ['money', 'Penge'], ['trade', 'Byt'], ['house', 'Auktionshus'], ['invest', 'Invester'], ['bank', 'Bank']];
+    const tabs = [['tasks', '📋 Opgaver'], ['exercise', '🎯 Min øvelse'], ['money', '💰 Penge'], ['trade', '🔁 Byt'], ['house', '🏛️ Auktionshus'], ['invest', '📈 Invester'], ['bank', '🏦 Bank']];
     tabs.forEach(([k, l]) => { const b = el('button' + (ui.sub === k ? '.active' : ''), { text: l }); b.addEventListener('click', () => { ui.sub = k; render(); }); nav.appendChild(b); });
     return nav;
   }
@@ -363,6 +390,7 @@
     c.appendChild(head('Min øvelse', 'Jeres ejede auktionsøvelse.'));
     if (!me.ownedAuctionExerciseId) { c.appendChild(el('div.card', {}, [el('p.muted', { text: 'I ejer ingen auktionsøvelse lige nu. Byd på næste auktion eller byt jer til en.' })])); return c; }
     const ex = S.auction.exercises.find((e) => e.id === me.ownedAuctionExerciseId);
+    if (ex.id === 'mindpuzzle') { c.appendChild(mindpuzzleCard(ex)); return c; }
     const cd = cooldownLeft(ex.id);
     const card = el('div.card');
     card.appendChild(el('span.cat.' + ex.category, { text: catName(ex.category) }));
@@ -385,6 +413,140 @@
     c.appendChild(card);
     return c;
   }
+  // ---------- MIND PUZZLE (Horse Academy) — auto-godkendelse ----------
+  const MP_SWATCH = {
+    orange: '#F5821F', gul: '#FFD500', lyseblaa: '#29ABE2', moerkeblaa: '#1B3F94',
+    lysegroen: '#8CC63F', moerkegroen: '#1D6B45', lilla: '#93278F', pink: '#F06EAA',
+    brun: '#754C29', roedhvid: 'repeating-linear-gradient(45deg,#D7182A 0 8px,#fff 8px 16px)',
+  };
+  function mpSwatch(colorId) {
+    if (!MP_SWATCH[colorId]) return null;
+    return el('span', { style: `display:inline-block;width:22px;height:22px;border-radius:6px;border:1.5px solid rgba(0,0,0,.25);vertical-align:middle;background:${MP_SWATCH[colorId]}` });
+  }
+  function mpLoad() {
+    TG.emit('team:mindpuzzleGet').then((r) => {
+      if (!r.ok) return check(r);
+      ui.mindpuzzle = { data: r, checking: false, answers: {}, result: null };
+      render();
+    });
+  }
+  function mindpuzzleCard(ex) {
+    const me = S.me;
+    const wrap = el('div.col');
+    const mp = ui.mindpuzzle;
+    const cd = cooldownLeft('mindpuzzle');
+    const card = el('div.card');
+    card.appendChild(el('span.cat.money', { text: 'Penge' }));
+    card.appendChild(el('h2', { text: 'Mind Puzzle — Horse Academy', style: 'margin:4px 0' }));
+
+    // Ingen data hentet endnu → hent (viser aktuelt niveau)
+    if (!mp || !mp.data) {
+      card.appendChild(el('p.muted', { text: 'Byg banen på spillepladen, så hesten kommer fra start til mål og hopper over forhindringerne i rækkefølgen på opgavekortet. Godkendelsen klarer tabletten — ingen instruktør nødvendig.' }));
+      const b = el('button.btn.gold.block.lg', { text: 'Vis vores niveau', style: 'margin-top:12px' });
+      b.addEventListener('click', mpLoad);
+      card.appendChild(b);
+      wrap.appendChild(card);
+      return wrap;
+    }
+    const d = mp.data;
+
+    // Alle niveauer klaret
+    if (d.done) {
+      card.appendChild(el('div.center', { style: 'padding:18px' }, [
+        el('div', { style: 'font-size:42px', text: '🏆' }),
+        el('h3', { text: 'ALLE 20 NIVEAUER GENNEMFØRT!' }),
+        el('p.muted', { text: 'Vildt godt gået. Overvej at bytte øvelsen væk — den giver ikke mere nu.' }),
+      ]));
+      wrap.appendChild(card);
+      return wrap;
+    }
+
+    card.appendChild(el('div.row.between', { style: 'margin:4px 0' }, [
+      el('span.chip.turf', { text: `Niveau ${d.level} af ${d.totalLevels} · ${d.tier}` }),
+      el('span.num', { style: 'color:var(--gold)', text: '+' + sd(d.nextReward) }),
+    ]));
+
+    // Resultat efter tjek
+    if (mp.result) {
+      const r = mp.result;
+      if (r.approved) {
+        card.appendChild(el('div.center', { style: 'padding:16px' }, [
+          el('div', { style: 'font-size:38px', text: '✅' }),
+          el('h3', { text: `Niveau ${r.level} godkendt!` }),
+          el('p', { html: `+ <b>${sd(r.reward)}</b> er sat ind på kontoen.` }),
+          r.done ? el('p', { style: 'margin-top:6px', text: '🏆 I har gennemført ALLE niveauer!' }) : el('p.muted', { style: 'margin-top:6px', text: 'Næste niveau låses op, når cooldown er udløbet.' }),
+        ]));
+        const b = el('button.btn.block', { text: 'Videre' });
+        b.addEventListener('click', () => { ui.mindpuzzle = null; render(); });
+        card.appendChild(b);
+      } else {
+        card.appendChild(el('div.center', { style: 'padding:16px' }, [
+          el('div', { style: 'font-size:38px', text: '❌' }),
+          el('h3', { text: 'Det matcher ikke banen' }),
+          el('p.muted', { text: `Tjek jeres løsning og prøv igen om ${r.penaltySeconds || 60} sekunder. I får nye kontrolspørgsmål.` }),
+        ]));
+        const b = el('button.btn.block', { text: 'Tilbage til opgaven' });
+        b.addEventListener('click', () => { ui.mindpuzzle = null; mpLoad(); });
+        card.appendChild(b);
+      }
+      wrap.appendChild(card);
+      return wrap;
+    }
+
+    // Kontrolspørgsmål (godkendelsesflow)
+    if (mp.checking) {
+      card.appendChild(el('p.muted', { style: 'margin:6px 0', text: 'Svar ud fra jeres byggede bane — lad den stå urørt, mens I svarer!' }));
+      d.questions.forEach((q, qi) => {
+        const box = el('div', { style: 'margin:10px 0' });
+        box.appendChild(el('div', { style: 'font-weight:600;margin-bottom:6px', text: (qi + 1) + '. ' + q.text }));
+        const row = el('div.row.wrap', { style: 'gap:8px' });
+        q.options.forEach((opt) => {
+          const sw = q.type === 'color' ? mpSwatch(opt.id) : null;
+          const b = el('button.btn.sm.ghost', { style: 'flex:1;min-width:130px;display:flex;align-items:center;justify-content:center;gap:8px' });
+          if (sw) b.appendChild(sw);
+          b.appendChild(el('span', { text: opt.label }));
+          if (mp.answers[qi] === opt.id) b.classList.add('gold');
+          b.addEventListener('click', () => { mp.answers[qi] = opt.id; render(); });
+          row.appendChild(b);
+        });
+        box.appendChild(row);
+        card.appendChild(box);
+      });
+      const ready = d.questions.every((_, qi) => mp.answers[qi] != null);
+      const submit = el('button.btn.gold.block.lg', { text: 'Godkend vores løsning', style: 'margin-top:8px', disabled: ready ? null : 'true' });
+      submit.addEventListener('click', () => {
+        const answers = d.questions.map((_, qi) => mp.answers[qi]);
+        TG.emit('team:mindpuzzleSubmit', { answers }).then((r) => { if (!r.ok) return check(r); mp.result = r; render(); });
+      });
+      card.appendChild(submit);
+      const back = el('button.btn.sm.ghost.block', { text: '← Tilbage (banen er ikke klar)', style: 'margin-top:6px' });
+      back.addEventListener('click', () => { mp.checking = false; mp.answers = {}; render(); });
+      card.appendChild(back);
+      wrap.appendChild(card);
+      return wrap;
+    }
+
+    // Opgavevisning: challenge-billede + start godkendelse
+    card.appendChild(el('p.muted', { style: 'margin:4px 0', text: 'Byg banen så hesten rider fra start-bogstavet, hopper over forhindringerne i rækkefølgen herunder og ender ved den røde bom.' }));
+    const img = el('img', { src: d.image, alt: `Challenge ${d.book}`, style: 'width:100%;border-radius:12px;border:1px solid var(--line);margin:8px 0' });
+    card.appendChild(img);
+    card.appendChild(el('p.muted', { style: 'font-size:12px', text: `Hæftets challenge ${d.book} · Når banen er bygget, stiller tabletten ${d.questions.length} kontrolspørgsmål om jeres løsning.` }));
+    const go = el('button.btn.gold.block.lg', { text: cd ? `Cooldown ${cd}` : 'Vi er færdige — godkend banen', style: 'margin-top:10px', disabled: cd ? 'true' : null });
+    go.setAttribute('data-cooldown', 'mindpuzzle');
+    go.addEventListener('click', () => {
+      // Hent friske spørgsmål lige inden tjek (nyt tilfældigt udtræk)
+      TG.emit('team:mindpuzzleGet').then((r) => {
+        if (!r.ok) return check(r);
+        if (r.cooldownLeft) { toast('Cooldown — vent lidt endnu.', 'err'); return; }
+        ui.mindpuzzle = { data: r, checking: true, answers: {}, result: null };
+        render();
+      });
+    });
+    card.appendChild(go);
+    wrap.appendChild(card);
+    return wrap;
+  }
+
   function thresholdInfo(ex) {
     if (!ex.thresholds) return el('span');
     const order = ['pass', 'bronze', 'silver', 'gold'];
@@ -398,10 +560,9 @@
     const c = el('div.col');
     c.appendChild(head('Pengeopgaver', 'Løs for kontanter. Cooldown efter hvert forsøg.'));
     if (ui.tip13) { c.appendChild(tip13Card()); return c; }
-    if (ui.tidslinje) { c.appendChild(tidslinjeCard()); return c; }
     // launchers
     c.appendChild(taskLauncher('Tip en 13\'er', '13 spørgsmål — 100 SD pr. rigtige.', 'tip13', () => TG.emit('team:tip13Get').then((r) => { if (!r.ok) return check(r); ui.tip13 = { data: r, answers: {}, result: null }; render(); })));
-    c.appendChild(taskLauncher('Tidslinje', 'Sæt 5 begivenheder i rækkefølge — 300 SD.', 'tidslinje', () => TG.emit('team:tidslinjeGet').then((r) => { if (!r.ok) return check(r); ui.tidslinje = { data: r, order: r.items.slice(), result: null }; render(); })));
+    c.appendChild(tidslinjeStationCard());
     c.appendChild(dystCard());
     return c;
   }
@@ -434,29 +595,12 @@
     card.appendChild(submit);
     return card;
   }
-  function tidslinjeCard() {
-    const T = ui.tidslinje;
+  // Tidslinjen løses ved Tidslinje-stationen (egen tablet) — her vises kun status.
+  function tidslinjeStationCard() {
+    const cd = cooldownLeft('tidslinje');
     const card = el('div.card');
-    card.appendChild(el('div.row.between', {}, [el('h3', { text: 'Tidslinje' }), backBtn(() => { ui.tidslinje = null; render(); })]));
-    if (T.result) {
-      card.appendChild(el('div.center', { style: 'padding:16px' }, [el('h2', { text: T.result.success ? 'Korrekt! 🎉' : 'Ikke helt…' }), el('p', { style: 'margin-top:8px', html: T.result.success ? '+ <b>' + sd(T.result.reward) + '</b>' : 'Rigtig rækkefølge: ' + T.result.correctOrder.join(' → ') })]));
-      const done = el('button.btn.block', { text: 'Færdig' }); done.addEventListener('click', () => { ui.tidslinje = null; render(); }); card.appendChild(done);
-      return card;
-    }
-    card.appendChild(el('p.muted', { text: T.data.title, style: 'margin-bottom:8px' }));
-    const list = el('div.list-move');
-    T.order.forEach((it, idx) => {
-      const item = el('div.item');
-      item.appendChild(el('span.badge', { style: 'width:28px;height:28px;background:var(--navy)', text: String(idx + 1) }));
-      item.appendChild(el('span', { style: 'flex:1', text: it.label }));
-      const up = el('button.btn.sm.ghost', { text: '▲', disabled: idx === 0 ? 'true' : null }); up.addEventListener('click', () => { const a = T.order; [a[idx - 1], a[idx]] = [a[idx], a[idx - 1]]; render(); });
-      const dn = el('button.btn.sm.ghost', { text: '▼', disabled: idx === T.order.length - 1 ? 'true' : null }); dn.addEventListener('click', () => { const a = T.order; [a[idx + 1], a[idx]] = [a[idx], a[idx + 1]]; render(); });
-      item.appendChild(up); item.appendChild(dn); list.appendChild(item);
-    });
-    card.appendChild(list);
-    const submit = el('button.btn.gold.block.lg', { text: 'Aflever rækkefølge', style: 'margin-top:10px' });
-    submit.addEventListener('click', () => TG.emit('team:tidslinjeSubmit', { orderedIds: T.order.map((i) => i.id) }).then((r) => { if (!r.ok) return check(r); T.result = r; render(); }));
-    card.appendChild(submit);
+    card.appendChild(el('div.row.between', {}, [el('h3', { text: '🕰️ Tidslinjen' }), cd ? el('span.chip.red', { text: 'Cooldown ' + cd, 'data-cooldown': 'tidslinje' }) : el('span.chip.turf', { text: 'Klar' })]));
+    card.appendChild(el('p.muted', { style: 'margin:6px 0', text: 'Læg de fysiske kort i kronologisk rækkefølge — 300 SD pr. korrekt tidslinje. Løses ved Tidslinje-stationens tablet: gå derover og vælg jeres stald på skærmen.' }));
     return card;
   }
   function dystCard() {
@@ -548,10 +692,10 @@
   function houseView() {
     const me = S.me;
     const c = el('div.col');
-    c.appendChild(head('Auktionshus', 'Byt jeres øvelse til en ledig — mod et gebyr.'));
+    c.appendChild(head('Auktionshus', 'Byt jeres øvelse til en ledig — mod et lille fast gebyr.'));
     if (!me.ownedAuctionExerciseId) { c.appendChild(el('div.card', {}, [el('p.muted', { text: 'I ejer ingen øvelse at bytte.' })])); return c; }
-    const fee = Math.round(me.ownedExercisePurchasePrice * (S.config.auctionHouseExchangeRate || 0.5));
-    c.appendChild(el('div.card', {}, [el('p', { html: `Byttegebyr: <b>${sd(fee)}</b> (50% af jeres købspris).` })]));
+    const fee = S.config.auctionHouseExchangeFee != null ? S.config.auctionHouseExchangeFee : Math.round(me.ownedExercisePurchasePrice * (S.config.auctionHouseExchangeRate || 0.5));
+    c.appendChild(el('div.card', {}, [el('p', { html: `Byttegebyr: <b>${sd(fee)}</b> — fast pris uanset øvelse.` })]));
     const free = S.auction.exercises.filter((e) => !e.currentOwnerTeamId);
     if (!free.length) c.appendChild(el('div.card', {}, [el('p.muted', { text: 'Ingen ledige øvelser i auktionshuset lige nu.' })]));
     free.forEach((ex) => {
@@ -569,10 +713,13 @@
   function investView() {
     const c = el('div.col');
     c.appendChild(head('Investér', 'Hesten løfter toppen, jockeyen bunden. Stald = sikker værdi.'));
-    const groups = [['horse', 'Hest', 'burgundy'], ['jockey', 'Jockey', 'turf'], ['stable', 'Stald', 'gold']];
-    groups.forEach(([type, label]) => {
-      const card = el('div.card');
-      card.appendChild(el('h3', { text: label }));
+    const groups = [['horse', 'Hest', 'cat-top-horse', 'hest-opgradering'], ['jockey', 'Jockey', 'cat-top-jockey', 'jockey'], ['stable', 'Stald', 'cat-top-money', 'hestesko']];
+    groups.forEach(([type, label, catClass, icon]) => {
+      const card = el('div.card.' + catClass);
+      const hd = el('div.row', { style: 'align-items:center;gap:10px' });
+      hd.appendChild(TG.assetImg(icon, { style: 'width:30px;height:30px' }));
+      hd.appendChild(el('h3', { text: label }));
+      card.appendChild(hd);
       ((S.config.investmentOptions || {})[type] || []).forEach((p) => {
         const bought = (S.me.investmentsMade || {})[p.id] >= (S.config.maxPurchasesPerOption || 1);
         const row = el('div.row.between', { style: 'padding:8px 0;border-bottom:1px dashed var(--line)' });
@@ -693,7 +840,7 @@
   }
 
   // ---------- helpers ----------
-  function head(title, sub) { const h = el('div', { style: 'margin:4px 0 6px' }); h.appendChild(el('h1', { text: title, style: 'font-size:30px' })); if (sub) h.appendChild(el('p.muted', { text: sub })); return h; }
+  function head(title, sub) { const h = el('div', { style: 'margin:4px 0 10px' }); h.appendChild(el('h1', { text: title, style: 'font-size:30px' })); h.appendChild(el('div.head-accent')); if (sub) h.appendChild(el('p.muted', { text: sub })); return h; }
   function backBtn(fn) { const b = el('button.btn.sm.ghost', { text: '← Tilbage' }); b.addEventListener('click', fn); return b; }
   function catName(c) { return c === 'money' ? 'Penge' : c === 'jockey' ? 'Jockey' : 'Hest'; }
   function ownerName(id) { const t = S.teams.find((x) => x.id === id); return t ? t.stableName : '—'; }
