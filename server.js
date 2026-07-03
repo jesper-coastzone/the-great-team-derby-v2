@@ -54,6 +54,7 @@ app.get('/', (req, res) => res.sendFile(path.join(PUBLIC, 'index.html')));
 app.get('/host', page('host'));
 app.get('/screen', page('screen'));
 app.get('/team', page('team'));
+app.get('/station', page('station'));
 
 // Netværksinfo til host (viser hvilke URL'er enhederne skal bruge).
 app.get('/api/net', (req, res) => {
