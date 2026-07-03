@@ -59,6 +59,7 @@
     row.appendChild(txt('Antal runder', 'totalRounds', '2', 'number'));
     row.appendChild(txt('Rundelængde (min)', 'roundMin', '20', 'number'));
     row.appendChild(txt('Auktionslængde (sek)', 'auctionSec', '180', 'number'));
+    row.appendChild(txt('Antal bots (0-3)', 'numBots', '0', 'number'));
     card.appendChild(row);
     const warm = el('label.row', { style: 'gap:8px;margin:8px 0' }); const cb = el('input', { type: 'checkbox' }); cb.checked = true; f.warm = cb; warm.appendChild(cb); warm.appendChild(el('span', { text: 'Inkludér warm-up løb (startkapital)' })); card.appendChild(warm);
     const btn = el('button.btn.gold.block.lg', { text: 'Opret spil' });
@@ -67,6 +68,7 @@
         eventName: f.eventName.value, programItems: prog.value.split('\n').map((s) => s.trim()).filter(Boolean),
         numTeams: Number(f.numTeams.value), totalRounds: Number(f.totalRounds.value),
         roundLengthSeconds: Number(f.roundMin.value) * 60, auctionLengthSeconds: Number(f.auctionSec.value),
+        numBots: Number(f.numBots.value) || 0,
         includeWarmup: cb.checked,
       };
       TG.emit('host:createGame', settings).then((r) => {
@@ -136,6 +138,8 @@
     const btn = (label, ev, payload, cls) => { const b = el('button.btn' + (cls || ''), { text: label }); b.addEventListener('click', () => TG.emit(ev, payload).then(check)); return b; };
 
     if (phase === 'warmup') {
+      // Automatisk warm-up: scriptet løb der ender uafgjort — ingen præmier
+      box.appendChild(btn('▶ Afspil warm-up løb (automatisk)', 'host:autoWarmup', {}, '.gold'));
       box.appendChild(btn(S.warmupPaid ? '✓ Startkapital udbetalt' : 'Udbetal startkapital til alle', 'host:payWarmup', {}, '.gold'));
       box.appendChild(raceControls());
     } else if (phase === 'auction') {
@@ -152,7 +156,17 @@
       row.appendChild(btn('Start rundetimer', 'host:startRoundTimer', {}, '.turf'));
       row.appendChild(btn('Stop timer', 'host:stopRoundTimer', {}));
       box.appendChild(row);
-      if (S.timers && S.timers.round) box.appendChild(el('div.big-num', { style: 'font-size:32px;color:var(--navy)', text: TG.countdown(S.timers.round.endsAt), 'data-endsat': S.timers.round.endsAt }));
+      if (S.timers && S.timers.round) {
+        // Timer-visning + løbende justering af rundetiden
+        const timerRow = el('div.row.wrap', { style: 'align-items:center;gap:8px' });
+        timerRow.appendChild(el('div.big-num', { style: 'font-size:32px;color:var(--navy)', text: TG.countdown(S.timers.round.endsAt), 'data-endsat': S.timers.round.endsAt }));
+        [[-60, '−1 min'], [60, '+1 min'], [300, '+5 min']].forEach(([d, l]) => {
+          const x = el('button.btn.sm.ghost', { text: l });
+          x.addEventListener('click', () => TG.emit('host:adjustRoundTimer', { deltaSeconds: d }).then(check));
+          timerRow.appendChild(x);
+        });
+        box.appendChild(timerRow);
+      }
     } else if (phase === 'race' || phase === 'final-race') {
       box.appendChild(raceControls());
     } else if (phase === 'final-ready') {
