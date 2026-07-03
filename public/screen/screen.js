@@ -88,7 +88,7 @@
     const c = el('div', { style: 'flex:1' });
     c.appendChild(el('div.eyebrow', { text: 'Dagens dyst' }));
     c.appendChild(el('h1', { text: 'The Great Team Derby' }));
-    c.appendChild(el('p.lead', { text: 'Samarbejde, strategi, investeringer og performance. Byg jeres stald — og gør den mest værdifuld.' }));
+    c.appendChild(el('p.lead', { text: 'Samarbejde, strategi, investeringer og forandringsparathed. Byg jeres stald — og gør den mest værdifuld, også når planen vælter.' }));
     row.appendChild(c);
     row.appendChild(TG.assetImg('hest-og-jockey', { style: 'width:34vw;max-height:58vh' }));
     return row;
@@ -104,7 +104,7 @@
   function howToWin() {
     const c = el('div');
     c.appendChild(el('h1', { text: 'Sådan vinder I', style: 'font-size:5vw' }));
-    const steps = ['Løs opgaver og tjen Staldollars', 'Vind løb og få præmiepenge', 'Investér i hest, jockey og stald', 'Byt og træf skarpe beslutninger'];
+    const steps = ['Løs opgaver og tjen Staldollars', 'Vind løb og få præmiepenge', 'Investér i hest, jockey og stald', 'Byt, justér planen og træf skarpe beslutninger'];
     const list = el('div', { style: 'margin-top:1vh' });
     steps.forEach((s, i) => list.appendChild(el('div.row', { style: 'font-size:2vw;padding:.6vh 0' }, [el('span.num', { style: 'color:var(--gold);width:2.5vw', text: String(i + 1) }), el('span', { text: s })])));
     c.appendChild(list);
@@ -136,7 +136,7 @@
     fin.appendChild(el('div', { style: 'width:4vw;height:4vw;flex:none', html: TG.assetTag('pokal') }));
     fin.appendChild(el('div', {}, [
       el('div', { style: 'font-family:var(--font-display);font-weight:800;font-size:1.8vw', text: 'Til sidst: The Great Team Derby' }),
-      el('div', { style: 'font-size:1.15vw;opacity:.85', text: 'Væddemål, store præmier — og den mest værdifulde stald vinder' }),
+      el('div', { style: 'font-size:1.15vw;opacity:.85', text: 'Væddemål, store præmier og plads til comeback — den mest værdifulde stald vinder' }),
     ]));
     bottom.appendChild(fin);
     c.appendChild(bottom);
@@ -150,7 +150,7 @@
       { label: 'Min øvelse', title: 'Min øvelse', eyebrow: 'Fane 2 af 7', desc: 'Den auktionsøvelse I ejer. Kald instruktøren til et officielt forsøg — succes giver kontanter eller point til hest og jockey.' },
       { label: 'Penge', title: 'Pengeopgaver', eyebrow: 'Fane 3 af 7', desc: 'Tip en 13\'er, Tidslinje og Dyst giver hurtige Staldollars. Der er cooldown — så fordel jer, og hav altid noget i gang.' },
       { label: 'Byt', title: 'Byttehandel', eyebrow: 'Fane 4 af 7', desc: 'Byt jeres øvelse med en anden stald — evt. med penge oveni. Begge stalde skal acceptere handlen.' },
-      { label: 'Auktionshus', title: 'Auktionshus', eyebrow: 'Fane 5 af 7', desc: 'Fortrudt jeres køb? Byt til en ledig øvelse mod et gebyr på 50% af jeres købspris.' },
+      { label: 'Auktionshus', title: 'Auktionshus', eyebrow: 'Fane 5 af 7', desc: 'Fortrudt jeres køb? Byt til en ledig øvelse mod et fast gebyr på 100 SD.' },
       { label: 'Invester', title: 'Investering', eyebrow: 'Fane 6 af 7', desc: 'Hesten løfter terningens TOP, jockeyen løfter BUNDEN, stalden er sikker værdi. Max ét køb pr. mulighed — vælg klogt.' },
       { label: 'Bank', title: 'Bank & stilling', eyebrow: 'Fane 7 af 7', desc: 'Jeres samlede staldværdi og stillingen. Husk: den mest værdifulde stald vinder — ikke nødvendigvis løbsvinderen.' },
     ];
@@ -502,7 +502,7 @@
     c.appendChild(grid);
     const qs = el('div', { style: 'margin-top:2.5vh' });
     qs.appendChild(el('div.eyebrow', { text: 'Tal om det ved bordene' }));
-    ['Hvem traf beslutningerne ved auktionen — og hvordan?', 'Hvornår ændrede I strategi — og hvad udløste det?', 'Hvad ville I gøre anderledes, hvis runde 1 kom igen?'].forEach((q, i) => {
+    ['Hvem traf beslutningerne ved auktionen — og hvordan?', 'Hvornår ændrede I strategi — og hvad udløste det?', 'Da noget uventet væltede jeres plan — holdt I fast, eller lagde I om? Og hvad afgjorde det?', 'Hvad ville I gøre anderledes, hvis runde 1 kom igen?'].forEach((q, i) => {
       qs.appendChild(el('div.row', { style: 'font-size:1.7vw;padding:.6vh 0;gap:1vw' }, [el('span', { style: 'color:var(--gold);font-weight:800', text: String(i + 1) + '.' }), el('span', { text: q })]));
     });
     c.appendChild(qs);
