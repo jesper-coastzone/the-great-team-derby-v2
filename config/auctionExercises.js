@@ -17,7 +17,7 @@ const auctionExercises = [
       'Klassisk cornhole-board. I får 5 ærteposer. Øv frit. Når I vil have et officielt forsøg, ' +
       'kalder I på en instruktør. Succes: mindst 2 poser i hullet, ELLER mindst 4 poser på pladen ' +
       '(poser i hullet tæller også som på pladen).',
-    gives: 'Staldollars — belønningen falder for hver succes.',
+    gives: 'Derby Dollars — belønningen falder for hver succes.',
     reward: { start: 1000, decreasePerSuccess: 50, min: 400 },
     cooldownSeconds: 180,
   },
@@ -27,9 +27,9 @@ const auctionExercises = [
     category: 'money',
     short: 'Byg et tårn af hestesko (min. 20 cm).',
     description:
-      'Byg et hus/tårn af hestesko. Succeskriterie: mindst 20 cm højt. Når det er godkendt, får I SD. ' +
+      'Byg et hus/tårn af hestesko. Succeskriterie: mindst 20 cm højt. Når det er godkendt, får I DD. ' +
       'Belønningen falder for hver succes.',
-    gives: 'Staldollars — aftagende belønning.',
+    gives: 'Derby Dollars — aftagende belønning.',
     reward: { start: 1000, decreasePerSuccess: 50, min: 400 },
     cooldownSeconds: 180,
   },
@@ -43,7 +43,7 @@ const auctionExercises = [
       'forhindringsbanen — uden at kunne se noget som helst. Resten af stalden guider hest og jockey ' +
       'gennem banen — KUN ved hjælp af snorene. Kald på en instruktør for et officielt forsøg. ' +
       'Succes: hele banen gennemføres.',
-    gives: 'Staldollars — belønningen falder for hver succes.',
+    gives: 'Derby Dollars — belønningen falder for hver succes.',
     reward: { start: 1000, decreasePerSuccess: 50, min: 400 },
     cooldownSeconds: 180,
   },
