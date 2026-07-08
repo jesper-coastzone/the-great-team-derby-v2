@@ -72,6 +72,7 @@
       case 'stable-setup': return setupView();
       case 'ready-wait': return readyWaitView();
       case 'pre-season': return preseasonView();
+      case 'preseason-dashboard': return preseasonRoundView();
       case 'warmup-race': return warmupView();
       case 'auction': return auctionView();
       case 'round-dashboard': return dashboardView();
@@ -201,10 +202,11 @@
       });
       c.appendChild(grid);
     } else if (tab === 'money') {
-      c.appendChild(psCard('💰 Pengeopgaver', 'Hurtige kontanter med cooldown — fordel jer, så I altid har noget i gang.'));
-      c.appendChild(psCard('Tip en 13\'er', '13 spørgsmål på tabletten — 100 SD pr. rigtigt svar.'));
-      c.appendChild(psCard('🕰️ Tidslinjen', 'Læg de fysiske kort i kronologisk rækkefølge ved Tidslinje-stationens tablet — 300 SD pr. korrekt tidslinje.'));
-      c.appendChild(psCard('⚔️ Dysten', 'Udfordr en anden stald til en estimerings-duel (bedst af 3). Vinderen får 500 SD.'));
+      c.appendChild(psCard('💰 Pengeopgaver', 'Hurtige Derby Dollars med cooldown — fordel jer, så I altid har noget i gang.'));
+      c.appendChild(psCard('Tip en 13\'er', '13 spørgsmål på tabletten — 100 DD pr. rigtigt svar.'));
+      c.appendChild(psCard('🕰️ Tidslinjen', 'Tabletten trækker 5 numre — find de ophængte kort i lokalet, og læg numrene i kronologisk rækkefølge. 300 DD pr. korrekt tidslinje.'));
+      c.appendChild(psCard('🧩 Mind Puzzle', 'Byg banen på spillepladen efter opgavekortet — tabletten godkender selv. 300 DD pr. niveau, og banerne bliver sværere og sværere.'));
+      c.appendChild(psCard('⚔️ Dysten', 'Udfordr en anden stald til en estimerings-duel (bedst af 3). Vinderen får 500 DD.'));
     } else if (tab === 'trade') {
       c.appendChild(psCard('🔁 Byttehandel', 'Byt jeres auktionsøvelse med en anden stald — evt. med Staldollars oveni. Begge stalde skal acceptere handlen. Brug det, når jeres øvelse er ved at være tømt for værdi, eller når en anden øvelse passer bedre til holdet.'));
     } else if (tab === 'house') {
@@ -221,9 +223,23 @@
     return c;
   }
 
+  // ---------- PRE-SEASON PRØVERUNDE (spilbar: kun pengeopgaver + læsestof) ----------
+  function preseasonRoundView() {
+    const c = el('div.col');
+    c.appendChild(head('Pre-season · prøverunden', 'Nu er det alvor på skrømt: Tjen jeres første Derby Dollars på pengeopgaverne — de tæller med i regnskabet!'));
+    c.appendChild(moneyContent());
+    if (!ui.tip13 && !ui.tidslinje && !ui.mindpuzzle) {
+      c.appendChild(el('div.eyebrow', { text: 'Mens I venter på cooldown — læs om de faste opgaver', style: 'margin-top:14px' }));
+      c.appendChild(psCard('Puslespil', 'Et langt team-puslespil, der åbner når sæsonen starter. Fuldfør det før finalen og få jeres Derby-licens — uden den mister I et slag i finaleløbet.'));
+      c.appendChild(psCard('Pynt jeres hest', 'Dekorér jeres hobbyhest. Bedømmes i den kreative showcase og giver bonus til staldværdien.'));
+      c.appendChild(psCard('Design jeres staldskilt', 'Staldens våbenskjold. Bedømmes også i showcasen.'));
+    }
+    return c;
+  }
+
   // ---------- WARM-UP ----------
   function warmupView() {
-    if (S.warmupPaid) return centerMsg('Startkapital modtaget!', 'I har fået <b>5.000 SD</b> i staldkassen.');
+    if (S.warmupPaid) return centerMsg('Startkapital modtaget!', 'I har fået <b>5.000 DD</b> i staldkassen.');
     return centerMsg('Warm-up løb', 'Læn jer tilbage og nyd showet — bagefter får alle stalde startkapital.');
   }
 
@@ -269,7 +285,7 @@
     }
     if (ex.lastPurchasePrice) t.appendChild(el('div.muted', { style: 'font-size:12px;margin-top:4px', text: 'Sidst solgt: ' + sd(ex.lastPurchasePrice) }));
     if (a.status === 'open') {
-      const amt = el('input', { type: 'number', min: '1', placeholder: 'Bud i SD', value: ui.bids[ex.id] || '', style: 'margin-top:8px' });
+      const amt = el('input', { type: 'number', min: '1', placeholder: 'Bud i DD', value: ui.bids[ex.id] || '', style: 'margin-top:8px' });
       amt.addEventListener('input', () => { ui.bids[ex.id] = amt.value; });
       const bid = el('button.btn.sm.gold.block', { text: myBid ? `Ændr bud (${money(myBid.amount)})` : 'Byd', style: 'margin-top:6px' });
       bid.addEventListener('click', () => TG.emit('team:bid', { exerciseId: ex.id, amount: Number(amt.value) }).then((r) => { check(r); if (r.ok) toast('Bud afgivet', 'ok'); }));
@@ -439,9 +455,11 @@
     card.appendChild(el('span.cat.money', { text: 'Penge' }));
     card.appendChild(el('h2', { text: 'Mind Puzzle — Horse Academy', style: 'margin:4px 0' }));
 
-    // Ingen data hentet endnu → hent (viser aktuelt niveau)
+    // Ingen data hentet endnu → hent (viser aktuelt niveau) + eksempel fra opgavebogen
     if (!mp || !mp.data) {
       card.appendChild(el('p.muted', { text: 'Byg banen på spillepladen, så hesten kommer fra start til mål og hopper over forhindringerne i rækkefølgen på opgavekortet. Godkendelsen klarer tabletten — ingen instruktør nødvendig.' }));
+      card.appendChild(el('img', { src: '/assets/mindpuzzle/eksempel.jpg', alt: 'Eksempel fra opgavebogen', style: 'width:100%;border-radius:12px;border:1px solid var(--line);margin:10px 0 4px' }));
+      card.appendChild(el('p.muted', { style: 'font-size:12px', text: 'Sådan læses et opgavekort: CHALLENGE (venstre) viser forhindringernes rækkefølge — her Y→B→D→E→G→J→B og mål ved den røde bom. SOLUTION (højre) viser banen færdigbygget.' }));
       const b = el('button.btn.gold.block.lg', { text: 'Vis vores niveau', style: 'margin-top:12px' });
       b.addEventListener('click', mpLoad);
       card.appendChild(b);
@@ -558,11 +576,18 @@
   // ---------- MONEY TASKS ----------
   function moneyView() {
     const c = el('div.col');
-    c.appendChild(head('Pengeopgaver', 'Løs for kontanter. Cooldown efter hvert forsøg.'));
+    c.appendChild(head('Pengeopgaver', 'Løs for Derby Dollars. Cooldown efter hvert forsøg.'));
+    c.appendChild(moneyContent());
+    return c;
+  }
+  // Genbruges af både runde-dashboardet og pre-season-prøverunden
+  function moneyContent() {
+    const c = el('div.col');
     if (ui.tip13) { c.appendChild(tip13Card()); return c; }
-    // launchers
-    c.appendChild(taskLauncher('Tip en 13\'er', '13 spørgsmål — 100 SD pr. rigtige.', 'tip13', () => TG.emit('team:tip13Get').then((r) => { if (!r.ok) return check(r); ui.tip13 = { data: r, answers: {}, result: null }; render(); })));
-    c.appendChild(tidslinjeStationCard());
+    if (ui.tidslinje) { c.appendChild(tidslinjeCard()); return c; }
+    c.appendChild(taskLauncher('Tip en 13\'er', '13 spørgsmål — 100 DD pr. rigtige.', 'tip13', () => TG.emit('team:tip13Get').then((r) => { if (!r.ok) return check(r); ui.tip13 = { data: r, answers: {}, result: null }; render(); })));
+    c.appendChild(taskLauncher('🕰️ Tidslinjen', 'I trækker 5 numre — find kortene i lokalet og læg dem i kronologisk rækkefølge. 300 DD.', 'tidslinje', () => TG.emit('team:tidslinjeGet').then((r) => { if (!r.ok) return check(r); if (r.cooldownLeft) return toast('Tidslinjen er på cooldown.', 'err'); ui.tidslinje = { cards: r.cards, order: r.cards.slice(), reward: r.nextReward, result: null }; render(); })));
+    c.appendChild(mindpuzzleCard());
     c.appendChild(dystCard());
     return c;
   }
@@ -595,12 +620,43 @@
     card.appendChild(submit);
     return card;
   }
-  // Tidslinjen løses ved Tidslinje-stationen (egen tablet) — her vises kun status.
-  function tidslinjeStationCard() {
-    const cd = cooldownLeft('tidslinje');
-    const card = el('div.card');
-    card.appendChild(el('div.row.between', {}, [el('h3', { text: '🕰️ Tidslinjen' }), cd ? el('span.chip.red', { text: 'Cooldown ' + cd, 'data-cooldown': 'tidslinje' }) : el('span.chip.turf', { text: 'Klar' })]));
-    card.appendChild(el('p.muted', { style: 'margin:6px 0', text: 'Læg de fysiske kort i kronologisk rækkefølge — 300 SD pr. korrekt tidslinje. Løses ved Tidslinje-stationens tablet: gå derover og vælg jeres stald på skærmen.' }));
+  // Tidslinjen v2: 5 tilfældige numre — find de ophængte kort, læg numrene i rækkefølge.
+  function tidslinjeCard() {
+    const T = ui.tidslinje;
+    const card = el('div.card.cat-top-money');
+    card.appendChild(el('div.row.between', {}, [el('h3', { text: '🕰️ Tidslinjen' }), backBtn(() => { ui.tidslinje = null; render(); })]));
+    if (T.result) {
+      if (T.result.success) {
+        card.appendChild(el('div.center', { style: 'padding:14px' }, [
+          el('div', { style: 'font-size:38px', text: '✅' }),
+          el('h2', { text: 'Korrekt rækkefølge!' }),
+          el('p', { style: 'margin-top:6px', html: '+ <b>' + sd(T.result.reward) + '</b>' }),
+        ]));
+        (T.result.correctLabels || []).forEach((l, i) => card.appendChild(el('div.muted', { style: 'font-size:13px;padding:2px 0', text: `${i + 1}. Kort ${T.result.correctCards[i]} — ${l}` })));
+      } else {
+        card.appendChild(el('div.center', { style: 'padding:14px' }, [
+          el('div', { style: 'font-size:38px', text: '❌' }),
+          el('h2', { text: 'Ikke helt rigtigt' }),
+          el('p.muted', { style: 'margin-top:6px', text: 'I får et nyt træk, når cooldown er udløbet.' }),
+        ]));
+      }
+      const done = el('button.btn.block', { text: 'Færdig' }); done.addEventListener('click', () => { ui.tidslinje = null; render(); }); card.appendChild(done);
+      return card;
+    }
+    card.appendChild(el('p.muted', { style: 'margin:6px 0', text: 'Jeres 5 kort hænger i lokalet — find numrene, og læg dem her i KRONOLOGISK rækkefølge (ældst øverst).' }));
+    const list = el('div.list-move');
+    T.order.forEach((n, idx) => {
+      const item = el('div.item');
+      item.appendChild(el('span.badge', { style: 'width:44px;height:44px;background:var(--navy);font-size:18px', text: String(n) }));
+      item.appendChild(el('span', { style: 'flex:1;font-weight:700', text: 'Kort ' + n }));
+      const up = el('button.btn.sm.ghost', { text: '▲', disabled: idx === 0 ? 'true' : null }); up.addEventListener('click', () => { const a = T.order; [a[idx - 1], a[idx]] = [a[idx], a[idx - 1]]; render(); });
+      const dn = el('button.btn.sm.ghost', { text: '▼', disabled: idx === T.order.length - 1 ? 'true' : null }); dn.addEventListener('click', () => { const a = T.order; [a[idx + 1], a[idx]] = [a[idx], a[idx + 1]]; render(); });
+      item.appendChild(up); item.appendChild(dn); list.appendChild(item);
+    });
+    card.appendChild(list);
+    const submit = el('button.btn.gold.block.lg', { text: 'Aflever rækkefølge (+' + money(T.reward) + ' DD)', style: 'margin-top:10px' });
+    submit.addEventListener('click', () => TG.emit('team:tidslinjeSubmit', { orderedNumbers: T.order }).then((r) => { if (!r.ok) return check(r); T.result = r; render(); }));
+    card.appendChild(submit);
     return card;
   }
   function dystCard() {
@@ -663,7 +719,7 @@
     const sel = el('select', { style: 'margin-top:8px' });
     sel.appendChild(el('option', { value: '', text: 'Vælg stald at bytte med…' }));
     others.forEach((t) => { const ex = S.auction.exercises.find((e) => e.id === t.ownedAuctionExerciseId); sel.appendChild(el('option', { value: t.id, text: `${t.stableName} — har ${ex ? ex.name : '?'}` })); });
-    const extra = el('input', { type: 'number', min: '0', placeholder: 'Ekstra betaling fra jer (SD)', style: 'margin-top:8px' });
+    const extra = el('input', { type: 'number', min: '0', placeholder: 'Ekstra betaling fra jer (DD)', style: 'margin-top:8px' });
     const myEx = S.auction.exercises.find((e) => e.id === me.ownedAuctionExerciseId);
     card.appendChild(el('p.muted', { style: 'margin-top:8px', text: 'I giver: ' + (myEx ? myEx.name : '?') }));
     card.appendChild(sel); card.appendChild(extra);
@@ -702,7 +758,7 @@
       const card = el('div.card');
       card.appendChild(el('div.row.between', {}, [el('div', {}, [el('span.cat.' + ex.category, { text: catName(ex.category) }), el('h3', { text: ex.name })]), el('span.chip.gold', { text: 'Ledig' })]));
       card.appendChild(el('p.muted', { text: ex.short, style: 'margin:6px 0' }));
-      const b = el('button.btn.block', { text: `Byt hertil (${money(fee)} SD)` });
+      const b = el('button.btn.block', { text: `Byt hertil (${money(fee)} DD)` });
       b.addEventListener('click', () => TG.emit('team:exchange', { targetExerciseId: ex.id }).then((r) => { check(r); if (r.ok) toast('Byttet!', 'ok'); }));
       card.appendChild(b); c.appendChild(card);
     });
@@ -724,7 +780,7 @@
         const bought = (S.me.investmentsMade || {})[p.id] >= (S.config.maxPurchasesPerOption || 1);
         const row = el('div.row.between', { style: 'padding:8px 0;border-bottom:1px dashed var(--line)' });
         row.appendChild(el('div', {}, [el('b', { text: p.label }), el('div.muted', { style: 'font-size:13px', text: `+${money(p.valueIncrease)} værdi${p.performancePoints ? ' · +' + p.performancePoints + ' point' : ''}` })]));
-        const b = el('button.btn.sm', { text: bought ? '✓ Købt' : money(p.cost) + ' SD', disabled: bought ? 'true' : null });
+        const b = el('button.btn.sm', { text: bought ? '✓ Købt' : money(p.cost) + ' DD', disabled: bought ? 'true' : null });
         if (!bought) b.addEventListener('click', () => TG.emit('team:invest', { assetType: type, productId: p.id }).then((r) => { check(r); if (r.ok) toast('Investeret', 'ok'); }));
         row.appendChild(b); card.appendChild(row);
       });
@@ -788,10 +844,10 @@
     if (myBet) {
       const potential = Math.round(myBet.amount * myBet.odds);
       if (race.status === 'finished') {
-        card.appendChild(el('p', { style: 'margin-top:6px', html: myBet.payout ? `I vandt væddemålet: <b>+${money(myBet.payout)} SD</b> 🎉` : `Væddemålet tabt (−${money(myBet.amount)} SD).` }));
+        card.appendChild(el('p', { style: 'margin-top:6px', html: myBet.payout ? `I vandt væddemålet: <b>+${money(myBet.payout)} DD</b> 🎉` : `Væddemålet tabt (−${money(myBet.amount)} DD).` }));
       } else {
-        card.appendChild(el('div.chip.gold', { style: 'margin-top:6px', text: `Satset: ${money(myBet.amount)} SD til odds ${myBet.odds}` }));
-        card.appendChild(el('p.muted', { style: 'margin-top:6px', text: `Vind løbet og få ${money(potential)} SD tilbage!` }));
+        card.appendChild(el('div.chip.gold', { style: 'margin-top:6px', text: `Satset: ${money(myBet.amount)} DD til odds ${myBet.odds}` }));
+        card.appendChild(el('p.muted', { style: 'margin-top:6px', text: `Vind løbet og få ${money(potential)} DD tilbage!` }));
       }
       return card;
     }
@@ -800,7 +856,7 @@
       return card;
     }
     card.appendChild(el('p.muted', { style: 'margin:6px 0', text: `Jeres odds: ${odds} (sat efter stillingen — jo længere bagud, jo højere odds). Vinder I løbet, får I indsatsen × ${odds}. Taber I, er den tabt.` }));
-    const inp = el('input', { type: 'number', min: '1', placeholder: `Indsats i SD (max ${me.cash})` });
+    const inp = el('input', { type: 'number', min: '1', placeholder: `Indsats i DD (max ${me.cash})` });
     const b = el('button.btn.gold.block', { text: `Sats til odds ${odds}`, style: 'margin-top:8px' });
     b.addEventListener('click', () => TG.emit('team:bet', { amount: Number(inp.value) }).then((r) => { check(r); if (r.ok) toast('Væddemål registreret!', 'ok'); }));
     card.appendChild(inp); card.appendChild(b);
