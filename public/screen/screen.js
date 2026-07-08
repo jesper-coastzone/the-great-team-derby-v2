@@ -332,15 +332,88 @@
   function round() {
     const c = el('div');
     const t = S.timers && S.timers.round ? TG.countdown(S.timers.round.endsAt) : null;
-    c.appendChild(el('div.row.between', {}, [el('h1', { text: S.slide.screenTitle, style: 'font-size:5vw' }), t ? el('div.big-num', { text: t, 'data-endsat': S.timers.round.endsAt }) : null]));
-    c.appendChild(el('p.lead', { text: 'Løs opgaver, byt øvelser, investér — og gør jer klar til løbet.' }));
-    c.appendChild(miniLeaderboard());
+    c.appendChild(el('div.row.between', {}, [el('h1', { text: S.slide.screenTitle, style: 'font-size:4.2vw' }), t ? el('div.big-num', { text: t, 'data-endsat': S.timers.round.endsAt }) : null]));
+    c.appendChild(el('p.lead', { style: 'margin:.2vh 0 .8vh', text: 'Løs opgaver, byt øvelser, investér — og gør jer klar til løbet.' }));
+    c.appendChild(stableOverview());
     return c;
   }
-  function miniLeaderboard() {
-    const box = el('div', { style: 'margin-top:2vh' });
-    (S.ranking || []).slice(0, 5).forEach((r) => box.appendChild(el('div.row.between', { style: 'font-size:1.6vw;padding:.5vh 0;border-bottom:1px solid var(--line)' }, [el('span', { html: `<b>${r.place}.</b> ${r.stableName}` }), el('span.num', { text: sd(r.totalValue) })])));
-    return box;
+
+  // Stald-overblik i runderne: udvikling pr. stald i stedet for ren ranking.
+  // Bedste hest = publikumsfavorit (får fan-boost i løbet). FLIP-animation ved overhaling.
+  const ovPrev = { tops: {}, places: {} };
+  function bestHorseTeamId() {
+    const sorted = [...S.teams].sort((a, b) => (b.horseValue - a.horseValue) || (b.horseLevel - a.horseLevel));
+    if (!sorted.length) return null;
+    // Kun en favorit når én hest reelt er bedst (ikke ved dødt løb, fx i pre-season).
+    if (sorted.length > 1 && sorted[0].horseValue === sorted[1].horseValue && sorted[0].horseLevel === sorted[1].horseLevel) return null;
+    return sorted[0].id;
+  }
+  function stableOverview() {
+    const ranked = S.ranking || [];
+    const favId = bestHorseTeamId();
+    const cols = ranked.length <= 4 ? ranked.length || 1 : Math.ceil(ranked.length / 2);
+    const grid = el('div', { style: `display:grid;grid-template-columns:repeat(${Math.min(4, Math.max(2, cols))},1fr);gap:.9vw;margin-top:.6vh` });
+    ranked.forEach((r) => {
+      const team = S.teams.find((x) => x.id === r.teamId) || {};
+      grid.appendChild(ovCard(r, team, r.teamId === favId));
+    });
+    requestAnimationFrame(() => animateOvertakes(grid));
+    return grid;
+  }
+  function ovRow(icon, label, value) {
+    return el('div.row.between', { style: 'font-size:1.05vw;padding:.28vh 0;border-bottom:1px dashed var(--line)' }, [
+      el('span', { style: 'color:var(--text-dim)', text: `${icon} ${label}` }),
+      el('span.num', { style: 'font-weight:700', text: value }),
+    ]);
+  }
+  function ovCard(r, team, isFav) {
+    const card = el('div.card', {
+      'data-ov-team': r.teamId,
+      style: `position:relative;display:flex;flex-direction:column;gap:.2vw;padding:.9vw 1vw;border-top:.4vw solid ${r.color ? r.color.hex : 'var(--navy)'}` + (isFav ? ';box-shadow:0 0 0 3px var(--gold), var(--shadow)' : ''),
+    });
+    // Header: placering + staldnavn (+ favorit-badge)
+    const head = el('div.row', { style: 'align-items:center;gap:.5vw' }, [
+      el('span', { style: `display:flex;align-items:center;justify-content:center;width:1.9vw;height:1.9vw;border-radius:50%;background:${r.color ? r.color.hex : 'var(--navy)'};color:#fff;font-weight:800;font-size:1vw`, text: String(r.place) }),
+      el('span', { style: 'font-weight:800;font-size:1.25vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis', text: r.stableName }),
+    ]);
+    card.appendChild(head);
+    if (isFav) card.appendChild(el('div', { style: 'font-size:.85vw;font-weight:800;color:var(--burgundy);letter-spacing:.5px', text: '📣 PUBLIKUMSFAVORIT — bedste hest, fan-boost i løbet' }));
+    // Udvikling: hest / jockey / stald / kontant
+    const dice = team.dice ? ` · 🎲 ${team.dice.min}–${team.dice.max}` : '';
+    card.appendChild(ovRow('🐎', (team.horseName || 'Hest') + ` · niv. ${team.horseLevel != null ? team.horseLevel : '-'}`, sd(r.horseValue)));
+    card.appendChild(ovRow('🏇', (team.jockeyName || 'Jockey') + ` · niv. ${team.jockeyLevel != null ? team.jockeyLevel : '-'}`, sd(r.jockeyValue)));
+    card.appendChild(ovRow('🏠', 'Stald', sd(r.stableValue)));
+    card.appendChild(ovRow('💰', 'Kontant', sd(r.cash)));
+    const foot = el('div.row.between', { style: 'margin-top:auto;padding-top:.35vh;align-items:baseline' }, [
+      el('span', { style: 'font-size:.8vw;letter-spacing:1px;text-transform:uppercase;color:var(--text-faint)', text: 'Staldværdi' + dice }),
+      el('span.num', { style: 'font-size:1.7vw;font-weight:800;color:var(--burgundy)', text: sd(r.totalValue) }),
+    ]);
+    card.appendChild(foot);
+    return card;
+  }
+  function animateOvertakes(grid) {
+    const newTops = {}; const newPlaces = {};
+    (S.ranking || []).forEach((r) => { newPlaces[r.teamId] = r.place; });
+    grid.querySelectorAll('[data-ov-team]').forEach((card) => {
+      const id = card.getAttribute('data-ov-team');
+      const rect = card.getBoundingClientRect();
+      newTops[id] = { top: rect.top, left: rect.left };
+      const prev = ovPrev.tops[id];
+      if (prev) {
+        const dx = prev.left - rect.left; const dy = prev.top - rect.top;
+        if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
+          card.animate([{ transform: `translate(${dx}px,${dy}px)` }, { transform: 'translate(0,0)' }], { duration: 700, easing: 'cubic-bezier(.2,.9,.3,1.1)' });
+          const prevPlace = ovPrev.places[id];
+          if (prevPlace != null && newPlaces[id] < prevPlace) {
+            const flash = el('div', { style: 'position:absolute;top:-1.1vw;right:.6vw;background:var(--gold);color:#fff;font-weight:800;font-size:.95vw;padding:.2vw .7vw;border-radius:999px;box-shadow:var(--shadow);z-index:3', text: '🏇 Overhaling!' });
+            card.appendChild(flash);
+            flash.animate([{ opacity: 0, transform: 'scale(.6)' }, { opacity: 1, transform: 'scale(1.08)' }, { opacity: 1, transform: 'scale(1)' }], { duration: 450 });
+            setTimeout(() => { flash.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 400 }).onfinish = () => flash.remove(); }, 2600);
+          }
+        }
+      }
+    });
+    ovPrev.tops = newTops; ovPrev.places = newPlaces;
   }
 
   // ---- race track (v2: levende løb med feed, events og konfetti) ----
