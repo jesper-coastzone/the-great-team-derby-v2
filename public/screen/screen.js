@@ -632,6 +632,71 @@
   function teamName(id) { const t = S.teams.find((x) => x.id === id); return t ? t.stableName : '—'; }
   function teamColor(id) { const t = S.teams.find((x) => x.id === id); return t && t.color ? t.color.hex : 'var(--navy)'; }
 
+  // ---- Lyd: musik + dansk TTS-speaker (styres af host via S.sound) ----
+  const SND = { unlocked: false, players: {} };
+  function sndPlayer(key, src) {
+    if (!SND.players[key]) {
+      const a = new Audio(src);
+      a.loop = true; a.volume = 0.45;
+      a.addEventListener('error', () => { a.broken = true; });
+      SND.players[key] = a;
+    }
+    return SND.players[key];
+  }
+  function sndToggle(a, want) {
+    if (!a || a.broken) return;
+    if (want && a.paused) a.play().catch(() => { a.broken = true; });
+    else if (!want && !a.paused) a.pause();
+  }
+  function syncSound() {
+    if (!S) return;
+    const snd = S.sound || {};
+    const anyOn = snd.roundMusic || snd.raceMusic || snd.tts;
+    let btn = document.getElementById('sndUnlock');
+    if (anyOn && !SND.unlocked) {
+      if (!btn) {
+        btn = el('button#sndUnlock', { text: '🔊 Aktivér lyd', style: 'position:fixed;bottom:18px;right:18px;z-index:80;background:var(--navy);color:var(--on-navy);border:2px solid var(--gold);border-radius:999px;padding:12px 22px;font-size:16px;font-weight:700;cursor:pointer;box-shadow:var(--shadow-lg)' });
+        btn.addEventListener('click', () => {
+          SND.unlocked = true;
+          // Lås både musik og TTS op med brugerens klik (browser-krav)
+          Object.entries({ round: '/assets/audio/runde.mp3', race: '/assets/audio/loeb.mp3' }).forEach(([k, src]) => {
+            const a = sndPlayer(k, src);
+            a.play().then(() => a.pause()).catch(() => {});
+          });
+          if ('speechSynthesis' in window) { const u = new SpeechSynthesisUtterance(''); u.lang = 'da-DK'; speechSynthesis.speak(u); }
+          btn.remove();
+          syncSound();
+        });
+        document.body.appendChild(btn);
+      }
+    } else if (btn) btn.remove();
+    if (!SND.unlocked) return;
+    const kind = S.slide.kind;
+    const inRace = ['warmup-race', 'race', 'final-race'].includes(kind) && S.race && S.race.status !== 'finished';
+    const inRound = ['round', 'preseason-round'].includes(S.phase);
+    sndToggle(sndPlayer('round', '/assets/audio/runde.mp3'), !!snd.roundMusic && inRound && !inRace);
+    sndToggle(sndPlayer('race', '/assets/audio/loeb.mp3'), !!snd.raceMusic && inRace);
+  }
+  function speak(text) {
+    if (!('speechSynthesis' in window)) return;
+    const clean = String(text).replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}]/gu, '').replace(/\s+/g, ' ').trim();
+    if (!clean) return;
+    if (speechSynthesis.pending && speechSynthesis.speaking) return; // undgå kø-ophobning ved hurtige slag
+    const u = new SpeechSynthesisUtterance(clean);
+    u.lang = 'da-DK'; u.rate = 1.06; u.pitch = 1.02;
+    const voice = speechSynthesis.getVoices().find((v) => v.lang && v.lang.toLowerCase().startsWith('da'));
+    if (voice) u.voice = voice;
+    speechSynthesis.speak(u);
+  }
+  function ttsRaceFeed() {
+    if (!SND.unlocked || !S || !S.sound || !S.sound.tts || !S.race) return;
+    const feed = S.race.feed || [];
+    if (window.__ttsRace !== S.race.id) { window.__ttsRace = S.race.id; window.__ttsCount = feed.length ? feed.length - 1 : 0; }
+    while (window.__ttsCount < feed.length) { speak(feed[window.__ttsCount].text); window.__ttsCount++; }
+  }
+  // Hooks: kør lyd-sync ved hver state-opdatering
+  TG.onState(() => { syncSound(); ttsRaceFeed(); });
+
   // opdater countdowns hvert sekund
   setInterval(() => { document.querySelectorAll('[data-endsat]').forEach((n) => { n.textContent = TG.countdown(Number(n.getAttribute('data-endsat'))); }); }, 500);
 })();
