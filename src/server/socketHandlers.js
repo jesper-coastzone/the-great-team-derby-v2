@@ -287,7 +287,10 @@ function register(io) {
     // ---------- TEAM: quiz-motorer (ack med data, ingen broadcast af facit) ----------
     socket.on('team:tip13Get', (_, cb) => { const g = gameOf(); const t = teamOf(); ack(cb, g && t ? tasks.getTip13(g, t) : { ok: false }); });
     socket.on('team:tip13Submit', (p, cb) => { const g = gameOf(); const t = teamOf(); const r = g && t ? tasks.submitTip13(g, t, p.answers || []) : { ok: false }; if (g) rt.pushState(g); ack(cb, r); });
-    // ---------- STATION: Tidslinjen (egen tablet — kun ejer-stalden kan løse) ----------
+    // ---------- TEAM: Tidslinjen v2 (på holdets egen tablet — numre fra puljen på 40) ----------
+    socket.on('team:tidslinjeGet', (_, cb) => { const g = gameOf(); const t = teamOf(); ack(cb, g && t ? tasks.getTidslinje(g, t) : { ok: false }); });
+    socket.on('team:tidslinjeSubmit', (p, cb) => { const g = gameOf(); const t = teamOf(); const r = g && t ? tasks.submitTidslinje(g, t, (p && (p.orderedNumbers || p.orderedIds)) || []) : { ok: false }; if (g) rt.pushState(g); ack(cb, r); });
+    // (Station-events beholdes for bagudkompatibilitet — bruger samme motor)
     socket.on('station:tidslinjeGet', (p, cb) => {
       const g = gameOf(); if (!g) return ack(cb, { ok: false, error: 'Intet spil.' });
       const t = gs.getTeam(g, p && p.teamId);
@@ -296,7 +299,7 @@ function register(io) {
     socket.on('station:tidslinjeSubmit', (p, cb) => {
       const g = gameOf(); if (!g) return ack(cb, { ok: false, error: 'Intet spil.' });
       const t = gs.getTeam(g, p && p.teamId);
-      const r = t ? tasks.submitTidslinje(g, t, (p && p.orderedIds) || []) : { ok: false, error: 'Ukendt hold.' };
+      const r = t ? tasks.submitTidslinje(g, t, (p && (p.orderedNumbers || p.orderedIds)) || []) : { ok: false, error: 'Ukendt hold.' };
       rt.pushState(g);
       ack(cb, r);
     });
