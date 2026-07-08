@@ -61,7 +61,9 @@
       case 'game-flow': return gameFlow();
       case 'stable-setup': return stableSetup();
       case 'ready-check': return readyCheck();
-      case 'pre-season': return preseason();
+      case 'pre-season': case 'preseason-tasks': return preseason();
+      case 'preseason-round': return preseasonRound();
+      case 'auction-intro': return auctionIntro();
       case 'warmup-race': return raceTrack('Warm-up løb');
       case 'auction': return auction();
       case 'round': return round();
@@ -104,7 +106,7 @@
   function howToWin() {
     const c = el('div');
     c.appendChild(el('h1', { text: 'Sådan vinder I', style: 'font-size:5vw' }));
-    const steps = ['Løs opgaver og tjen Staldollars', 'Vind løb og få præmiepenge', 'Investér i hest, jockey og stald', 'Byt, justér planen og træf skarpe beslutninger'];
+    const steps = ['Løs opgaver og tjen Derby Dollars', 'Vind løb og få præmiepenge', 'Investér i hest, jockey og stald', 'Byt, justér planen og træf skarpe beslutninger'];
     const list = el('div', { style: 'margin-top:1vh' });
     steps.forEach((s, i) => list.appendChild(el('div.row', { style: 'font-size:2vw;padding:.6vh 0' }, [el('span.num', { style: 'color:var(--gold);width:2.5vw', text: String(i + 1) }), el('span', { text: s })])));
     c.appendChild(list);
@@ -116,7 +118,7 @@
     c.appendChild(el('h1', { text: 'Spillets gang', style: 'font-size:4.6vw;margin-bottom:2.2vh' }));
     const steps = [
       { t: 'Auktion', d: 'Byd på jeres øvelse', icon: 'hammer-auktion', color: '#6E1F2E' },
-      { t: 'Runde', d: 'Løs opgaver · tjen Staldollars', icon: 'puslespil-opgaver', color: '#C9A227' },
+      { t: 'Runde', d: 'Løs opgaver · tjen Derby Dollars', icon: 'puslespil-opgaver', color: '#C9A227' },
       { t: 'Investér', d: 'Hest · jockey · stald', icon: 'diagram-investering', color: '#2D4A3D' },
       { t: 'Løb', d: 'Slå terninger · vind præmier', icon: 'maalflag', color: '#B83232' },
     ];
@@ -148,7 +150,7 @@
     const tabs = [
       { label: 'Opgaver', title: 'Opgaver', eyebrow: 'Fane 1 af 7', desc: 'Puslespillet, der giver jeres Derby-licens, og de kreative opgaver ligger her. Kald hosten, når I vil have noget godkendt.' },
       { label: 'Min øvelse', title: 'Min øvelse', eyebrow: 'Fane 2 af 7', desc: 'Den auktionsøvelse I ejer. Kald instruktøren til et officielt forsøg — succes giver kontanter eller point til hest og jockey.' },
-      { label: 'Penge', title: 'Pengeopgaver', eyebrow: 'Fane 3 af 7', desc: 'Tip en 13\'er, Tidslinje og Dyst giver hurtige Staldollars. Der er cooldown — så fordel jer, og hav altid noget i gang.' },
+      { label: 'Penge', title: 'Pengeopgaver', eyebrow: 'Fane 3 af 7', desc: 'Tip en 13\'er, Tidslinjen (find de nummererede kort i lokalet), Dysten og Mind Puzzle giver hurtige Derby Dollars. Der er cooldown — så fordel jer, og hav altid noget i gang.' },
       { label: 'Byt', title: 'Byttehandel', eyebrow: 'Fane 4 af 7', desc: 'Byt jeres øvelse med en anden stald — evt. med penge oveni. Begge stalde skal acceptere handlen.' },
       { label: 'Auktionshus', title: 'Auktionshus', eyebrow: 'Fane 5 af 7', desc: 'Fortrudt jeres køb? Byt til en ledig øvelse mod et fast gebyr på 100 SD.' },
       { label: 'Invester', title: 'Investering', eyebrow: 'Fane 6 af 7', desc: 'Hesten løfter terningens TOP, jockeyen løfter BUNDEN, stalden er sikker værdi. Max ét køb pr. mulighed — vælg klogt.' },
@@ -211,6 +213,51 @@
   function puzzleSvg() { return '<svg viewBox="0 0 64 64" width="100%" height="100%"><rect x="12" y="12" width="18" height="18" rx="3" fill="#C9A227"/><rect x="34" y="12" width="18" height="18" rx="3" fill="#1F3E63"/><rect x="12" y="34" width="18" height="18" rx="3" fill="#1F3E63"/><rect x="34" y="34" width="18" height="18" rx="3" fill="#C9A227"/></svg>'; }
   function chartSvg() { return '<svg viewBox="0 0 64 64" width="100%" height="100%"><rect x="12" y="34" width="9" height="18" rx="2" fill="#2D4A3D"/><rect x="27" y="24" width="9" height="28" rx="2" fill="#2D4A3D"/><rect x="42" y="14" width="9" height="38" rx="2" fill="#2D4A3D"/></svg>'; }
   function flagSvg() { return '<svg viewBox="0 0 64 64" width="100%" height="100%"><rect x="14" y="10" width="4" height="44" fill="#1F3E63"/><path d="M18 12 h30 v20 h-30 z" fill="#1F3E63"/><path d="M18 12 h10 v10 h-10 z M38 12 h10 v10 h-10 z M28 22 h10 v10 h-10 z" fill="#FAF6EA"/></svg>'; }
+
+  // ---- pre-season prøverunde: timer + kontant-kapløb ----
+  function preseasonRound() {
+    const c = el('div');
+    const t = S.timers && S.timers.round ? TG.countdown(S.timers.round.endsAt) : null;
+    c.appendChild(el('div.row.between', {}, [el('h1', { text: 'Pre-season er i gang!', style: 'font-size:4.6vw' }), t ? el('div.big-num', { text: t, 'data-endsat': S.timers.round.endsAt }) : null]));
+    c.appendChild(el('p.lead', { text: 'Prøverunden: Løs pengeopgaverne på tabletten — Tip en 13\'er, Tidslinjen, Dysten og Mind Puzzle. Alt hvad I tjener, tæller med!' }));
+    const box = el('div', { style: 'margin-top:2vh' });
+    box.appendChild(el('div.eyebrow', { text: 'Hvem tjener mest?' }));
+    const ranked = [...S.teams].filter((x) => x.joined).sort((a, b) => b.cash - a.cash);
+    ranked.slice(0, 8).forEach((r, i) => box.appendChild(el('div.row.between', { style: 'font-size:1.9vw;padding:.6vh 0;border-bottom:1px solid var(--line)' }, [
+      el('span', { html: `<b style="color:var(--gold)">${i + 1}.</b> ${r.stableName}` }),
+      el('span.num', { text: sd(r.cash) }),
+    ])));
+    c.appendChild(box);
+    return c;
+  }
+
+  // ---- auktionen forklaret (efter warm-up) ----
+  function auctionIntro() {
+    const c = el('div');
+    c.appendChild(el('h1', { text: 'Auktionen — sådan virker den', style: 'font-size:4.2vw;margin-bottom:1.8vh' }));
+    const steps = [
+      { t: 'Byd fra tabletten', d: 'Alle stalde byder samtidig på de 6 specialøvelser', icon: 'hammer-auktion', color: '#6E1F2E' },
+      { t: 'Højeste bud vinder', d: 'Max én øvelse pr. stald — vælg med omhu', icon: 'pokal', color: '#C9A227' },
+      { t: 'Øvelsen arbejder for jer', d: 'Giver Derby Dollars eller hest/jockey-point hele sæsonen', icon: 'penge', color: '#2D4A3D' },
+      { t: 'Fortrudt? Byt!', d: 'Byt med en anden stald — eller i auktionshuset for 100 DD', icon: 'hestesko', color: '#B83232' },
+    ];
+    const row = el('div', { style: 'display:flex;gap:.8vw;align-items:stretch' });
+    steps.forEach((s, i) => {
+      const card = el('div', { style: `flex:1;background:#fff;border-radius:18px;border-top:.55vh solid ${s.color};box-shadow:var(--shadow);padding:1.4vw 1.1vw;text-align:center` });
+      card.appendChild(el('div', { style: 'width:4.6vw;height:4.6vw;margin:0 auto .8vh', html: TG.assetTag(s.icon) }));
+      card.appendChild(el('div', { style: 'font-family:var(--font-display);font-weight:800;font-size:1.7vw;color:var(--navy)', text: (i + 1) + '. ' + s.t }));
+      card.appendChild(el('div', { style: 'font-size:1.1vw;color:var(--text-dim);margin-top:.3vh', text: s.d }));
+      row.appendChild(card);
+    });
+    c.appendChild(row);
+    // De 6 øvelser
+    const exRow = el('div', { style: 'display:flex;gap:.7vw;margin-top:2vh;flex-wrap:wrap' });
+    (S.auction.exercises || []).forEach((ex) => {
+      exRow.appendChild(el('div', { style: 'background:#fff;border:1px solid var(--line);border-radius:999px;padding:.5vw 1.2vw;font-weight:700;font-size:1.2vw;box-shadow:var(--shadow)', text: ex.name }));
+    });
+    c.appendChild(exRow);
+    return c;
+  }
 
   // ---- setup / ready ----
   function stableSetup() {
@@ -395,7 +442,7 @@
       podium.innerHTML = '';
       if (race.results && race.results.length) {
         const row = el('div.row', { style: 'gap:1.4vw;margin-top:1vh;justify-content:center' });
-        race.results.slice(0, 3).forEach((r) => row.appendChild(el('div.chip.gold', { style: 'font-size:1.4vw;padding:.6vw 1.2vw', text: `${r.place}. ${r.stableName}${r.deadHeat ? ' (dødt løb)' : ''} · +${money(r.prize)} SD` })));
+        race.results.slice(0, 3).forEach((r) => row.appendChild(el('div.chip.gold', { style: 'font-size:1.4vw;padding:.6vw 1.2vw', text: `${r.place}. ${r.stableName}${r.deadHeat ? ' (dødt løb)' : ''} · +${money(r.prize)} DD` })));
         podium.appendChild(row);
         if (window.__confettiRace !== race.id) { window.__confettiRace = race.id; confetti(); }
       }
