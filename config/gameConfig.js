@@ -100,17 +100,23 @@ const gameConfig = {
     // Hest/jockey: værdineutrale (1000→1000) men point-tunge — ægte valg mellem
     // likviditet + terninger nu vs. stald-afkast til sidst (ekspert-review pkt. 5)
     horse: [
+      { id: 'horse-0', label: 'Nye hestesko', cost: 500, valueIncrease: 500, performancePoints: 1 },
       { id: 'horse-1', label: 'Bedre foder', cost: 1000, valueIncrease: 1000, performancePoints: 3 },
       { id: 'horse-2', label: 'Elitetræning', cost: 2000, valueIncrease: 2000, performancePoints: 5 },
+      { id: 'horse-3', label: 'Stjernetræner', cost: 3500, valueIncrease: 3500, performancePoints: 8 },
     ],
     jockey: [
+      { id: 'jockey-0', label: 'Nye ridestøvler', cost: 500, valueIncrease: 500, performancePoints: 1 },
       { id: 'jockey-1', label: 'Ridekursus', cost: 1000, valueIncrease: 1000, performancePoints: 3 },
       { id: 'jockey-2', label: 'Mentaltræning', cost: 2000, valueIncrease: 2000, performancePoints: 5 },
+      { id: 'jockey-3', label: 'Personlig fysioterapeut', cost: 3500, valueIncrease: 3500, performancePoints: 8 },
     ],
     stable: [
       // Stald = sikker værdi med lille afkast; max 1 køb pr. option holder det i skak.
+      { id: 'stable-0', label: 'Frisk halm', cost: 500, valueIncrease: 550, performancePoints: 0 },
       { id: 'stable-1', label: 'Ny boks', cost: 1000, valueIncrease: 1100, performancePoints: 0 },
       { id: 'stable-2', label: 'Staldudvidelse', cost: 2000, valueIncrease: 2300, performancePoints: 0 },
+      { id: 'stable-3', label: 'Moderne træningsanlæg', cost: 3500, valueIncrease: 4100, performancePoints: 0 },
     ],
   },
 
