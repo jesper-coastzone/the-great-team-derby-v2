@@ -35,6 +35,7 @@
     root.appendChild(app);
     if (S.slide.tabletMode === 'round-dashboard') root.appendChild(navbar());
     ui.renderedMode = S.slide.tabletMode;
+    celebrateChanges(S.me);
     incomingTradeToast();
   }
 
@@ -143,7 +144,7 @@
   // ---------- PRE-SEASON ----------
   // Samme 7 faner som under runderne (og som vises på storskærmen) — men interaktivt:
   // tryk rundt, læs om funktionerne. Ingen belønninger endnu.
-  const PS_TABS = [['tasks', 'Opgaver'], ['exercise', 'Min øvelse'], ['money', 'Penge'], ['trade', 'Byt'], ['house', 'Auktionshus'], ['invest', 'Invester'], ['bank', 'Bank']];
+  const PS_TABS = [['tasks', '📋 Opgaver'], ['exercise', '🎯 Min øvelse'], ['money', '💰 Penge'], ['trade', '🔁 Byt'], ['house', '🏛️ Auktionshus'], ['invest', '📈 Invester'], ['bank', '🏦 Bank']];
   function preseasonView() {
     const c = el('div.col');
     c.appendChild(head('Pre-season', 'Sådan ser jeres tablet ud under runderne. Tryk rundt i fanerne og læg jeres plan — ingen belønninger endnu.'));
@@ -298,9 +299,88 @@
   // ---------- DASHBOARD ----------
   function navbar() {
     const nav = el('div.navbar');
-    const tabs = [['tasks', '📋 Opgaver'], ['exercise', '🎯 Min øvelse'], ['money', '💰 Penge'], ['trade', '🔁 Byt'], ['house', '🏛️ Auktionshus'], ['invest', '📈 Invester'], ['bank', '🏦 Bank']];
-    tabs.forEach(([k, l]) => { const b = el('button' + (ui.sub === k ? '.active' : ''), { text: l }); b.addEventListener('click', () => { ui.sub = k; render(); }); nav.appendChild(b); });
+    const tabs = [
+      ['tasks', '📋', 'Opgaver'], ['exercise', '🎯', 'Min øvelse'], ['money', '💰', 'Penge'],
+      ['trade', '🔁', 'Byt'], ['house', '🏛️', 'Auktionshus'], ['invest', '📈', 'Invester'], ['bank', '🏦', 'Bank'],
+    ];
+    tabs.forEach(([k, ico, l]) => {
+      const b = el('button' + (ui.sub === k ? '.active' : ''), {}, [
+        el('span.nico', { text: ico }),
+        el('span', { text: l }),
+      ]);
+      b.addEventListener('click', () => { ui.sub = k; render(); });
+      nav.appendChild(b);
+    });
     return nav;
+  }
+
+  // ---------- Gamification: penge-delta, konfetti og niveau-fejring ----------
+  function celebrateChanges(me) {
+    // Kontant-delta som flydende tal ved "Kontant"-metrikken
+    const prev = ui.prevCash;
+    ui.prevCash = me.cash;
+    if (prev != null && me.cash !== prev) {
+      const delta = me.cash - prev;
+      const host = document.querySelector('.topbar .metrics .center');
+      if (host) {
+        const f = el('div.cash-float' + (delta > 0 ? '.plus' : '.minus'), { text: (delta > 0 ? '+' : '−') + money(Math.abs(delta)) + ' DD' });
+        host.appendChild(f);
+        f.animate([
+          { opacity: 0, transform: 'translateY(0)' },
+          { opacity: 1, transform: 'translateY(6px)', offset: 0.2 },
+          { opacity: 1, transform: 'translateY(10px)', offset: 0.75 },
+          { opacity: 0, transform: 'translateY(18px)' },
+        ], { duration: 1600, easing: 'ease-out' }).onfinish = () => f.remove();
+      }
+      if (delta >= 300) emojiBurst(['🎉', '💰', '✨']);
+    }
+    // Niveau-fejring for hest og jockey
+    if (ui.prevHorseLevel != null && me.horseLevel > ui.prevHorseLevel) {
+      toast(`${me.horseName || 'Hesten'} nåede niveau ${me.horseLevel}! 🐎`, 'ok');
+      emojiBurst(['🐎', '⭐', '✨']);
+    }
+    if (ui.prevJockeyLevel != null && me.jockeyLevel > ui.prevJockeyLevel) {
+      toast(`${me.jockeyName || 'Jockeyen'} nåede niveau ${me.jockeyLevel}! 🏇`, 'ok');
+      emojiBurst(['🏇', '⭐', '✨']);
+    }
+    ui.prevHorseLevel = me.horseLevel;
+    ui.prevJockeyLevel = me.jockeyLevel;
+  }
+  function emojiBurst(emojis) {
+    if (document.querySelector('.burst-wrap')) return; // én ad gangen
+    const wrap = el('div.burst-wrap');
+    for (let i = 0; i < 10; i++) {
+      const s = el('span', { text: emojis[i % emojis.length] });
+      const x = 15 + Math.random() * 70;
+      s.style.left = x + '%';
+      s.style.bottom = '-30px';
+      wrap.appendChild(s);
+      s.animate([
+        { transform: 'translateY(0) rotate(0deg)', opacity: 1 },
+        { transform: `translateY(-${45 + Math.random() * 35}vh) rotate(${(Math.random() - 0.5) * 260}deg)`, opacity: 0 },
+      ], { duration: 1100 + Math.random() * 600, easing: 'cubic-bezier(.15,.6,.4,1)', delay: Math.random() * 180 });
+    }
+    document.body.appendChild(wrap);
+    setTimeout(() => wrap.remove(), 2100);
+  }
+
+  // Niveau-progressbar: point optjent mod næste niveau
+  function levelBar(points, level, thresholds, maxLevel) {
+    const t = thresholds || [3, 7, 12, 18];
+    const max = maxLevel || 4;
+    if (level >= max) {
+      return el('div', {}, [
+        el('div.lvlbar.maxed', {}, [el('i', { style: 'width:100%' })]),
+        el('div.lvlhint', { text: 'Maks. niveau! 🏆' }),
+      ]);
+    }
+    const prevT = level > 0 ? t[level - 1] : 0;
+    const nextT = t[level];
+    const pct = Math.max(4, Math.min(100, Math.round(((points - prevT) / (nextT - prevT)) * 100)));
+    return el('div', {}, [
+      el('div.lvlbar', {}, [el('i', { style: `width:${pct}%` })]),
+      el('div.lvlhint', { text: `${points}/${nextT} point til niv. ${level + 1}` }),
+    ]);
   }
 
   function dashboardView() {
@@ -348,13 +428,17 @@
     card.appendChild(top);
     card.appendChild(el('div.finish-stripe', { style: 'margin:12px 0' }));
     const grid = el('div.grid', { style: 'grid-template-columns:1fr 1fr 1fr;gap:8px' });
-    const cell = (label, star, value) => el('div', { style: 'text-align:center;background:#fff;border:1px solid var(--line);border-radius:12px;padding:8px 4px' }, [
+    const cell = (label, star, value, bar) => el('div', { style: 'text-align:center;background:#fff;border:1px solid var(--line);border-radius:12px;padding:8px 6px' }, [
       el('div', { style: 'font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text-faint);font-weight:700', text: label }),
       star != null ? el('div', { style: 'color:var(--gold);font-size:14px;letter-spacing:2px', text: star }) : el('div', { style: 'height:4px' }),
       el('div', { style: 'font-family:var(--font-num);font-weight:800;font-size:16px;color:var(--navy)', text: money(value) }),
+      bar || null,
     ]);
-    grid.appendChild(cell('Hest', stars(me.horseLevel), me.horseValue));
-    grid.appendChild(cell('Jockey', stars(me.jockeyLevel), me.jockeyValue));
+    const cf = S.config || {};
+    grid.appendChild(cell('Hest', stars(me.horseLevel), me.horseValue,
+      levelBar(me.horsePerformancePoints || 0, me.horseLevel, cf.horseLevelThresholds, cf.maxHorseLevel)));
+    grid.appendChild(cell('Jockey', stars(me.jockeyLevel), me.jockeyValue,
+      levelBar(me.jockeyPerformancePoints || 0, me.jockeyLevel, cf.jockeyLevelThresholds, cf.maxJockeyLevel)));
     grid.appendChild(cell('Stald', null, me.stableValue));
     card.appendChild(grid);
     const foot = el('div.row.between', { style: 'margin-top:10px;align-items:baseline' });
