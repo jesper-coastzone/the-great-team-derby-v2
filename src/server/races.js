@@ -45,6 +45,18 @@ function startRace(game, type, round) {
   }
   game.races.push(race);
   game.currentRaceId = race.id;
+  // Publikumsfavorit: bedste hest udpeges automatisk ved løbsstart (host kan stadig ændre det).
+  const af = cfg.audienceFavorite || {};
+  if (af.enabled && game.teams.length > 1) {
+    const sorted = [...game.teams].sort((a, b) => (b.horseValue - a.horseValue) || (b.horseLevel - a.horseLevel));
+    const best = sorted[0];
+    // Kun når én hest reelt er bedst — i warm-up (alle ens) udpeges ingen favorit.
+    if (best.horseValue > sorted[1].horseValue || best.horseLevel > sorted[1].horseLevel) {
+      race.favoriteTeamId = best.id;
+      pushFeed(race, { kind: 'favorite', teamId: best.id, stableName: best.stableName, text: `📣 ${best.stableName} har løbets bedste hest og er publikumsfavorit!` });
+      gs.logEvent(game, `${best.stableName} er publikumsfavorit (bedste hest).`);
+    }
+  }
   gs.logEvent(game, `${type === 'final' ? 'Finaleløb' : 'Løb'} startet (${race.rollsPerTeam} slag).`);
   return { ok: true, race };
 }
