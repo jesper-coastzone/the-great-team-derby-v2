@@ -14,7 +14,7 @@
     on(ev, cb) { socket.on(ev, cb); },
     join(role, opts) { return emit('join', Object.assign({ role }, opts || {})); },
     money(n) { return (Math.round(n) || 0).toLocaleString('da-DK'); },
-    sd(n) { return API.money(n) + ' SD'; },
+    sd(n) { return API.money(n) + ' DD'; },
     save(k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
     load(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
     del(k) { try { localStorage.removeItem(k); } catch (e) {} },
