@@ -127,6 +127,8 @@ function createGame(settings = {}) {
     transactions: [],
     log: [],
     warmupPaid: false,
+    // Lyd på storskærmen — styres af host (musik kræver filer i /assets/audio/)
+    sound: { roundMusic: false, raceMusic: false, tts: false },
   };
 
   for (let i = 1; i <= s.numTeams; i++) game.teams.push(makeTeam(game, i));
@@ -344,6 +346,7 @@ function buildStateFor(game, role, teamId) {
       bets: race.bets || {},
     } : null,
     warmupPaid: game.warmupPaid,
+    sound: game.sound || { roundMusic: false, raceMusic: false, tts: false },
     role,
   };
 

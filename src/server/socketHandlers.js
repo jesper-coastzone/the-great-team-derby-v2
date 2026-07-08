@@ -131,6 +131,12 @@ function register(io) {
     socket.on('host:goto', (p, cb) => hostMut((g) => gm.goToSlide(g, p.index), cb));
     socket.on('host:setScreenMessage', (p, cb) => hostMut((g) => { g.screenMessageOverride = p.message || null; return { ok: true }; }, cb));
     socket.on('host:overrideTablet', (p, cb) => hostMut((g) => { g.tabletModeOverride = p.mode || null; return { ok: true }; }, cb));
+    // Lyd-toggles til storskærmen (rundemusik / løbsmusik / TTS-speaker)
+    socket.on('host:setSound', (p, cb) => hostMut((g) => {
+      g.sound = g.sound || { roundMusic: false, raceMusic: false, tts: false };
+      for (const k of ['roundMusic', 'raceMusic', 'tts']) if (p && typeof p[k] === 'boolean') g.sound[k] = p[k];
+      return { ok: true };
+    }, cb));
 
     // ---------- HOST: økonomi/warmup ----------
     socket.on('host:payWarmup', (_, cb) => hostMut((g) => econ.payWarmup(g), cb));
