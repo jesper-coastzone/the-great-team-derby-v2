@@ -184,6 +184,54 @@ const tidslinjeSets = [
   },
 ];
 
+// ---------- Tidslinjen v2: ÉN pulje med 40 nummererede begivenheder ----------
+// Numrene (n) er bevidst blandede, så nummer-rækkefølgen ALDRIG er kronologisk.
+// Alle årstal er unikke — der er aldrig tvivl om den rigtige rækkefølge.
+// Begivenhedsteksterne står KUN på de fysiske print-ark (4 pr. ark, 10 ark) —
+// tabletten viser kun numrene. Årstal (facit) forlader aldrig serveren.
+const timelineEvents = [
+  { n: 1,  label: 'Den første iPhone lanceres', labelEn: 'The first iPhone is launched', year: 2007 },
+  { n: 2,  label: 'Grundloven underskrives', labelEn: 'The Danish Constitution is signed', year: 1849 },
+  { n: 3,  label: 'Berlinmurens fald', labelEn: 'The fall of the Berlin Wall', year: 1989 },
+  { n: 4,  label: 'Bogtrykkerkunsten opfindes', labelEn: 'The printing press is invented', year: 1440 },
+  { n: 5,  label: 'Danmark befries 5. maj', labelEn: 'Denmark is liberated on 5 May', year: 1945 },
+  { n: 6,  label: 'ChatGPT lanceres', labelEn: 'ChatGPT is launched', year: 2022 },
+  { n: 7,  label: 'Glødepæren opfindes', labelEn: 'The light bulb is invented', year: 1879 },
+  { n: 8,  label: 'Jellingstenen rejses', labelEn: 'The Jelling Stone is raised', year: 965 },
+  { n: 9,  label: 'Danmark vinder EM i fodbold', labelEn: 'Denmark wins the European Football Championship', year: 1992 },
+  { n: 10, label: 'Wright-brødrenes første flyvetur', labelEn: 'The Wright brothers\' first flight', year: 1903 },
+  { n: 11, label: 'Øresundsbroen åbner', labelEn: 'The Øresund Bridge opens', year: 2000 },
+  { n: 12, label: 'Dampmaskinen opfindes', labelEn: 'The steam engine is invented', year: 1712 },
+  { n: 13, label: 'Kvinder får valgret i Danmark', labelEn: 'Danish women gain the right to vote', year: 1915 },
+  { n: 14, label: 'Mount Everest bestiges første gang', labelEn: 'Mount Everest is climbed for the first time', year: 1953 },
+  { n: 15, label: 'Columbus når Amerika', labelEn: 'Columbus reaches the Americas', year: 1492 },
+  { n: 16, label: 'Den første mand på Månen', labelEn: 'The first man on the Moon', year: 1969 },
+  { n: 17, label: 'LEGO grundlægges', labelEn: 'LEGO is founded', year: 1932 },
+  { n: 18, label: 'Titanic synker', labelEn: 'The Titanic sinks', year: 1912 },
+  { n: 19, label: 'USA\'s uafhængighedserklæring', labelEn: 'The US Declaration of Independence', year: 1776 },
+  { n: 20, label: 'COVID-19 lukker Danmark ned', labelEn: 'COVID-19 locks down Denmark', year: 2020 },
+  { n: 21, label: 'Margrethe 2. bliver dronning', labelEn: 'Margrethe II becomes Queen of Denmark', year: 1972 },
+  { n: 22, label: 'Reformationen i Danmark', labelEn: 'The Reformation in Denmark', year: 1536 },
+  { n: 23, label: 'Telefonen opfindes', labelEn: 'The telephone is invented', year: 1876 },
+  { n: 24, label: 'Tjernobyl-ulykken', labelEn: 'The Chernobyl disaster', year: 1986 },
+  { n: 25, label: 'H.C. Andersen fødes', labelEn: 'Hans Christian Andersen is born', year: 1805 },
+  { n: 26, label: 'Storebæltsbroen indvies', labelEn: 'The Great Belt Bridge opens', year: 1998 },
+  { n: 27, label: 'Kalmarunionen dannes', labelEn: 'The Kalmar Union is formed', year: 1397 },
+  { n: 28, label: 'Det første fjernsyn demonstreres', labelEn: 'The first television is demonstrated', year: 1927 },
+  { n: 29, label: 'Bitcoin lanceres', labelEn: 'Bitcoin is launched', year: 2009 },
+  { n: 30, label: 'Den Franske Revolution begynder', labelEn: 'The French Revolution begins', year: 1789 },
+  { n: 31, label: 'Danmark besættes 9. april', labelEn: 'Denmark is occupied on 9 April', year: 1940 },
+  { n: 32, label: 'Eiffeltårnet står færdigt', labelEn: 'The Eiffel Tower is completed', year: 1889 },
+  { n: 33, label: 'MobilePay lanceres', labelEn: 'MobilePay is launched', year: 2013 },
+  { n: 34, label: 'Enevælden indføres i Danmark', labelEn: 'Absolute monarchy is introduced in Denmark', year: 1660 },
+  { n: 35, label: 'Den første mand i rummet', labelEn: 'The first man in space', year: 1961 },
+  { n: 36, label: 'Terrorangrebet 11. september', labelEn: 'The September 11 attacks', year: 2001 },
+  { n: 37, label: 'LEGO-klodsen patenteres', labelEn: 'The LEGO brick is patented', year: 1958 },
+  { n: 38, label: 'Skolepligt indføres i Danmark', labelEn: 'Compulsory schooling is introduced in Denmark', year: 1814 },
+  { n: 39, label: 'YouTube grundlægges', labelEn: 'YouTube is founded', year: 2005 },
+  { n: 40, label: 'Den første pc fra IBM lanceres', labelEn: 'The first IBM PC is launched', year: 1981 },
+];
+
 // ---------- Dyst (estimering, nærmeste vinder) ----------
 const dystQuestions = [
   { q: 'Hvor mange knogler har et voksent menneske?', answer: 206, unit: 'stk' },
@@ -204,5 +252,6 @@ module.exports = {
   alwaysAvailableTasks,
   tip13Sets,
   tidslinjeSets,
+  timelineEvents,
   dystQuestions,
 };

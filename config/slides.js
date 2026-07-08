@@ -10,7 +10,9 @@ const PHASES = {
   INTRO: 'intro',
   SETUP: 'setup',
   PRESEASON: 'preseason',
+  PRESEASON_ROUND: 'preseason-round',
   WARMUP: 'warmup',
+  AUCTION_INTRO: 'auction-intro',
   AUCTION: 'auction',
   ROUND: 'round',
   RACE: 'race',
@@ -19,6 +21,14 @@ const PHASES = {
   FINAL_RACE: 'final-race',
   REVEAL: 'reveal',
 };
+
+// Sæsonnavne i stedet for "Runde 1/2/..." — skalerer med antal runder.
+const SEASONS = ['Forårssæsonen', 'Sommersæsonen', 'Efterårssæsonen', 'Vintersæsonen'];
+function seasonName(r, total) {
+  if (total <= 1) return SEASONS[2];                      // én runde: Efterårssæsonen
+  if (total === 2) return [SEASONS[0], SEASONS[2]][r - 1] || `Sæson ${r}`; // forår + efterår
+  return SEASONS[r - 1] || `Sæson ${r}`;
+}
 
 function buildDeck(settings) {
   const rounds = settings.totalRounds || 2;
@@ -52,30 +62,39 @@ function buildDeck(settings) {
     screenTitle: 'Er alle stalde klar?', tabletMode: 'ready-wait',
     hostHint: 'Se alle hold. Ret navne hvis nødvendigt. Vent til alle er klar.' });
 
-  // ---- Pre-season ----
-  push({ kind: 'pre-season', phase: PHASES.PRESEASON, title: 'Pre-season',
-    screenTitle: 'Pre-season', tabletMode: 'pre-season',
-    hostHint: 'Hold læser regler og planlægger. Ingen belønninger endnu.' });
+  // ---- Pre-season: pengeopgaverne forklares → spilbar prøverunde ----
+  push({ kind: 'preseason-tasks', phase: PHASES.PRESEASON, title: 'Pengeopgaverne',
+    screenTitle: 'Sådan tjener I Derby Dollars', tabletMode: 'pre-season',
+    hostHint: 'Forklar de fire pengeopgaver kort: Tip en 13\'er, Tidslinjen, Dysten og Mind Puzzle. Tablets kan trykke rundt imens.' });
+  push({ kind: 'preseason-round', phase: PHASES.PRESEASON_ROUND, title: 'Pre-season — prøverunden',
+    screenTitle: 'Pre-season er i gang!', tabletMode: 'preseason-dashboard',
+    hostHint: 'Start rundetimeren (fx 10 min). Holdene tjener ÆGTE Derby Dollars på pengeopgaverne og kan læse om de faste opgaver.' });
 
   // ---- Warm-up ----
   if (includeWarmup) {
     push({ kind: 'warmup-race', phase: PHASES.WARMUP, title: 'Warm-up løb',
       screenTitle: 'Warm-up løb', tabletMode: 'warmup-race',
-      hostHint: 'Kør det teatralske warm-up. Til sidst: udbetal startkapital til alle.' });
+      hostHint: 'Tryk "Afspil warm-up løb" — det ender uafgjort. Til sidst: udbetal startkapital til alle.' });
   }
 
-  // ---- Runder ----
+  // ---- Auktionen forklares (efter warm-up, inden første auktion) ----
+  push({ kind: 'auction-intro', phase: PHASES.AUCTION_INTRO, title: 'Auktionen forklaret',
+    screenTitle: 'Auktionen — sådan virker den', tabletMode: 'bank',
+    hostHint: 'Forklar auktionen: 6 specialøvelser, byd fra tabletten, max én øvelse pr. stald. Byt/auktionshus undervejs.' });
+
+  // ---- Sæsoner (runder) ----
   for (let r = 1; r <= rounds; r++) {
-    push({ kind: 'auction', phase: PHASES.AUCTION, title: `Auktion ${r}`,
-      screenTitle: `Auktion ${r}`, tabletMode: 'auction', meta: { round: r, auctionNumber: r },
+    const season = seasonName(r, rounds);
+    push({ kind: 'auction', phase: PHASES.AUCTION, title: `Auktion · ${season}`,
+      screenTitle: `Auktion · ${season}`, tabletMode: 'auction', meta: { round: r, auctionNumber: r },
       hostHint: 'Start auktion → luk → afgør vindere.' });
-    push({ kind: 'round', phase: PHASES.ROUND, title: `Runde ${r}`,
-      screenTitle: `Runde ${r}`, tabletMode: 'round-dashboard', meta: { round: r },
+    push({ kind: 'round', phase: PHASES.ROUND, title: season,
+      screenTitle: season, tabletMode: 'round-dashboard', meta: { round: r },
       hostHint: 'Start rundetimer. Godkend opgaver undervejs.' });
-    push({ kind: 'race', phase: PHASES.RACE, title: `Løb ${r}`,
-      screenTitle: `Løb ${r}`, tabletMode: 'race', meta: { round: r, raceType: 'normal' },
+    push({ kind: 'race', phase: PHASES.RACE, title: `Løb · ${season}`,
+      screenTitle: `Løb · ${season}`, tabletMode: 'race', meta: { round: r, raceType: 'normal' },
       hostHint: 'Åbn rolling → hold slår → afslut løb → udbetal præmier.' });
-    push({ kind: 'leaderboard', phase: PHASES.LEADERBOARD, title: `Stilling efter runde ${r}`,
+    push({ kind: 'leaderboard', phase: PHASES.LEADERBOARD, title: `Stilling efter ${season.toLowerCase()}`,
       screenTitle: 'Stilling', tabletMode: 'bank', meta: { round: r },
       hostHint: 'Vis stillingen efter total staldværdi.' });
   }

@@ -6,8 +6,12 @@
 
 const gameConfig = {
   // ---- Valuta ----
-  currencyName: 'Staldollars',
-  currencyAbbr: 'SD',
+  currencyName: 'Derby Dollars',
+  currencyAbbr: 'DD',
+
+  // ---- Sæsonnavne (bruges i stedet for "Runde 1/2/...") ----
+  // Ved 2 runder bruges [0] og [2] (forår + efterår); ved 3+ tages de i rækkefølge.
+  seasonNames: ['Forårssæsonen', 'Sommersæsonen', 'Efterårssæsonen', 'Vintersæsonen'],
 
   // ---- Startværdier ----
   startCash: 0,                 // før warm-up (teams starter uden kontanter)
@@ -144,6 +148,11 @@ const gameConfig = {
     tidslinje: {
       rewardOnSuccess: 300,
       rewardOnFail: 0,
+      cooldownSeconds: 300,
+      cardsPerDraw: 5,           // antal tilfældige numre pr. træk (fra puljen på 40)
+    },
+    mindpuzzle: {
+      rewardPerLevel: 300,       // fast belønning — banerne bliver sværere af sig selv
       cooldownSeconds: 300,
     },
     dyst: {

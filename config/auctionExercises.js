@@ -1,5 +1,6 @@
 /*
- * auctionExercises.js — de 8 special-øvelser der handles på auktion.
+ * auctionExercises.js — de 6 special-øvelser der handles på auktion.
+ * (Mind Puzzle er flyttet til fælles pengeopgaver; Påklæd din hest er udgået.)
  * category: 'money' | 'jockey' | 'horse'
  *   money   → giver SD (aftagende belønning + cooldown)
  *   jockey  → giver jockey-performance-point (resultatniveau)
@@ -19,20 +20,6 @@ const auctionExercises = [
     gives: 'Staldollars — belønningen falder for hver succes.',
     reward: { start: 1000, decreasePerSuccess: 50, min: 400 },
     cooldownSeconds: 180,
-  },
-  {
-    id: 'mindpuzzle',
-    name: 'Mind Puzzle',
-    category: 'money',
-    short: 'Løs stigende sværhedsgrader — tabletten godkender selv.',
-    description:
-      'Horse Academy-puslespil i 20 stigende niveauer (Starter → Wizard). Opgaven vises på tabletten; ' +
-      'byg banen fysisk, og tabletten godkender jeres løsning med kontrolspørgsmål — ingen instruktør. ' +
-      'Belønningen falder pr. niveau. På et tidspunkt kan det bedre betale sig at bytte øvelsen væk.',
-    gives: 'Staldollars pr. gennemført niveau (aftagende).',
-    reward: { start: 1000, decreasePerSuccess: 100, min: 300 },
-    cooldownSeconds: 180,
-    progressive: true, // tæller niveau pr. hold
   },
   {
     id: 'hesteskohus',
@@ -73,7 +60,7 @@ const auctionExercises = [
   },
   {
     id: 'baleofhay',
-    name: 'Stack a Bale of Hay',
+    name: 'Stabl Høballer',
     category: 'jockey',
     short: 'Stabl halmballer med snore — balance.',
     description:
@@ -94,18 +81,6 @@ const auctionExercises = [
       'rækkefølge. Tabes et æble, starter det forfra. Hurtigste tid vinder.',
     gives: 'Hest-point (energi/performance).',
     thresholds: { gold: 90, silver: 120, bronze: 160, pass: 220 }, // sekunder — lavere er bedre
-    lowerIsBetter: true,
-  },
-  {
-    id: 'paaklaed',
-    name: 'Påklæd din hest',
-    category: 'horse',
-    short: 'Klæd hesten på — og pak pænt sammen igen.',
-    description:
-      'Stor legetøjshest. Tag alt udstyr korrekt på, få det godkendt, tag det af igen og fold det pænt ' +
-      'sammen. Tiden løber til alt er af og foldet. Hurtigste tid vinder.',
-    gives: 'Hest-point (klargøring/performance).',
-    thresholds: { gold: 60, silver: 90, bronze: 130, pass: 180 }, // sekunder — lavere er bedre
     lowerIsBetter: true,
   },
 ];
