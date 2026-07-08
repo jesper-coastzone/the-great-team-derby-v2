@@ -1,0 +1,13 @@
+Lydfiler til The Great Team Derby
+=================================
+
+Læg royaltyfri musik her med præcis disse filnavne:
+
+  runde.mp3  — stemningsmusik, afspilles i loop under runderne
+  loeb.mp3   — løbsmusik (champagnegalop), afspilles i loop under løbene
+
+Lyden styres fra host-konsollen under "🔊 Lyd på storskærmen".
+Speaker-funktionen (dansk oplæsning af løbets highlights) kræver ingen filer.
+
+OBS: Første gang skal der klikkes på "🔊 Aktivér lyd"-knappen nederst til højre
+på selve storskærmen — browsere kræver ét klik, før de må afspille lyd.
