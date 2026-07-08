@@ -458,7 +458,7 @@
     // Ingen data hentet endnu → hent (viser aktuelt niveau) + eksempel fra opgavebogen
     if (!mp || !mp.data) {
       card.appendChild(el('p.muted', { text: 'Byg banen på spillepladen, så hesten kommer fra start til mål og hopper over forhindringerne i rækkefølgen på opgavekortet. Godkendelsen klarer tabletten — ingen instruktør nødvendig.' }));
-      card.appendChild(el('img', { src: '/assets/mindpuzzle/eksempel.jpg', alt: 'Eksempel fra opgavebogen', style: 'width:100%;border-radius:12px;border:1px solid var(--line);margin:10px 0 4px' }));
+      card.appendChild(el('img', { src: '/assets/mindpuzzle/eksempel.jpg', alt: 'Eksempel fra opgavebogen', style: 'width:100%;max-height:360px;object-fit:contain;background:#e8f4f8;border-radius:12px;border:1px solid var(--line);margin:10px 0 4px' }));
       card.appendChild(el('p.muted', { style: 'font-size:12px', text: 'Sådan læses et opgavekort: CHALLENGE (venstre) viser forhindringernes rækkefølge — her Y→B→D→E→G→J→B og mål ved den røde bom. SOLUTION (højre) viser banen færdigbygget.' }));
       const b = el('button.btn.gold.block.lg', { text: 'Vis vores niveau', style: 'margin-top:12px' });
       b.addEventListener('click', mpLoad);
@@ -546,7 +546,7 @@
 
     // Opgavevisning: challenge-billede + start godkendelse
     card.appendChild(el('p.muted', { style: 'margin:4px 0', text: 'Byg banen så hesten rider fra start-bogstavet, hopper over forhindringerne i rækkefølgen herunder og ender ved den røde bom.' }));
-    const img = el('img', { src: d.image, alt: `Challenge ${d.book}`, style: 'width:100%;border-radius:12px;border:1px solid var(--line);margin:8px 0' });
+    const img = el('img', { src: d.image, alt: `Challenge ${d.book}`, style: 'width:100%;max-height:420px;object-fit:contain;background:#e8f4f8;border-radius:12px;border:1px solid var(--line);margin:8px 0' });
     card.appendChild(img);
     card.appendChild(el('p.muted', { style: 'font-size:12px', text: `Hæftets challenge ${d.book} · Når banen er bygget, stiller tabletten ${d.questions.length} kontrolspørgsmål om jeres løsning.` }));
     const go = el('button.btn.gold.block.lg', { text: cd ? `Cooldown ${cd}` : 'Vi er færdige — godkend banen', style: 'margin-top:10px', disabled: cd ? 'true' : null });
