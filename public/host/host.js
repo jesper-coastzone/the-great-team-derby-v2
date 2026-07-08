@@ -151,8 +151,9 @@
       box.appendChild(row);
       box.appendChild(el('div.mini', { text: 'Status: ' + (a ? a.status : 'ingen') }));
       box.appendChild(bidTable());
-    } else if (phase === 'round') {
+    } else if (phase === 'round' || phase === 'preseason-round') {
       const row = el('div.row.wrap');
+      if (phase === 'preseason-round') row.appendChild(btn('Start prøverunde (10 min)', 'host:startRoundTimer', { seconds: 600 }, '.gold'));
       row.appendChild(btn('Start rundetimer', 'host:startRoundTimer', {}, '.turf'));
       row.appendChild(btn('Stop timer', 'host:stopRoundTimer', {}));
       box.appendChild(row);
