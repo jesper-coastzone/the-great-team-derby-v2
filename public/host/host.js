@@ -265,6 +265,7 @@
     col.appendChild(approvalsPanel());
     col.appendChild(teamsPanel());
     col.appendChild(tradesPanel());
+    col.appendChild(soundPanel());
     col.appendChild(gamesPanel());
     col.appendChild(toolsPanel());
     col.appendChild(logPanel());
@@ -370,6 +371,29 @@
       const b = el('button.btn.sm.ghost', { text: 'Annullér' }); b.addEventListener('click', () => TG.emit('host:cancelTrade', { tradeId: t.id })); row.appendChild(b);
       c.appendChild(row);
     });
+    return c;
+  }
+
+  // Lyd på storskærmen: musik-toggles + dansk TTS-speaker
+  function soundPanel() {
+    const c = el('div.card.sec');
+    c.appendChild(el('h3', { text: '🔊 Lyd på storskærmen' }));
+    const snd = S.sound || {};
+    const defs = [
+      ['roundMusic', 'Rundemusik', 'Stemningsmusik i runderne (kræver runde.mp3)'],
+      ['raceMusic', 'Løbsmusik', 'Champagnegalop under løbene (kræver loeb.mp3)'],
+      ['tts', 'Speaker', 'Dansk oplæsning af løbets highlights'],
+    ];
+    defs.forEach(([key, label, hint]) => {
+      const on = !!snd[key];
+      const row = el('div.row.between', { style: 'padding:6px 0;border-bottom:1px dashed var(--line);align-items:center' });
+      row.appendChild(el('div', {}, [el('b', { text: label }), el('div.mini', { text: hint })]));
+      const b = el('button.btn.sm' + (on ? '' : '.ghost'), { text: on ? 'Til' : 'Fra' });
+      b.addEventListener('click', () => TG.emit('host:setSound', { [key]: !on }).then(check));
+      row.appendChild(b);
+      c.appendChild(row);
+    });
+    c.appendChild(el('p.mini', { style: 'margin-top:6px', text: 'Musikfiler lægges i public/assets/audio/ som runde.mp3 og loeb.mp3. Første gang skal der trykkes på lyd-knappen på selve storskærmen.' }));
     return c;
   }
 
