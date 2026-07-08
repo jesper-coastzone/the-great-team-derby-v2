@@ -318,6 +318,11 @@ function buildStateFor(game, role, teamId) {
       maxPurchasesPerOption: cfg.maxPurchasesPerOption || 0,
       roles: cfg.roles || [],
       finalBetting: cfg.finalBetting || { enabled: false },
+      // Niveau-tærskler til progressbarer på tabletten
+      horseLevelThresholds: cfg.horseLevelThresholds,
+      jockeyLevelThresholds: cfg.jockeyLevelThresholds,
+      maxHorseLevel: cfg.maxHorseLevel,
+      maxJockeyLevel: cfg.maxJockeyLevel,
     },
     phase: game.currentPhase,
     currentRound: game.currentRound,
