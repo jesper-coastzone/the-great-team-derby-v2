@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Great Team Derby — Simulator</title>
+<link rel="icon" href="/icon.png?size=64">
+<link rel="stylesheet" href="/shared/tokens.css">
+<style>
+  html, body { height: 100%; overflow: hidden; }
+  body { display: grid; grid-template-rows: 54px 1fr; background: var(--navy-ink); }
+
+  /* ---- topbar ---- */
+  .simbar { display: flex; align-items: center; gap: 14px; padding: 0 16px; background: var(--navy); color: var(--on-navy); box-shadow: var(--shadow); z-index: 5; }
+  .simbar .logo { font-family: var(--font-display); font-weight: 800; font-size: 17px; white-space: nowrap; }
+  .simbar .logo .tag { color: var(--gold-soft); }
+  .simbar .hint { font-size: 12px; opacity: .75; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .simbar input { width: 110px; text-align: center; font-size: 16px; font-weight: 800; letter-spacing: 3px; text-transform: uppercase; border: 0; border-radius: 8px; padding: 7px 8px; font-family: var(--font-num); }
+  .simbar button { border: 0; border-radius: 8px; padding: 8px 14px; font-weight: 700; font-size: 13px; cursor: pointer; background: var(--gold); color: var(--navy-ink); }
+  .simbar button.ghost { background: rgba(250,246,234,.14); color: var(--on-navy); }
+
+  /* ---- layout: host til venstre, skærm + tablet stablet til højre ---- */
+  .grid { display: grid; grid-template-columns: minmax(0, 11fr) minmax(0, 9fr); gap: 8px; padding: 8px; min-height: 0; }
+  .pane { display: grid; grid-template-rows: 26px 1fr; min-height: 0; background: #0b1b30; border-radius: 10px; overflow: hidden; border: 1px solid rgba(250,246,234,.12); }
+  .pane .lbl { display: flex; align-items: center; gap: 8px; padding: 0 10px; font-size: 10px; letter-spacing: 2.5px; text-transform: uppercase; font-weight: 700; color: var(--gold-soft); background: rgba(250,246,234,.06); }
+  .pane .lbl .dot { width: 7px; height: 7px; border-radius: 50%; background: #4a7a63; }
+  .pane .lbl .dot.off { background: #8a97a6; }
+  .pane iframe { width: 100%; height: 100%; border: 0; background: var(--cream); }
+  .right { display: grid; grid-template-rows: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; min-height: 0; }
+</style>
+</head>
+<body>
+  <div class="simbar">
+    <div class="logo">🧪 Derby-<span class="tag">Simulator</span></div>
+    <div class="hint">Opret et testspil i host-konsollen til venstre (kald det fx "TEST") — indtast spilkoden her, og klik alt igennem. Testspil påvirker ikke rigtige spil.</div>
+    <input id="code" type="text" maxlength="6" placeholder="KODE">
+    <button id="connect">Forbind skærm + tablet</button>
+    <button id="newteam" class="ghost" title="Slip nuværende stald og lad serveren tildele en ny">Skift stald</button>
+    <button id="reload" class="ghost" title="Genindlæs alle tre paneler">Genstart paneler</button>
+  </div>
+
+  <div class="grid">
+    <div class="pane">
+      <div class="lbl"><span class="dot"></span>Host-konsol — her styrer du spillet</div>
+      <iframe id="host" src="/host"></iframe>
+    </div>
+    <div class="right">
+      <div class="pane">
+        <div class="lbl"><span class="dot off" id="screenDot"></span>Storskærm — det deltagerne ser på projektoren</div>
+        <iframe id="screen" src="about:blank"></iframe>
+      </div>
+      <div class="pane">
+        <div class="lbl"><span class="dot off" id="teamDot"></span>Tablet — det ét team ser (server tildeler stald)</div>
+        <iframe id="team" src="about:blank"></iframe>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const codeInp = $('code');
+
+  // Husk seneste simulator-kode lokalt
+  const saved = localStorage.getItem('sim_code');
+  if (saved) codeInp.value = saved;
+
+  function currentCode() { return codeInp.value.trim().toUpperCase(); }
+
+  function connect() {
+    const code = currentCode();
+    if (code.length < 4) { codeInp.focus(); codeInp.style.outline = '3px solid var(--red)'; setTimeout(() => codeInp.style.outline = '', 900); return; }
+    localStorage.setItem('sim_code', code);
+    // Skærm: join direkte via ?code — nulstil evt. gammel gemt kode først (samme origin)
+    try { $('screen').contentWindow && $('screen').contentWindow.localStorage.removeItem('tg_screen_code'); } catch (e) {}
+    $('screen').src = '/screen?code=' + encodeURIComponent(code);
+    // Tablet: behold evt. teamId så man følger samme stald ved genforbindelse
+    $('team').src = '/team?code=' + encodeURIComponent(code);
+    $('screenDot').classList.remove('off');
+    $('teamDot').classList.remove('off');
+  }
+
+  function newTeam() {
+    const code = currentCode();
+    // Slip stalden: ryd gemt teamId (samme origin → adgang til iframe-localStorage)
+    try {
+      const w = $('team').contentWindow;
+      if (w) { w.localStorage.removeItem('tg_teamId'); }
+      else { localStorage.removeItem('tg_teamId'); }
+    } catch (e) { localStorage.removeItem('tg_teamId'); }
+    $('team').src = code.length >= 4 ? '/team?code=' + encodeURIComponent(code) : '/team';
+  }
+
+  function reloadAll() {
+    $('host').src = '/host';
+    connect();
+  }
+
+  $('connect').addEventListener('click', connect);
+  $('newteam').addEventListener('click', newTeam);
+  $('reload').addEventListener('click', reloadAll);
+  codeInp.addEventListener('keydown', (e) => { if (e.key === 'Enter') connect(); });
+
+  // Auto-forbind hvis der er gemt en kode fra sidst
+  if (saved && saved.length >= 4) connect();
+})();
+</script>
+</body>
+</html>
