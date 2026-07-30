@@ -43,7 +43,7 @@
     const wrap = el('div.big-center');
     const card = el('div.card', { style: 'max-width:420px;width:100%' });
     card.appendChild(el('div.eyebrow', { text: 'Stald-tablet' }));
-    card.appendChild(el('h1', { text: 'The Great Team Derby', style: 'font-size:34px;margin:8px 0 16px' }));
+    card.appendChild(el('img', { src: TG.assetURL('logo'), alt: 'The Great Team Derby', style: 'width:82%;max-width:330px;margin:10px auto 16px;display:block' }));
     const inp = el('input', { type: 'text', placeholder: 'Spilkode (fx ABCDE)', maxlength: '6', style: 'text-transform:uppercase;text-align:center;font-size:26px;letter-spacing:4px' });
     const btn = el('button.btn.xl', { text: 'Tilslut' });
     btn.addEventListener('click', () => { if (inp.value.trim().length >= 4) doJoin(inp.value.trim()); else toast('Indtast en gyldig kode.', 'err'); });
@@ -118,7 +118,7 @@
   function introDerby() {
     const card = el('div.card', { style: 'text-align:center' });
     card.appendChild(TG.assetImg('hest-og-jockey', { style: 'width:62%;max-width:340px;margin:0 auto;display:block' }));
-    card.appendChild(el('h1', { text: 'The Great Team Derby', style: 'font-size:30px;margin:8px 0' }));
+    card.appendChild(el('img', { src: TG.assetURL('logo'), alt: 'The Great Team Derby', style: 'width:76%;max-width:360px;margin:8px auto;display:block' }));
     card.appendChild(el('p.muted', { style: 'font-size:16px', text: 'Samarbejde, strategi, investeringer og forandringsparathed. Byg jeres stald — og gør den mest værdifuld, også når planen vælter.' }));
     return card;
   }
