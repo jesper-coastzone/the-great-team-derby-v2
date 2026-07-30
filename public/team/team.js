@@ -30,6 +30,7 @@
     clear(root);
     if (!S || !S.me) { root.appendChild(joinView()); ui.renderedMode = null; return; }
     root.appendChild(topbar());
+    if (S.activeChangeCard) root.appendChild(changeCardBar());
     const app = el('div.app');
     app.appendChild(bodyForMode());
     root.appendChild(app);
@@ -384,6 +385,21 @@
       nav.appendChild(b);
     });
     return nav;
+  }
+
+  // ---------- Forandringskort: banner + fejring ved nyt kort ----------
+  function changeCardBar() {
+    const cc = S.activeChangeCard;
+    const key = cc.id + ':' + cc.playedAt;
+    if (ui.ccKey !== key) {
+      ui.ccKey = key;
+      toast(cc.emoji + ' FORANDRINGSKORT: ' + cc.title, 'err');
+      emojiBurst([cc.emoji, '🃏', '⚡']);
+    }
+    const bar = el('div', { style: 'background:var(--burgundy);color:#fff;padding:9px 14px;font-weight:700;font-size:14px;display:flex;gap:9px;align-items:center;position:sticky;top:0;z-index:9' });
+    bar.appendChild(el('span', { style: 'font-size:19px', text: cc.emoji }));
+    bar.appendChild(el('span', { text: cc.title + ' — ' + cc.text }));
+    return bar;
   }
 
   // ---------- Gamification: penge-delta, konfetti og niveau-fejring ----------
