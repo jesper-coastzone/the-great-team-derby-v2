@@ -25,6 +25,7 @@
 
   function render() {
     if (!S) return;
+    changeCardFx(); // Forandringskort: afsløring + banner (kører uafhængigt af slide)
     // Løbs-slides opdateres in-place, så hestene glider i stedet for at hoppe.
     if (['warmup-race', 'race', 'final-race'].includes(S.slide.kind) && S.race && !S.screenMessageOverride) {
       const existing = document.getElementById('raceStage');
@@ -34,11 +35,40 @@
     const stage = el('div.stage');
     stage.appendChild(el('div.corner-motif', { html: TG.motif.horse('#C9A227') }));
     stage.appendChild(brandbar());
+    if (S.activeChangeCard) stage.appendChild(changeBanner());
     const content = el('div.content');
     content.appendChild(slideContent());
     stage.appendChild(content);
     root.appendChild(stage);
     if (document.getElementById('raceStage')) updateRace();
+  }
+
+  // ---- Forandringskort på storskærmen ----
+  function changeBanner() {
+    return el('div', {
+      style: 'display:flex;align-items:center;gap:1vw;background:var(--burgundy);color:#fff;border-radius:12px;padding:.5vw 1.2vw;margin:.6vh 0;font-weight:700;font-size:1.25vw;box-shadow:var(--shadow)',
+    }, [
+      el('span', { style: 'font-size:1.7vw', text: S.activeChangeCard.emoji }),
+      el('span', { text: 'FORANDRINGSKORT: ' + S.activeChangeCard.title + ' — ' + S.activeChangeCard.text }),
+    ]);
+  }
+  function changeCardFx() {
+    const cc = S.activeChangeCard;
+    const key = cc ? cc.id + ':' + cc.playedAt : null;
+    if (!cc || window.__ccKey === key) { if (!cc) window.__ccKey = null; return; }
+    window.__ccKey = key;
+    // Fuldskærms-afsløring i ~9 sekunder
+    const ov = el('div', { style: 'position:fixed;inset:0;z-index:70;display:grid;place-items:center;background:rgba(15,36,64,.88)' });
+    const card = el('div', { style: 'background:var(--cream);border:6px solid var(--gold);border-radius:24px;padding:3vw 4vw;max-width:60vw;text-align:center;box-shadow:0 30px 80px rgba(0,0,0,.5)' });
+    card.appendChild(el('div', { style: 'font-size:1.1vw;letter-spacing:4px;text-transform:uppercase;color:var(--burgundy);font-weight:800', text: '🃏 Forandringskort' }));
+    card.appendChild(el('div', { style: 'font-size:5vw;margin:.8vh 0', text: cc.emoji }));
+    card.appendChild(el('div', { style: 'font-family:var(--font-display);font-weight:800;font-size:3vw;color:var(--navy);line-height:1.05', text: cc.title }));
+    card.appendChild(el('div', { style: 'font-size:1.5vw;color:var(--text-dim);margin-top:1.2vh;line-height:1.5', text: cc.text }));
+    ov.appendChild(card);
+    document.body.appendChild(ov);
+    card.animate([{ transform: 'scale(.6) rotate(-4deg)', opacity: 0 }, { transform: 'scale(1.04) rotate(1deg)', opacity: 1, offset: .6 }, { transform: 'scale(1) rotate(0)', opacity: 1 }], { duration: 700, easing: 'cubic-bezier(.2,.9,.3,1.2)' });
+    try { if (SND.unlocked && S.sound && S.sound.tts) speak('Forandringskort! ' + cc.title + '. ' + cc.text); } catch (e) { /* lyd ikke aktiveret */ }
+    setTimeout(() => { ov.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 500 }).onfinish = () => ov.remove(); }, 9000);
   }
 
   function brandbar() {
