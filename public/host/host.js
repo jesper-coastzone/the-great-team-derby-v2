@@ -265,6 +265,7 @@
     col.appendChild(approvalsPanel());
     col.appendChild(teamsPanel());
     col.appendChild(tradesPanel());
+    col.appendChild(exercisesPanel());
     col.appendChild(soundPanel());
     col.appendChild(gamesPanel());
     col.appendChild(toolsPanel());
@@ -369,6 +370,46 @@
       const row = el('div.row.between', { style: 'padding:5px 0;border-bottom:1px dashed var(--line)' });
       row.appendChild(el('span.mini', { text: `${t.fromStable} → ${t.toStable}: ${t.offeredName}↔${t.requestedName}${t.extraPayment ? ' +' + money(t.extraPayment) : ''}` }));
       const b = el('button.btn.sm.ghost', { text: 'Annullér' }); b.addEventListener('click', () => TG.emit('host:cancelTrade', { tradeId: t.id })); row.appendChild(b);
+      c.appendChild(row);
+    });
+    return c;
+  }
+
+  // Øvelses-oversigt: skjul øvelser/opgaver hvis grejet mangler, eller der er for få hold
+  function exercisesPanel() {
+    const c = el('div.card.sec');
+    const offTasks = (S.disabled && S.disabled.moneyTasks) || [];
+    const exercises = (S.auction && S.auction.exercises) || [];
+    const hiddenCount = exercises.filter((e) => e.hidden).length + offTasks.length;
+    c.appendChild(el('h3', { text: '🧰 Øvelser & opgaver' + (hiddenCount ? ` (${hiddenCount} skjult)` : '') }));
+    c.appendChild(el('p.mini', { text: 'Skjul en øvelse, hvis grejet mangler, eller der er for få hold. Skjulte øvelser forsvinder fra auktion, auktionshus og tablets.' }));
+
+    const catLabel = { money: 'Penge', jockey: 'Jockey', horse: 'Hest' };
+    c.appendChild(el('p.mini', { style: 'margin-top:8px;font-weight:700;letter-spacing:1px;text-transform:uppercase', text: 'Auktionsøvelser' }));
+    exercises.forEach((ex) => {
+      const row = el('div.row.between', { style: 'padding:5px 0;border-bottom:1px dashed var(--line);align-items:center' + (ex.hidden ? ';opacity:.55' : '') });
+      const info = el('div', {}, [
+        el('b', { text: ex.name + (ex.hidden ? ' · skjult' : '') }),
+        el('div.mini', { text: catLabel[ex.category] || ex.category }),
+      ]);
+      row.appendChild(info);
+      const right = el('div.row', { style: 'gap:6px;align-items:center' });
+      if (ex.currentOwnerTeamId) right.appendChild(el('span.mini', { text: 'Ejer: ' + teamName(ex.currentOwnerTeamId) }));
+      const b = el('button.btn.sm' + (ex.hidden ? '' : '.ghost'), { text: ex.hidden ? 'Vis igen' : 'Skjul', disabled: (!ex.hidden && ex.currentOwnerTeamId) ? 'true' : null, title: ex.currentOwnerTeamId ? 'Ejede øvelser kan ikke skjules' : '' });
+      b.addEventListener('click', () => TG.emit('host:toggleExercise', { exerciseId: ex.id, hidden: !ex.hidden }).then(check));
+      right.appendChild(b);
+      row.appendChild(right);
+      c.appendChild(row);
+    });
+
+    c.appendChild(el('p.mini', { style: 'margin-top:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase', text: 'Pengeopgaver på tabletten' }));
+    [['tip13', 'Tip en 13\'er', 'Ren digital quiz'], ['tidslinje', 'Tidslinjen', 'Kræver de ophængte kort'], ['mindpuzzle', 'Mind Puzzle', 'Kræver spilleplader'], ['dyst', 'Dysten', 'Kræver mindst 2 aktive stalde']].forEach(([id, name, hint]) => {
+      const hidden = offTasks.includes(id);
+      const row = el('div.row.between', { style: 'padding:5px 0;border-bottom:1px dashed var(--line);align-items:center' + (hidden ? ';opacity:.55' : '') });
+      row.appendChild(el('div', {}, [el('b', { text: name + (hidden ? ' · skjult' : '') }), el('div.mini', { text: hint })]));
+      const b = el('button.btn.sm' + (hidden ? '' : '.ghost'), { text: hidden ? 'Vis igen' : 'Skjul' });
+      b.addEventListener('click', () => TG.emit('host:toggleMoneyTask', { taskId: id, hidden: !hidden }).then(check));
+      row.appendChild(b);
       c.appendChild(row);
     });
     return c;
