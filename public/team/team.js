@@ -739,12 +739,14 @@
   // Genbruges af både runde-dashboardet og pre-season-prøverunden
   function moneyContent() {
     const c = el('div.col');
+    const off = (S.disabled && S.disabled.moneyTasks) || [];
     if (ui.tip13) { c.appendChild(tip13Card()); return c; }
     if (ui.tidslinje) { c.appendChild(tidslinjeCard()); return c; }
-    c.appendChild(taskLauncher('Tip en 13\'er', '13 spørgsmål — 100 DD pr. rigtige.', 'tip13', () => TG.emit('team:tip13Get').then((r) => { if (!r.ok) return check(r); ui.tip13 = { data: r, answers: {}, result: null }; render(); })));
-    c.appendChild(taskLauncher('🕰️ Tidslinjen', 'I trækker 5 numre — find kortene i lokalet og læg dem i kronologisk rækkefølge. 300 DD.', 'tidslinje', () => TG.emit('team:tidslinjeGet').then((r) => { if (!r.ok) return check(r); if (r.cooldownLeft) return toast('Tidslinjen er på cooldown.', 'err'); ui.tidslinje = { cards: r.cards, order: r.cards.slice(), reward: r.nextReward, result: null }; render(); })));
-    c.appendChild(mindpuzzleCard());
-    c.appendChild(dystCard());
+    if (!off.includes('tip13')) c.appendChild(taskLauncher('Tip en 13\'er', '13 spørgsmål — 100 DD pr. rigtige.', 'tip13', () => TG.emit('team:tip13Get').then((r) => { if (!r.ok) return check(r); ui.tip13 = { data: r, answers: {}, result: null }; render(); })));
+    if (!off.includes('tidslinje')) c.appendChild(taskLauncher('🕰️ Tidslinjen', 'I trækker 5 numre — find kortene i lokalet og læg dem i kronologisk rækkefølge. 300 DD.', 'tidslinje', () => TG.emit('team:tidslinjeGet').then((r) => { if (!r.ok) return check(r); if (r.cooldownLeft) return toast('Tidslinjen er på cooldown.', 'err'); ui.tidslinje = { cards: r.cards, order: r.cards.slice(), reward: r.nextReward, result: null }; render(); })));
+    if (!off.includes('mindpuzzle')) c.appendChild(mindpuzzleCard());
+    if (!off.includes('dyst')) c.appendChild(dystCard());
+    if (!c.children.length) c.appendChild(el('div.card', {}, [el('p.muted', { text: 'Ingen pengeopgaver er åbne lige nu — spørg værten.' })]));
     return c;
   }
   function taskLauncher(name, desc, key, onStart) {
