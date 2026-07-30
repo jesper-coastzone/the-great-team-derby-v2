@@ -265,6 +265,7 @@
     col.appendChild(approvalsPanel());
     col.appendChild(teamsPanel());
     col.appendChild(tradesPanel());
+    col.appendChild(changeCardsPanel());
     col.appendChild(exercisesPanel());
     col.appendChild(soundPanel());
     col.appendChild(gamesPanel());
@@ -372,6 +373,45 @@
       const b = el('button.btn.sm.ghost', { text: 'Annullér' }); b.addEventListener('click', () => TG.emit('host:cancelTrade', { tradeId: t.id })); row.appendChild(b);
       c.appendChild(row);
     });
+    return c;
+  }
+
+  // Forandringskort: uventede hændelser der træner forandringsparathed
+  function changeCardsPanel() {
+    const c = el('div.card.sec');
+    const active = S.activeChangeCard;
+    c.appendChild(el('h3', { text: '🃏 Forandringskort' + (active ? ' — AKTIVT' : '') }));
+    c.appendChild(el('p.mini', { text: 'Spil et kort, når holdene skal rystes ud af planen — kortet afsløres dramatisk på storskærmen. AUTO-kort ændrer selv spillet; MANUEL-kort håndhæves af instruktørerne.' }));
+
+    if (active) {
+      const box = el('div', { style: 'background:var(--navy);color:var(--on-navy);border-radius:12px;padding:10px 12px;margin:8px 0' });
+      box.appendChild(el('div', { style: 'font-weight:800;font-size:15px', text: `${active.emoji} ${active.title}` }));
+      box.appendChild(el('div', { style: 'font-size:12px;opacity:.85;margin:4px 0 8px', text: active.text }));
+      const end = el('button.btn.sm.gold', { text: 'Afslut kort (rul effekter tilbage)' });
+      end.addEventListener('click', () => TG.emit('host:endChangeCard').then(check));
+      box.appendChild(end);
+      c.appendChild(box);
+    }
+
+    const det = el('details');
+    det.appendChild(el('summary', { text: active ? 'Kortbunken (afslut det aktive kort først)' : 'Kortbunken — vælg og spil' }));
+    const list = el('div.col', { style: 'margin-top:8px' });
+    (S.changeCards || []).forEach((card) => {
+      const row = el('div', { style: 'padding:7px 0;border-bottom:1px dashed var(--line)' });
+      const top = el('div.row.between', { style: 'align-items:center' });
+      top.appendChild(el('b', { text: `${card.emoji} ${card.title}` }));
+      const right = el('div.row', { style: 'gap:6px;align-items:center' });
+      right.appendChild(el('span.chip' + (card.manual ? '.gold' : '.turf'), { style: 'font-size:10px', text: card.manual ? 'MANUEL' : 'AUTO' }));
+      const play = el('button.btn.sm', { text: 'Spil', disabled: active ? 'true' : null });
+      play.addEventListener('click', () => TG.emit('host:playChangeCard', { cardId: card.id }).then(check));
+      right.appendChild(play);
+      top.appendChild(right);
+      row.appendChild(top);
+      row.appendChild(el('div.mini', { style: 'margin-top:2px', text: card.hostHint }));
+      list.appendChild(row);
+    });
+    det.appendChild(list);
+    c.appendChild(det);
     return c;
   }
 
