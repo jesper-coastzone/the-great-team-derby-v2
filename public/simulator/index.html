@@ -32,7 +32,7 @@
 <body>
   <div class="simbar">
     <div class="logo">🧪 Derby-<span class="tag">Simulator</span></div>
-    <div class="hint">Opret et testspil i host-konsollen til venstre (kald det fx "TEST") — indtast spilkoden her, og klik alt igennem. Testspil påvirker ikke rigtige spil.</div>
+    <div class="hint">Opret eller vælg et testspil i host-konsollen til venstre — skærm og tablet følger automatisk med. Testspil påvirker ikke rigtige spil.</div>
     <input id="code" type="text" maxlength="6" placeholder="KODE">
     <button id="connect">Forbind skærm + tablet</button>
     <button id="newteam" class="ghost" title="Slip nuværende stald og lad serveren tildele en ny">Skift stald</button>
@@ -60,17 +60,14 @@
 (function () {
   const $ = (id) => document.getElementById(id);
   const codeInp = $('code');
-
-  // Husk seneste simulator-kode lokalt
-  const saved = localStorage.getItem('sim_code');
-  if (saved) codeInp.value = saved;
+  let connectedCode = null; // hvilken kode skærm+tablet aktuelt viser
 
   function currentCode() { return codeInp.value.trim().toUpperCase(); }
 
   function connect() {
     const code = currentCode();
     if (code.length < 4) { codeInp.focus(); codeInp.style.outline = '3px solid var(--red)'; setTimeout(() => codeInp.style.outline = '', 900); return; }
-    localStorage.setItem('sim_code', code);
+    connectedCode = code;
     // Skærm: join direkte via ?code — nulstil evt. gammel gemt kode først (samme origin)
     try { $('screen').contentWindow && $('screen').contentWindow.localStorage.removeItem('tg_screen_code'); } catch (e) {}
     $('screen').src = '/screen?code=' + encodeURIComponent(code);
@@ -101,8 +98,20 @@
   $('reload').addEventListener('click', reloadAll);
   codeInp.addEventListener('keydown', (e) => { if (e.key === 'Enter') connect(); });
 
-  // Auto-forbind hvis der er gemt en kode fra sidst
-  if (saved && saved.length >= 4) connect();
+  // AUTO-FØLG: skærm og tablet følger altid det spil, host-konsollen er inde i.
+  // (Samme origin → vi kan aflæse spilkoden direkte i host-panelets topbar.)
+  setInterval(() => {
+    try {
+      const w = $('host').contentWindow;
+      if (!w || !w.document) return;
+      const el = w.document.querySelector('.hostbar .code');
+      const hostCode = el && el.textContent.trim().toUpperCase();
+      if (hostCode && hostCode.length >= 4 && hostCode !== connectedCode) {
+        codeInp.value = hostCode;
+        connect();
+      }
+    } catch (e) { /* host-panelet er ikke klar endnu */ }
+  }, 2000);
 })();
 </script>
 </body>
