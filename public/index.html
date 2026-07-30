@@ -18,6 +18,11 @@
   .tile .card { text-align: center; transition: transform .1s; }
   .tile .card:hover { transform: translateY(-4px); }
   .tile .ic { width: 54px; height: 54px; margin: 0 auto 10px; }
+  /* Simulator: bred flise til instruktører under de tre roller */
+  .tile.wide { grid-column: 1 / -1; }
+  .tile.wide .card { display: flex; align-items: center; text-align: left; gap: 16px; border: 2px dashed var(--gold); background: linear-gradient(150deg, #fff 60%, var(--cream-2)); }
+  .tile.wide .ic { width: 54px; height: 54px; margin: 0; flex: none; }
+  .tile.wide .chip-sim { display: inline-block; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; font-weight: 800; color: var(--burgundy); }
   @media (max-width: 620px){ .tiles{ grid-template-columns:1fr; } }
 </style>
 </head>
@@ -32,12 +37,14 @@
       <a class="tile" href="/host"><div class="card"><div class="ic" id="ic1"></div><h3>Host</h3><p class="muted">Game master-konsol</p></div></a>
       <a class="tile" href="/screen"><div class="card"><div class="ic" id="ic2"></div><h3>Storskærm</h3><p class="muted">Præsentation / projektor</p></div></a>
       <a class="tile" href="/team"><div class="card"><div class="ic" id="ic3"></div><h3>Tablet</h3><p class="muted">Stald-tablet</p></div></a>
+      <a class="tile wide" href="/simulator"><div class="card"><div class="ic" id="ic4"></div><div><span class="chip-sim">Til instruktører</span><h3>🧪 Simulator</h3><p class="muted">Host, storskærm og tablet på én skærm — klik hele spillet igennem i et testspil, uden at det påvirker rigtige events.</p></div></div></a>
     </div>
   </div>
   <script>
     document.getElementById('ic1').innerHTML = '<svg viewBox="0 0 64 64" width="100%"><circle cx="32" cy="32" r="30" fill="#1F3E63"/><path d="M32 12 L38 30 L32 52 L26 30 Z" fill="#FAF6EA"/></svg>';
     document.getElementById('ic2').innerHTML = '<svg viewBox="0 0 64 64" width="100%"><rect x="6" y="10" width="52" height="34" rx="4" fill="#2D4A3D"/><rect x="26" y="46" width="12" height="8" fill="#6E1F2E"/></svg>';
     document.getElementById('ic3').innerHTML = '<svg viewBox="0 0 64 64" width="100%"><rect x="12" y="6" width="40" height="52" rx="6" fill="#C9A227"/><circle cx="32" cy="50" r="3" fill="#1F3E63"/></svg>';
+    document.getElementById('ic4').innerHTML = '<svg viewBox="0 0 64 64" width="100%"><rect x="4" y="10" width="34" height="44" rx="4" fill="#1F3E63"/><rect x="42" y="10" width="18" height="20" rx="3" fill="#2D4A3D"/><rect x="42" y="34" width="18" height="20" rx="3" fill="#C9A227"/></svg>';
   </script>
 </body>
 </html>
