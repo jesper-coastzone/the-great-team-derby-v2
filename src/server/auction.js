@@ -25,6 +25,7 @@ function placeBid(game, team, exerciseId, amount) {
   if (!game.auction || game.auction.status !== 'open') return { ok: false, error: 'Auktionen er ikke åben.' };
   const ex = gs.exerciseById(game, exerciseId);
   if (!ex) return { ok: false, error: 'Ukendt øvelse.' };
+  if (game.disabled && game.disabled.exercises.includes(ex.id)) return { ok: false, error: 'Øvelsen er ikke med i dag.' };
   amount = Math.round(amount);
   if (!(amount > 0)) return { ok: false, error: 'Buddet skal være større end 0.' };
   if (amount > team.cash) return { ok: false, error: 'I kan ikke byde mere end I har på kontoen.' };
@@ -168,6 +169,7 @@ function auctionHouseExchange(game, team, targetExerciseId) {
   if (!team.ownedAuctionExerciseId) return { ok: false, error: 'I ejer ingen øvelse at bytte med.' };
   const target = gs.exerciseById(game, targetExerciseId);
   if (!target) return { ok: false, error: 'Ukendt øvelse.' };
+  if (game.disabled && game.disabled.exercises.includes(target.id)) return { ok: false, error: 'Øvelsen er ikke med i dag.' };
   if (target.currentOwnerTeamId) return { ok: false, error: 'Øvelsen er ejet af et andet hold — brug byttehandel i stedet.' };
 
   // Fast gebyr er autoritativt; procent-sats bruges kun som fallback (kompatibilitet)

@@ -131,6 +131,32 @@ function register(io) {
     socket.on('host:goto', (p, cb) => hostMut((g) => gm.goToSlide(g, p.index), cb));
     socket.on('host:setScreenMessage', (p, cb) => hostMut((g) => { g.screenMessageOverride = p.message || null; return { ok: true }; }, cb));
     socket.on('host:overrideTablet', (p, cb) => hostMut((g) => { g.tabletModeOverride = p.mode || null; return { ok: true }; }, cb));
+    // Skjul/vis øvelser og pengeopgaver (glemt grej eller for få hold)
+    socket.on('host:toggleExercise', (p, cb) => hostMut((g) => {
+      g.disabled = g.disabled || { exercises: [], moneyTasks: [] };
+      const ex = gs.exerciseById(g, p && p.exerciseId);
+      if (!ex) return { ok: false, error: 'Ukendt øvelse.' };
+      if (p.hidden) {
+        if (ex.currentOwnerTeamId) return { ok: false, error: 'Øvelsen ejes af en stald — den kan ikke skjules nu.' };
+        if (g.auction && (g.auction.status === 'open' || g.auction.status === 'closed')) return { ok: false, error: 'Vent til auktionen er afgjort.' };
+        if (!g.disabled.exercises.includes(ex.id)) g.disabled.exercises.push(ex.id);
+        gs.logEvent(g, `Øvelsen "${ex.name}" er skjult af værten.`);
+      } else {
+        g.disabled.exercises = g.disabled.exercises.filter((x) => x !== ex.id);
+        gs.logEvent(g, `Øvelsen "${ex.name}" er med igen.`);
+      }
+      return { ok: true };
+    }, cb));
+    socket.on('host:toggleMoneyTask', (p, cb) => hostMut((g) => {
+      g.disabled = g.disabled || { exercises: [], moneyTasks: [] };
+      const valid = { tip13: 'Tip en 13\'er', tidslinje: 'Tidslinjen', mindpuzzle: 'Mind Puzzle', dyst: 'Dysten' };
+      if (!p || !valid[p.taskId]) return { ok: false, error: 'Ukendt opgave.' };
+      if (p.hidden) { if (!g.disabled.moneyTasks.includes(p.taskId)) g.disabled.moneyTasks.push(p.taskId); }
+      else g.disabled.moneyTasks = g.disabled.moneyTasks.filter((x) => x !== p.taskId);
+      gs.logEvent(g, `Pengeopgaven "${valid[p.taskId]}" er ${p.hidden ? 'skjult af værten' : 'med igen'}.`);
+      return { ok: true };
+    }, cb));
+
     // Lyd-toggles til storskærmen (rundemusik / løbsmusik / TTS-speaker)
     socket.on('host:setSound', (p, cb) => hostMut((g) => {
       g.sound = g.sound || { roundMusic: false, raceMusic: false, tts: false };
@@ -290,12 +316,16 @@ function register(io) {
       return { ok: true };
     }, cb));
 
+    // Pengeopgaver kan være slået fra af værten (glemt grej / for få hold)
+    const taskOff = (g, id) => !!(g && g.disabled && g.disabled.moneyTasks && g.disabled.moneyTasks.includes(id));
+    const OFF = { ok: false, error: 'Opgaven er ikke med i dag.' };
+
     // ---------- TEAM: quiz-motorer (ack med data, ingen broadcast af facit) ----------
-    socket.on('team:tip13Get', (_, cb) => { const g = gameOf(); const t = teamOf(); ack(cb, g && t ? tasks.getTip13(g, t) : { ok: false }); });
-    socket.on('team:tip13Submit', (p, cb) => { const g = gameOf(); const t = teamOf(); const r = g && t ? tasks.submitTip13(g, t, p.answers || []) : { ok: false }; if (g) rt.pushState(g); ack(cb, r); });
+    socket.on('team:tip13Get', (_, cb) => { const g = gameOf(); const t = teamOf(); if (taskOff(g, 'tip13')) return ack(cb, OFF); ack(cb, g && t ? tasks.getTip13(g, t) : { ok: false }); });
+    socket.on('team:tip13Submit', (p, cb) => { const g = gameOf(); const t = teamOf(); if (taskOff(g, 'tip13')) return ack(cb, OFF); const r = g && t ? tasks.submitTip13(g, t, p.answers || []) : { ok: false }; if (g) rt.pushState(g); ack(cb, r); });
     // ---------- TEAM: Tidslinjen v2 (på holdets egen tablet — numre fra puljen på 40) ----------
-    socket.on('team:tidslinjeGet', (_, cb) => { const g = gameOf(); const t = teamOf(); ack(cb, g && t ? tasks.getTidslinje(g, t) : { ok: false }); });
-    socket.on('team:tidslinjeSubmit', (p, cb) => { const g = gameOf(); const t = teamOf(); const r = g && t ? tasks.submitTidslinje(g, t, (p && (p.orderedNumbers || p.orderedIds)) || []) : { ok: false }; if (g) rt.pushState(g); ack(cb, r); });
+    socket.on('team:tidslinjeGet', (_, cb) => { const g = gameOf(); const t = teamOf(); if (taskOff(g, 'tidslinje')) return ack(cb, OFF); ack(cb, g && t ? tasks.getTidslinje(g, t) : { ok: false }); });
+    socket.on('team:tidslinjeSubmit', (p, cb) => { const g = gameOf(); const t = teamOf(); if (taskOff(g, 'tidslinje')) return ack(cb, OFF); const r = g && t ? tasks.submitTidslinje(g, t, (p && (p.orderedNumbers || p.orderedIds)) || []) : { ok: false }; if (g) rt.pushState(g); ack(cb, r); });
     // (Station-events beholdes for bagudkompatibilitet — bruger samme motor)
     socket.on('station:tidslinjeGet', (p, cb) => {
       const g = gameOf(); if (!g) return ack(cb, { ok: false, error: 'Intet spil.' });
@@ -311,11 +341,11 @@ function register(io) {
     });
 
     // ---------- TEAM: Mind Puzzle (Horse Academy) — auto-godkendelse på tablet ----------
-    socket.on('team:mindpuzzleGet', (_, cb) => { const g = gameOf(); const t = teamOf(); ack(cb, g && t ? tasks.getMindPuzzle(g, t) : { ok: false }); });
-    socket.on('team:mindpuzzleSubmit', (p, cb) => { const g = gameOf(); const t = teamOf(); const r = g && t ? tasks.submitMindPuzzle(g, t, (p && p.answers) || []) : { ok: false }; if (g) rt.pushState(g); ack(cb, r); });
+    socket.on('team:mindpuzzleGet', (_, cb) => { const g = gameOf(); const t = teamOf(); if (taskOff(g, 'mindpuzzle')) return ack(cb, OFF); ack(cb, g && t ? tasks.getMindPuzzle(g, t) : { ok: false }); });
+    socket.on('team:mindpuzzleSubmit', (p, cb) => { const g = gameOf(); const t = teamOf(); if (taskOff(g, 'mindpuzzle')) return ack(cb, OFF); const r = g && t ? tasks.submitMindPuzzle(g, t, (p && p.answers) || []) : { ok: false }; if (g) rt.pushState(g); ack(cb, r); });
 
     // ---------- TEAM: dyst ----------
-    socket.on('team:duelChallenge', (p, cb) => mut((g) => { const t = teamOf(); return t ? tasks.challengeDuel(g, t, p.toTeamId) : { ok: false }; }, cb));
+    socket.on('team:duelChallenge', (p, cb) => mut((g) => { if (taskOff(g, 'dyst')) return OFF; const t = teamOf(); return t ? tasks.challengeDuel(g, t, p.toTeamId) : { ok: false }; }, cb));
     socket.on('team:duelRespond', (p, cb) => mut((g) => { const t = teamOf(); return t ? tasks.respondDuel(g, t, p.duelId, p.accept) : { ok: false }; }, cb));
     socket.on('team:duelSubmit', (p, cb) => mut((g) => { const t = teamOf(); return t ? tasks.submitDuel(g, t, p.duelId, p.answers || []) : { ok: false }; }, cb));
 

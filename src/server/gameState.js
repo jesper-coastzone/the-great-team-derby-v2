@@ -129,6 +129,8 @@ function createGame(settings = {}) {
     warmupPaid: false,
     // Lyd på storskærmen — styres af host (musik kræver filer i /assets/audio/)
     sound: { roundMusic: false, raceMusic: false, tts: false },
+    // Skjulte øvelser/opgaver (host: glemt grej eller for få hold)
+    disabled: { exercises: [], moneyTasks: [] },
   };
 
   for (let i = 1; i <= s.numTeams; i++) game.teams.push(makeTeam(game, i));
@@ -268,14 +270,19 @@ function nextMoneyReward(e) {
 }
 
 function auctionView(game, role, teamId) {
-  const exercises = game.auctionExercisePool.map((e) => ({
-    id: e.id, name: e.name, category: e.category, short: e.short,
-    description: e.description, gives: e.gives, thresholds: e.thresholds || null,
-    lowerIsBetter: !!e.lowerIsBetter, progressive: !!e.progressive,
-    currentOwnerTeamId: e.currentOwnerTeamId, lastPurchasePrice: e.lastPurchasePrice,
-    isInAuctionHouse: e.isInAuctionHouse, successCount: e.successCount,
-    nextReward: e.reward ? nextMoneyReward(e) : null,
-  }));
+  const hiddenIds = (game.disabled && game.disabled.exercises) || [];
+  const exercises = game.auctionExercisePool
+    // Skjulte øvelser vises kun for host (så de kan slås til igen)
+    .filter((e) => role === 'host' || !hiddenIds.includes(e.id))
+    .map((e) => ({
+      id: e.id, name: e.name, category: e.category, short: e.short,
+      description: e.description, gives: e.gives, thresholds: e.thresholds || null,
+      lowerIsBetter: !!e.lowerIsBetter, progressive: !!e.progressive,
+      currentOwnerTeamId: e.currentOwnerTeamId, lastPurchasePrice: e.lastPurchasePrice,
+      isInAuctionHouse: e.isInAuctionHouse, successCount: e.successCount,
+      nextReward: e.reward ? nextMoneyReward(e) : null,
+      hidden: hiddenIds.includes(e.id),
+    }));
   if (!game.auction) return { status: 'none', exercises, bids: [], topBids: [] };
   let bids = game.auction.bids;
   // Højeste bud pr. øvelse — synligt for alle roller så man kan følge budkrigen live.
@@ -347,6 +354,7 @@ function buildStateFor(game, role, teamId) {
     } : null,
     warmupPaid: game.warmupPaid,
     sound: game.sound || { roundMusic: false, raceMusic: false, tts: false },
+    disabled: game.disabled || { exercises: [], moneyTasks: [] },
     role,
   };
 
