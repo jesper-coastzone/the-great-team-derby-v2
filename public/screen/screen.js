@@ -43,9 +43,9 @@
 
   function brandbar() {
     const b = el('div.brandbar');
-    const star = el('div', { style: 'width:2.6vw;height:2.6vw', html: TG.motif.compass('#C9A227') });
-    b.appendChild(star);
-    b.appendChild(el('div.eyebrow', { text: S.eventName + ' · CoastZone' }));
+    b.appendChild(el('img', { src: TG.assetURL('logo'), alt: 'The Great Team Derby', style: 'height:3.4vw;width:auto' }));
+    // Vis kun tekst ved siden af logoet, hvis eventet har eget kundenavn
+    if (S.eventName && S.eventName !== 'The Great Team Derby') b.appendChild(el('div.eyebrow', { text: S.eventName + ' · CoastZone' }));
     const showCode = ['intro-coastzone', 'program', 'derby-intro', 'stable-setup', 'ready-check'].includes(S.slide.kind);
     if (showCode) b.appendChild(el('div.code', {}, [el('div.lbl', { text: 'Spilkode' }), el('div.val', { text: S.code })]));
     return b;
@@ -89,7 +89,7 @@
     const row = el('div', { style: 'display:flex;align-items:center;gap:3vw' });
     const c = el('div', { style: 'flex:1' });
     c.appendChild(el('div.eyebrow', { text: 'Dagens dyst' }));
-    c.appendChild(el('h1', { text: 'The Great Team Derby' }));
+    c.appendChild(el('img', { src: TG.assetURL('logo'), alt: 'The Great Team Derby', style: 'width:34vw;max-width:100%;margin:1vh 0' }));
     c.appendChild(el('p.lead', { text: 'Samarbejde, strategi, investeringer og forandringsparathed. Byg jeres stald — og gør den mest værdifuld, også når planen vælter.' }));
     row.appendChild(c);
     row.appendChild(TG.assetImg('hest-og-jockey', { style: 'width:34vw;max-height:58vh' }));
