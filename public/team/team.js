@@ -69,7 +69,7 @@
 
   function bodyForMode() {
     switch (S.slide.tabletMode) {
-      case 'welcome': return centerMsg('Velkommen til<br>The Great Team Derby', 'Vent på værten…');
+      case 'welcome': return introView();
       case 'stable-setup': return setupView();
       case 'ready-wait': return readyWaitView();
       case 'pre-season': return preseasonView();
@@ -90,6 +90,78 @@
     if (sub) c.appendChild(el('p.muted', { html: sub, style: 'margin-top:12px;font-size:18px' }));
     w.appendChild(c);
     return w;
+  }
+
+  // ---------- INTRO: tabletten spejler storskærmens slides (backup hvis ingen projektor) ----------
+  function introView() {
+    const mirror = {
+      'program': introProgram,
+      'derby-intro': introDerby,
+      'how-to-win': introHowToWin,
+      'game-flow': introGameFlow,
+    }[S.slide.kind];
+    if (!mirror) return centerMsg('Velkommen til<br>The Great Team Derby', 'Vent på værten…');
+    const c = el('div.col');
+    c.appendChild(el('div.eyebrow', { text: 'Følg med — her eller på storskærmen' }));
+    c.appendChild(mirror());
+    return c;
+  }
+  function introProgram() {
+    const card = el('div.card');
+    card.appendChild(el('h1', { text: 'Dagens program', style: 'font-size:30px;margin-bottom:10px' }));
+    (S.programItems || []).forEach((p, i) => card.appendChild(el('div.row', { style: 'font-size:17px;padding:9px 0;border-bottom:1px solid var(--line);gap:12px' }, [
+      el('span', { style: 'color:var(--gold);font-weight:800;width:26px;flex:none;font-family:var(--font-num)', text: String(i + 1) }),
+      el('span', { text: p }),
+    ])));
+    return card;
+  }
+  function introDerby() {
+    const card = el('div.card', { style: 'text-align:center' });
+    card.appendChild(TG.assetImg('hest-og-jockey', { style: 'width:62%;max-width:340px;margin:0 auto;display:block' }));
+    card.appendChild(el('h1', { text: 'The Great Team Derby', style: 'font-size:30px;margin:8px 0' }));
+    card.appendChild(el('p.muted', { style: 'font-size:16px', text: 'Samarbejde, strategi, investeringer og forandringsparathed. Byg jeres stald — og gør den mest værdifuld, også når planen vælter.' }));
+    return card;
+  }
+  function introHowToWin() {
+    const card = el('div.card');
+    card.appendChild(el('h1', { text: 'Sådan vinder I', style: 'font-size:30px;margin-bottom:10px' }));
+    ['Løs opgaver og tjen Derby Dollars', 'Vind løb og få præmiepenge', 'Investér i hest, jockey og stald', 'Byt, justér planen og træf skarpe beslutninger'].forEach((s, i) =>
+      card.appendChild(el('div.row', { style: 'font-size:17px;padding:8px 0;gap:12px' }, [
+        el('span', { style: 'color:var(--gold);font-weight:800;width:26px;flex:none;font-family:var(--font-num)', text: String(i + 1) }),
+        el('span', { text: s }),
+      ])));
+    card.appendChild(el('div', { style: 'margin-top:12px;background:var(--navy);color:var(--on-navy);border-radius:12px;padding:12px 14px;font-weight:700;font-size:15px', html: 'Den mest værdifulde stald vinder — <b style="color:var(--gold-soft)">ikke</b> nødvendigvis vinderen af finaleløbet.' }));
+    return card;
+  }
+  function introGameFlow() {
+    const wrap = el('div.col');
+    const head = el('div.card');
+    head.appendChild(el('h1', { text: 'Spillets gang', style: 'font-size:30px' }));
+    head.appendChild(el('p.muted', { text: '🔁 Loopet gentages hver sæson.' }));
+    wrap.appendChild(head);
+    const steps = [
+      ['Auktion', 'Byd på jeres øvelse', 'hammer-auktion', '#6E1F2E'],
+      ['Runde', 'Løs opgaver · tjen Derby Dollars', 'puslespil-opgaver', '#C9A227'],
+      ['Investér', 'Hest · jockey · stald', 'diagram-investering', '#2D4A3D'],
+      ['Løb', 'Slå terninger · vind præmier', 'maalflag', '#B83232'],
+    ];
+    steps.forEach(([t, d, icon, color], i) => {
+      const card = el('div.card', { style: `border-left:8px solid ${color};display:flex;align-items:center;gap:14px` });
+      card.appendChild(TG.assetImg(icon, { style: 'width:46px;height:46px;flex:none' }));
+      card.appendChild(el('div', {}, [
+        el('div', { style: 'font-family:var(--font-display);font-weight:800;font-size:19px;color:var(--navy)', text: (i + 1) + '. ' + t }),
+        el('div.muted', { style: 'font-size:14px', text: d }),
+      ]));
+      wrap.appendChild(card);
+    });
+    const fin = el('div.card', { style: 'background:var(--navy);display:flex;align-items:center;gap:14px' });
+    fin.appendChild(TG.assetImg('pokal', { style: 'width:44px;height:44px;flex:none' }));
+    fin.appendChild(el('div', {}, [
+      el('div', { style: 'font-family:var(--font-display);font-weight:800;font-size:18px;color:#fff', text: 'Til sidst: The Great Team Derby' }),
+      el('div', { style: 'font-size:13px;color:rgba(250,246,234,.85)', text: 'Væddemål, store præmier og plads til comeback — den mest værdifulde stald vinder.' }),
+    ]));
+    wrap.appendChild(fin);
+    return wrap;
   }
 
   // ---------- SETUP ----------
