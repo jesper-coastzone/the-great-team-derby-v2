@@ -63,6 +63,7 @@
 
   // Assets: appen loader billeder fra /assets. Skift filerne ud (samme navne) for at opgradere grafikken.
   API.ASSETS = {
+    'logo':'logo.png',
     'hestesko':'hestesko.png','hest-silhuet':'hest-silhuet.png','hest-markoer':'hest-markoer.png',
     'hest-markoer-silhuet':'hest-markoer-silhuet.png','hammer-auktion':'hammer-auktion.png',
     'puslespil-opgaver':'puslespil-opgaver.png','diagram-investering':'diagram-investering.png',
