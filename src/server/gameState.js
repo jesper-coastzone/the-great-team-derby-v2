@@ -355,6 +355,11 @@ function buildStateFor(game, role, teamId) {
     warmupPaid: game.warmupPaid,
     sound: game.sound || { roundMusic: false, raceMusic: false, tts: false },
     disabled: game.disabled || { exercises: [], moneyTasks: [] },
+    // Forandringskort: aktivt kort (alle roller) + multiplikatorer til visning
+    activeChangeCard: game.changeCard
+      ? { id: game.changeCard.id, emoji: game.changeCard.emoji, title: game.changeCard.title, text: game.changeCard.text, manual: game.changeCard.manual, playedAt: game.changeCard.playedAt }
+      : null,
+    taskMultipliers: game.taskMultipliers || {},
     role,
   };
 
@@ -374,6 +379,11 @@ function buildStateFor(game, role, teamId) {
     state.pendingApprovals = collectPendingApprovals(game);
     state.trades = game.trades;
     state.deck = game.deck.map((s) => ({ index: s.index, title: s.title, phase: s.phase }));
+    // Kort-katalog til Forandringskort-panelet
+    state.changeCards = require('../../config/changeCards').map((c) => ({
+      id: c.id, emoji: c.emoji, title: c.title, text: c.text,
+      hostHint: c.hostHint, manual: !(c.effects && c.effects.length),
+    }));
   }
 
   // Debrief-data (kun beregnet når debrief-slidet er aktivt)

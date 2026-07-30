@@ -10,6 +10,7 @@ const trades = require('./trades');
 const races = require('./races');
 const tasks = require('./tasks');
 const econ = require('./economy');
+const changeCardEngine = require('./changeCardEngine');
 const rt = require('./realtime');
 
 function ack(cb, res) { if (typeof cb === 'function') cb(res || { ok: true }); }
@@ -131,6 +132,10 @@ function register(io) {
     socket.on('host:goto', (p, cb) => hostMut((g) => gm.goToSlide(g, p.index), cb));
     socket.on('host:setScreenMessage', (p, cb) => hostMut((g) => { g.screenMessageOverride = p.message || null; return { ok: true }; }, cb));
     socket.on('host:overrideTablet', (p, cb) => hostMut((g) => { g.tabletModeOverride = p.mode || null; return { ok: true }; }, cb));
+    // Forandringskort: spil et kort / afslut det aktive
+    socket.on('host:playChangeCard', (p, cb) => hostMut((g) => changeCardEngine.playCard(g, p && p.cardId), cb));
+    socket.on('host:endChangeCard', (_, cb) => hostMut((g) => changeCardEngine.endCard(g), cb));
+
     // Skjul/vis øvelser og pengeopgaver (glemt grej eller for få hold)
     socket.on('host:toggleExercise', (p, cb) => hostMut((g) => {
       g.disabled = g.disabled || { exercises: [], moneyTasks: [] };

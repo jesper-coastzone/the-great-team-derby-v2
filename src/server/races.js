@@ -43,6 +43,8 @@ function startRace(game, type, round) {
     race.eventCount[t.id] = 0;
     t.race = { position: 0, rolls: [], lastRoll: 0, rollSum: 0, done: false, hasRolled: false, allowed: race.allowed[t.id] };
   }
+  // Uvejr fra forandringskort: gælder præcis ét løb
+  if (game.stormNextRace) { race.storm = true; game.stormNextRace = false; pushFeed(race, { kind: 'event', text: '⛈️ Uvejr over banen — alt kan ske i dette løb!' }); }
   game.races.push(race);
   game.currentRaceId = race.id;
   // Publikumsfavorit: bedste hest udpeges automatisk ved løbsstart (host kan stadig ændre det).
@@ -144,10 +146,12 @@ function rollForTeam(game, team) {
     race.favoriteUsed = true;
   }
 
-  // Tilfældigt event (dyrlæge, vind, publikum) — max N pr. hold pr. løb
+  // Tilfældigt event (dyrlæge, vind, publikum) — max N pr. hold pr. løb.
+  // Uvejr (forandringskort): dobbelt chance og dobbelt loft i dette løb.
   let event = null;
   const re = cfg.raceEvents || {};
-  if (re.enabled && race.eventCount[team.id] < (re.maxPerTeamPerRace || 1) && Math.random() < (re.chancePerRoll || 0)) {
+  const stormFactor = race.storm ? 2 : 1;
+  if (re.enabled && race.eventCount[team.id] < (re.maxPerTeamPerRace || 1) * stormFactor && Math.random() < (re.chancePerRoll || 0) * stormFactor) {
     event = pickRandomEvent();
     if (event) race.eventCount[team.id] += 1;
   }

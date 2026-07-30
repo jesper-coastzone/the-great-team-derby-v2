@@ -33,13 +33,18 @@ function getTip13(game, team) {
   };
 }
 
+// Forandringskort kan gange en opgaves belønning op (fx Tidslinjen ×2)
+function taskFactor(game, taskId) {
+  return (game && game.taskMultipliers && game.taskMultipliers[taskId]) || 1;
+}
+
 function submitTip13(game, team, answers) {
   const st = ensureStatus(team, 'tip13');
   if (onCooldown(team, 'tip13')) return { ok: false, error: 'Tip en 13\'er er på cooldown.' };
   const set = tip13Sets.find((s) => s.id === st.currentSetId) || tip13Sets[0];
   let correct = 0;
   set.questions.forEach((q, i) => { if (Number(answers[i]) === q.correct) correct += 1; });
-  const reward = correct * cfg.moneyTasks.tip13.rewardPerCorrect;
+  const reward = Math.round(correct * cfg.moneyTasks.tip13.rewardPerCorrect * taskFactor(game, 'tip13'));
   if (reward > 0) econ.addTransaction(game, team, reward, 'task', `Tip en 13'er: ${correct}/${set.questions.length} rigtige`);
   st.count = (st.count || 0) + 1;
   setCooldown(team, 'tip13', cfg.moneyTasks.tip13.cooldownSeconds);
@@ -65,7 +70,7 @@ function getTidslinje(game, team) {
   return {
     ok: true,
     cards: st.currentDraw.slice().sort((a, b) => a - b),
-    nextReward: cfg.moneyTasks.tidslinje.rewardOnSuccess, cooldownLeft: cdLeft,
+    nextReward: Math.round(cfg.moneyTasks.tidslinje.rewardOnSuccess * taskFactor(game, 'tidslinje')), cooldownLeft: cdLeft,
   };
 }
 
@@ -84,7 +89,7 @@ function submitTidslinje(game, team, orderedNumbers) {
   st.count = (st.count || 0) + 1;
   st.currentDraw = null; // nyt tilfældigt træk næste gang — uanset udfald
   setCooldown(team, 'tidslinje', cfg.moneyTasks.tidslinje.cooldownSeconds);
-  const reward = success ? cfg.moneyTasks.tidslinje.rewardOnSuccess : cfg.moneyTasks.tidslinje.rewardOnFail;
+  const reward = success ? Math.round(cfg.moneyTasks.tidslinje.rewardOnSuccess * taskFactor(game, 'tidslinje')) : cfg.moneyTasks.tidslinje.rewardOnFail;
   if (reward) econ.addTransaction(game, team, reward, 'task', `Tidslinjen ${success ? 'korrekt' : 'forkert'}`);
   gs.logEvent(game, `${team.stableName} forsøgte Tidslinjen (${success ? `korrekt, +${reward} ${cfg.currencyAbbr}` : 'forkert'}).`);
   const res = { ok: true, success, reward: success ? reward : 0 };
@@ -162,7 +167,7 @@ function resolveDuel(game, duel) {
   if (winner) {
     const loser = winner === from ? to : from;
     duel.winnerTeamId = winner.id;
-    if (cfgd.rewardWinner) econ.addTransaction(game, winner, cfgd.rewardWinner, 'task', 'Vandt dyst');
+    if (cfgd.rewardWinner) econ.addTransaction(game, winner, Math.round(cfgd.rewardWinner * taskFactor(game, 'dyst')), 'task', 'Vandt dyst');
     if (cfgd.rewardLoser) econ.addTransaction(game, loser, cfgd.rewardLoser, 'task', 'Tabte dyst');
   }
   duel.status = 'resolved';
@@ -265,7 +270,7 @@ function getMindPuzzle(game, team) {
     tier: levelDef.tier,
     book: levelDef.book,
     image: `/assets/mindpuzzle/challenge-${String(levelDef.book).padStart(2, '0')}.jpg`,
-    nextReward: (cfg.moneyTasks.mindpuzzle && cfg.moneyTasks.mindpuzzle.rewardPerLevel) || 300,
+    nextReward: Math.round((((cfg.moneyTasks.mindpuzzle && cfg.moneyTasks.mindpuzzle.rewardPerLevel) || 300)) * taskFactor(game, 'mindpuzzle')),
     cooldownLeft: cdLeft,
     questions: qIdx.map((i) => mpBuildQuestion(levelDef, levelDef.questions[i])),
   };
@@ -295,7 +300,7 @@ function submitMindPuzzle(game, team, answers) {
   }
 
   const mpCfg = cfg.moneyTasks.mindpuzzle || {};
-  const reward = mpCfg.rewardPerLevel || 300; // fast belønning — banerne bliver sværere af sig selv
+  const reward = Math.round((mpCfg.rewardPerLevel || 300) * taskFactor(game, 'mindpuzzle')); // fast belønning — banerne bliver sværere af sig selv
   econ.addTransaction(game, team, reward, 'task', `Mind Puzzle niveau ${levelDef.level} godkendt`);
   team.mindPuzzleLevel = (team.mindPuzzleLevel || 0) + 1;
   setCooldown(team, 'mindpuzzle', mpCfg.cooldownSeconds || 300);

@@ -33,7 +33,10 @@ function invest(game, team, assetType, productId) {
   if (!products) return { ok: false, error: 'Ukendt investeringstype.' };
   const product = products.find((p) => p.id === productId);
   if (!product) return { ok: false, error: 'Ukendt produkt.' };
-  if (!canAfford(team, product.cost)) return { ok: false, error: 'I har ikke nok kontanter.' };
+  // Forandringskort (fx Foderkrise) kan gøre investeringer dyrere
+  const priceFactor = (game.investMultipliers && game.investMultipliers[assetType]) || 1;
+  const cost = Math.round(product.cost * priceFactor);
+  if (!canAfford(team, cost)) return { ok: false, error: 'I har ikke nok kontanter.' };
 
   // Loft: hvert produkt kan kun købes et begrænset antal gange (lukker degenereret slutspil)
   team.investmentsMade = team.investmentsMade || {};
@@ -41,7 +44,7 @@ function invest(game, team, assetType, productId) {
   if ((team.investmentsMade[productId] || 0) >= maxBuys) return { ok: false, error: 'I har allerede købt denne investering.' };
   team.investmentsMade[productId] = (team.investmentsMade[productId] || 0) + 1;
 
-  addTransaction(game, team, -product.cost, 'invest', `Investering: ${product.label}`);
+  addTransaction(game, team, -cost, 'invest', `Investering: ${product.label}${priceFactor > 1 ? ' (foderkrise-pris)' : ''}`);
   if (assetType === 'horse') {
     team.horseValue += product.valueIncrease;
     if (product.performancePoints) addPerformancePoints(game, team, 'horse', product.performancePoints);
@@ -51,7 +54,7 @@ function invest(game, team, assetType, productId) {
   } else if (assetType === 'stable') {
     team.stableValue += product.valueIncrease;
   }
-  gs.logEvent(game, `${team.stableName} investerede i ${product.label} (${product.cost} ${cfg.currencyAbbr}).`);
+  gs.logEvent(game, `${team.stableName} investerede i ${product.label} (${cost} ${cfg.currencyAbbr}).`);
   return { ok: true };
 }
 
