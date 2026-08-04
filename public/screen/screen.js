@@ -97,6 +97,7 @@
       case 'warmup-race': return raceTrack('Warm-up løb');
       case 'auction': return auction();
       case 'round': return round();
+      case 'paddock': return paddock();
       case 'race': return raceTrack(S.slide.screenTitle);
       case 'leaderboard': return leaderboard('Stilling');
       case 'derby-readiness': return readiness();
@@ -363,7 +364,23 @@
     const c = el('div');
     const t = S.timers && S.timers.round ? TG.countdown(S.timers.round.endsAt) : null;
     c.appendChild(el('div.row.between', {}, [el('h1', { text: S.slide.screenTitle, style: 'font-size:4.2vw' }), t ? el('div.big-num', { text: t, 'data-endsat': S.timers.round.endsAt }) : null]));
-    c.appendChild(el('p.lead', { style: 'margin:.2vh 0 .8vh', text: 'Løs opgaver, byt øvelser, investér — og gør jer klar til løbet.' }));
+    c.appendChild(el('p.lead', { style: 'margin:.2vh 0 .8vh', text: 'Løs opgaver og fyld staldkassen — investeringen venter i Paddocken før løbet.' }));
+    c.appendChild(stableOverview());
+    return c;
+  }
+
+  // Paddocken (v2.13): investeringsvinduet før løbet — stor nedtælling + stald-overblik.
+  function paddock() {
+    const c = el('div');
+    const t = S.timers && S.timers.paddock;
+    const open = t && t.endsAt > Date.now();
+    c.appendChild(el('div.row.between', {}, [
+      el('h1', { text: S.slide.screenTitle, style: 'font-size:4.2vw' }),
+      open ? el('div.big-num', { text: TG.countdown(t.endsAt), 'data-endsat': t.endsAt, style: 'color:var(--gold)' }) : el('div.big-num', { text: 'LUKKET' }),
+    ]));
+    c.appendChild(el('p.lead', { style: 'margin:.2vh 0 .8vh', text: open
+      ? 'Paddocken er åben! Brug jeres Derby Dollars på hest, jockey og stald — vinduet lukker, når tiden er gået.'
+      : 'Paddocken er lukket — hestene føres til start!' }));
     c.appendChild(stableOverview());
     return c;
   }
