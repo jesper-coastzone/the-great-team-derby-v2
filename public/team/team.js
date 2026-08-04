@@ -78,6 +78,7 @@
       case 'warmup-race': return warmupView();
       case 'auction': return auctionView();
       case 'round-dashboard': return dashboardView();
+      case 'paddock': return paddockView();
       case 'bank': return bankView();
       case 'race': case 'final-race': return raceView();
       case 'final-result': return finalResultView();
@@ -940,9 +941,9 @@
   }
 
   // ---------- INVEST ----------
-  function investView() {
-    const c = el('div.col');
-    c.appendChild(head('Investér', 'Hesten løfter toppen, jockeyen bunden. Stald = sikker værdi.'));
+  // Investering sker KUN i Paddocken (v2.13). Uden for vinduet vises listen låst.
+  function investContent(locked) {
+    const wrap = el('div.col');
     const groups = [['horse', 'Hest', 'cat-top-horse', 'hest-opgradering'], ['jockey', 'Jockey', 'cat-top-jockey', 'jockey'], ['stable', 'Stald', 'cat-top-money', 'hestesko']];
     groups.forEach(([type, label, catClass, icon]) => {
       const card = el('div.card.' + catClass);
@@ -954,12 +955,51 @@
         const bought = (S.me.investmentsMade || {})[p.id] >= (S.config.maxPurchasesPerOption || 1);
         const row = el('div.row.between', { style: 'padding:8px 0;border-bottom:1px dashed var(--line)' });
         row.appendChild(el('div', {}, [el('b', { text: p.label }), el('div.muted', { style: 'font-size:13px', text: `+${money(p.valueIncrease)} værdi${p.performancePoints ? ' · +' + p.performancePoints + ' point' : ''}` })]));
-        const b = el('button.btn.sm', { text: bought ? '✓ Købt' : money(p.cost) + ' DD', disabled: bought ? 'true' : null });
-        if (!bought) b.addEventListener('click', () => TG.emit('team:invest', { assetType: type, productId: p.id }).then((r) => { check(r); if (r.ok) toast('Investeret', 'ok'); }));
+        const b = el('button.btn.sm', { text: bought ? '✓ Købt' : money(p.cost) + ' DD', disabled: (bought || locked) ? 'true' : null });
+        if (!bought && !locked) b.addEventListener('click', () => TG.emit('team:invest', { assetType: type, productId: p.id }).then((r) => { check(r); if (r.ok) toast('Investeret', 'ok'); }));
         row.appendChild(b); card.appendChild(row);
       });
-      c.appendChild(card);
+      wrap.appendChild(card);
     });
+    return wrap;
+  }
+
+  function investView() {
+    const c = el('div.col');
+    c.appendChild(head('Investér', 'Hesten løfter toppen, jockeyen bunden. Stald = sikker værdi.'));
+    const locked = S.phase !== 'paddock';
+    if (locked) {
+      const lockCard = el('div.card', { style: 'border-color:var(--gold);background:#fdf8e7' });
+      lockCard.appendChild(el('b', { text: '🔒 Paddocken er lukket' }));
+      lockCard.appendChild(el('p.muted', { style: 'margin-top:4px', text: 'Investering sker i Paddocken — det korte vindue lige før løbet. Tjen Derby Dollars nu, og læg jeres plan: Hvad vil I købe, når Paddocken åbner?' }));
+      c.appendChild(lockCard);
+    }
+    c.appendChild(investContent(locked));
+    return c;
+  }
+
+  // ---------- PADDOCK (v2.13): investeringsvinduet før løbet ----------
+  function paddockView() {
+    const c = el('div.col');
+    const t = (S.timers || {}).paddock;
+    const open = t && t.endsAt > Date.now();
+    c.appendChild(head('Paddocken', open ? 'Paddocken er åben — sidste chance for at ruste hest, jockey og stald før løbet!' : 'Paddocken er lukket.'));
+    if (open) {
+      const timer = el('div.card.center', { style: 'border-color:var(--gold);box-shadow:0 0 0 3px #f6eec9' });
+      timer.appendChild(el('div', { style: 'font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);font-weight:800', text: 'Paddocken lukker om' }));
+      const v = el('div', { text: TG.countdown(t.endsAt), style: 'font-family:var(--font-num);font-weight:800;font-size:52px;line-height:1.1' });
+      v.setAttribute('data-countdown', String(t.endsAt));
+      timer.appendChild(v);
+      timer.appendChild(el('div.muted', { style: 'font-size:13px', text: `I har ${money(S.me.cash)} DD i kassen` }));
+      c.appendChild(timer);
+      c.appendChild(investContent(false));
+    } else {
+      const lockCard = el('div.card.center');
+      lockCard.appendChild(el('div', { style: 'font-size:44px', text: '🔒' }));
+      lockCard.appendChild(el('b', { text: 'Investeringsvinduet er lukket' }));
+      lockCard.appendChild(el('p.muted', { text: 'Gør jer klar — hestene føres til start!' }));
+      c.appendChild(lockCard);
+    }
     return c;
   }
 
@@ -1091,6 +1131,12 @@
       const left = cooldownLeft(k);
       if (left) n.textContent = 'Cooldown ' + left;
       else expired = true;
+    });
+    // Paddock-nedtælling (og andre countdowns): live-opdatering + re-render ved udløb
+    document.querySelectorAll('[data-countdown]').forEach((n) => {
+      const e = Number(n.getAttribute('data-countdown'));
+      n.textContent = TG.countdown(e);
+      if (Date.now() > e && !n.__done) { n.__done = true; expired = true; }
     });
     if (expired) render();
   }, 1000);
