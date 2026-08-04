@@ -221,6 +221,9 @@ function register(io) {
     // ---------- HOST: runde ----------
     socket.on('host:startRoundTimer', (p, cb) => hostMut((g) => gm.startRoundTimer(g, p && p.seconds), cb));
     socket.on('host:stopRoundTimer', (_, cb) => hostMut((g) => gm.stopRoundTimer(g), cb));
+    // Paddocken (v2.13): genstart/luk investeringsvinduet manuelt
+    socket.on('host:startPaddockTimer', (p, cb) => hostMut((g) => gm.startPaddockTimer(g, p && p.seconds), cb));
+    socket.on('host:stopPaddockTimer', (_, cb) => hostMut((g) => gm.stopPaddockTimer(g), cb));
     // Justér den kørende rundetimer løbende (fx +1/−1/+5 min) — aldrig kortere end nu+10s
     socket.on('host:adjustRoundTimer', (p, cb) => hostMut((g) => {
       if (!(g.timers && g.timers.round)) return { ok: false, error: 'Ingen aktiv rundetimer.' };
@@ -294,7 +297,12 @@ function register(io) {
     socket.on('team:exchange', (p, cb) => mut((g) => { const t = teamOf(); return t ? auction.auctionHouseExchange(g, t, p.targetExerciseId) : { ok: false }; }, cb));
 
     // ---------- TEAM: investeringer ----------
-    socket.on('team:invest', (p, cb) => mut((g) => { const t = teamOf(); return t ? econ.invest(g, t, p.assetType, p.productId) : { ok: false }; }, cb));
+    socket.on('team:invest', (p, cb) => mut((g) => {
+      const t = teamOf(); if (!t) return { ok: false };
+      // v2.13: investering kan KUN ske i Paddocken (vinduet før løbet)
+      if (!gm.paddockOpen(g)) return { ok: false, error: 'Paddocken er lukket — I kan investere i vinduet lige før løbet.' };
+      return econ.invest(g, t, p.assetType, p.productId);
+    }, cb));
 
     // ---------- TEAM: trades ----------
     socket.on('team:trade', (p, cb) => mut((g) => { const t = teamOf(); return t ? trades.createTrade(g, t, p.toTeamId, p.offeredExerciseId, p.requestedExerciseId, p.extraPayment) : { ok: false }; }, cb));

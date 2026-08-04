@@ -4,6 +4,7 @@
  * så skærm og tablets følger med uden ekstra klik.
  */
 const { PHASES } = require('../../config/slides');
+const cfg = require('../../config/gameConfig');
 const { now, clamp } = require('./util');
 const gs = require('./gameState');
 const auction = require('./auction');
@@ -21,6 +22,8 @@ function goToSlide(game, index) {
   game.currentPhase = slide.phase;
   if (slide.meta && slide.meta.round) game.currentRound = slide.meta.round;
   if (game.status === 'lobby' && slide.phase !== PHASES.INTRO) game.status = 'running';
+  // Paddock-timeren lever kun på paddock-slidet
+  if (slide.phase !== PHASES.PADDOCK) delete game.timers.paddock;
   enterPhase(game, slide);
   gs.logEvent(game, `Slide → ${slide.title}`);
   return { ok: true };
@@ -48,6 +51,11 @@ function enterPhase(game, slide) {
     case PHASES.WARMUP: {
       const race = gs.currentRace(game);
       if (!race || race.status === 'finished') races.startRace(game, 'normal', 0);
+      break;
+    }
+    case PHASES.PADDOCK: {
+      // Paddocken åbner automatisk med timer — kun her kan der investeres.
+      startPaddockTimer(game);
       break;
     }
     default: break;
@@ -87,6 +95,22 @@ function startRoundTimer(game, seconds) {
 }
 function stopRoundTimer(game) { delete game.timers.round; return { ok: true }; }
 
+// Paddocken: kort investeringsvindue før løbet (v2.13)
+function startPaddockTimer(game, seconds) {
+  const s = seconds || cfg.paddockSeconds || 180;
+  game.timers.paddock = { endsAt: now() + s * 1000, length: s };
+  gs.logEvent(game, `Paddocken er åben (${Math.round(s / 60)} min) — investering mulig.`);
+  return { ok: true };
+}
+function stopPaddockTimer(game) { delete game.timers.paddock; gs.logEvent(game, 'Paddocken er lukket.'); return { ok: true }; }
+
+// Må der investeres lige nu? (bruges af team:invest)
+function paddockOpen(game) {
+  if (game.currentPhase !== PHASES.PADDOCK) return false;
+  if (game.timers.paddock && now() > game.timers.paddock.endsAt) return false;
+  return true;
+}
+
 // Periodisk tick: udløb af handler + auto-luk auktion når tiden er gået.
 function tick(game) {
   let changed = false;
@@ -100,5 +124,5 @@ function tick(game) {
 
 module.exports = {
   goToSlide, next, prev, currentSlide, joinTeam, setStableInfo,
-  startRoundTimer, stopRoundTimer, tick,
+  startRoundTimer, stopRoundTimer, startPaddockTimer, stopPaddockTimer, paddockOpen, tick,
 };
