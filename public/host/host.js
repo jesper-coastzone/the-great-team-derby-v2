@@ -168,6 +168,19 @@
         });
         box.appendChild(timerRow);
       }
+    } else if (phase === 'paddock') {
+      // Paddocken: investeringsvinduet — timeren starter automatisk ved slide-skift
+      const row = el('div.row.wrap');
+      row.appendChild(btn('Genstart Paddock (3 min)', 'host:startPaddockTimer', {}, '.gold'));
+      row.appendChild(btn('Genstart (1 min)', 'host:startPaddockTimer', { seconds: 60 }, '.ghost'));
+      row.appendChild(btn('Luk Paddocken nu', 'host:stopPaddockTimer', {}, '.burgundy'));
+      box.appendChild(row);
+      if (S.timers && S.timers.paddock) {
+        box.appendChild(el('div.big-num', { style: 'font-size:32px;color:var(--navy)', text: TG.countdown(S.timers.paddock.endsAt), 'data-endsat': S.timers.paddock.endsAt }));
+        box.appendChild(el('div.mini', { text: 'Kun mens timeren kører, kan staldene investere. Gå videre til løbet, når vinduet er lukket.' }));
+      } else {
+        box.appendChild(el('div.mini', { text: 'Paddocken er lukket — staldene kan ikke investere.' }));
+      }
     } else if (phase === 'race' || phase === 'final-race') {
       box.appendChild(raceControls());
     } else if (phase === 'final-ready') {
