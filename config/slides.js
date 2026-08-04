@@ -15,6 +15,7 @@ const PHASES = {
   AUCTION_INTRO: 'auction-intro',
   AUCTION: 'auction',
   ROUND: 'round',
+  PADDOCK: 'paddock',
   RACE: 'race',
   LEADERBOARD: 'leaderboard',
   FINAL_READY: 'final-ready',
@@ -52,7 +53,7 @@ function buildDeck(settings) {
     hostHint: 'Forklar: den mest værdifulde stald vinder — ikke nødvendigvis løbsvinderen.' });
   push({ kind: 'game-flow', phase: PHASES.INTRO, title: 'Spillets gang',
     screenTitle: 'Spillets gang', tabletMode: 'welcome',
-    hostHint: 'Forklar loopet: auktion → runde → løb → leaderboard.' });
+    hostHint: 'Forklar loopet: auktion → i stalden (opgaver) → Paddocken (investér) → løb → stilling.' });
 
   // ---- Setup ----
   push({ kind: 'stable-setup', phase: PHASES.SETUP, title: 'Skab jeres stald',
@@ -90,7 +91,10 @@ function buildDeck(settings) {
       hostHint: 'Start auktion → luk → afgør vindere.' });
     push({ kind: 'round', phase: PHASES.ROUND, title: season,
       screenTitle: season, tabletMode: 'round-dashboard', meta: { round: r },
-      hostHint: 'Start rundetimer. Godkend opgaver undervejs.' });
+      hostHint: 'Start rundetimer. Godkend opgaver undervejs. Investering er LUKKET — den åbner først i Paddocken.' });
+    push({ kind: 'paddock', phase: PHASES.PADDOCK, title: `Paddocken · ${season}`,
+      screenTitle: `Paddocken · ${season}`, tabletMode: 'paddock', meta: { round: r },
+      hostHint: 'Paddock-timeren starter automatisk (3 min). KUN her kan staldene investere Derby Dollars i hest, jockey og stald. Gå videre til løbet, når tiden er gået.' });
     push({ kind: 'race', phase: PHASES.RACE, title: `Løb · ${season}`,
       screenTitle: `Løb · ${season}`, tabletMode: 'race', meta: { round: r, raceType: 'normal' },
       hostHint: 'Åbn rolling → hold slår → afslut løb → udbetal præmier.' });
