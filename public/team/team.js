@@ -219,19 +219,37 @@
   // Samme 7 faner som under runderne (og som vises på storskærmen) — men interaktivt:
   // tryk rundt, læs om funktionerne. Ingen belønninger endnu.
   const PS_TABS = [['tasks', '📋 Opgaver'], ['exercise', '🎯 Min øvelse'], ['money', '💰 Penge'], ['trade', '🔁 Byt'], ['house', '🏛️ Auktionshus'], ['invest', '📈 Invester'], ['bank', '🏦 Bank']];
+  // Pre-season-gennemgang (v2.14): tabletten viser PRÆCIS prøverunde-skærmen,
+  // og hosten fremhæver punkterne ét ad gangen (S.preseasonFocus).
   function preseasonView() {
     const c = el('div.col');
-    c.appendChild(head('Pre-season', 'Sådan ser jeres tablet ud under runderne. Tryk rundt i fanerne og læg jeres plan — ingen belønninger endnu.'));
-    const nav = el('div.ps-tabs');
-    const active = ui.psTab || 'tasks';
-    PS_TABS.forEach(([k, l]) => {
-      const b = el('button' + (active === k ? '.active' : ''), { text: l });
-      b.addEventListener('click', () => { ui.psTab = k; ui.psDetail = null; render(); });
-      nav.appendChild(b);
-    });
-    c.appendChild(nav);
-    c.appendChild(psTabContent(active));
+    const f = S.preseasonFocus;
+    c.appendChild(head('Pre-season', f ? 'Følg med — instruktøren gennemgår opgaverne én ad gangen.' : 'Det her er præcis, hvad I ser i prøverunden om lidt.'));
+    c.appendChild(moneyContent());
+    const faste = el('div', { 'data-psfocus': 'faste' });
+    faste.appendChild(el('div.eyebrow', { text: 'De faste opgaver (åbner når sæsonen starter)', style: 'margin-top:14px' }));
+    faste.appendChild(psCard('Puslespil', 'Et langt team-puslespil. Fuldfør det før finalen og få jeres Derby-licens — uden den mister I et slag i finaleløbet.'));
+    faste.appendChild(psCard('Pynt jeres hest', 'Dekorér jeres hobbyhest. Bedømmes i den kreative showcase og giver bonus til staldværdien.'));
+    faste.appendChild(psCard('Design jeres staldskilt', 'Staldens våbenskjold. Bedømmes også i showcasen.'));
+    c.appendChild(faste);
+    applyPreseasonFocus(c);
     return c;
+  }
+
+  // Fremhæv hostens aktuelle punkt: dæmp resten, giv guldring + badge, scroll til det.
+  function applyPreseasonFocus(root) {
+    const f = S.preseasonFocus;
+    if (!f) return;
+    const sel = f === 'faste' ? '[data-psfocus="faste"]' : '[data-mtask="' + f + '"]';
+    root.querySelectorAll('[data-mtask], [data-psfocus]').forEach((n) => {
+      if (!n.matches(sel)) { n.style.opacity = '.25'; n.style.pointerEvents = 'none'; n.style.filter = 'grayscale(.5)'; }
+    });
+    const hit = root.querySelector(sel);
+    if (!hit) return;
+    hit.style.borderRadius = '14px';
+    hit.style.boxShadow = '0 0 0 4px var(--gold), 0 12px 32px rgba(201,162,39,.35)';
+    hit.prepend(el('div.chip.gold', { style: 'margin-bottom:8px;font-weight:800', text: '👉 Vi kigger på denne nu' }));
+    setTimeout(() => { try { hit.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {} }, 120);
   }
 
   function psCard(title, desc, extra) {
@@ -761,14 +779,15 @@
     if (ui.tidslinje) { c.appendChild(tidslinjeCard()); return c; }
     if (!off.includes('tip13')) c.appendChild(taskLauncher('Tip en 13\'er', '13 spørgsmål — 100 DD pr. rigtige.', 'tip13', () => TG.emit('team:tip13Get').then((r) => { if (!r.ok) return check(r); ui.tip13 = { data: r, answers: {}, result: null }; render(); })));
     if (!off.includes('tidslinje')) c.appendChild(taskLauncher('🕰️ Tidslinjen', 'I trækker 5 numre — find kortene i lokalet og læg dem i kronologisk rækkefølge. 300 DD.', 'tidslinje', () => TG.emit('team:tidslinjeGet').then((r) => { if (!r.ok) return check(r); if (r.cooldownLeft) return toast('Tidslinjen er på cooldown.', 'err'); ui.tidslinje = { cards: r.cards, order: r.cards.slice(), reward: r.nextReward, result: null }; render(); })));
-    if (!off.includes('mindpuzzle')) c.appendChild(mindpuzzleCard());
-    if (!off.includes('dyst')) c.appendChild(dystCard());
+    if (!off.includes('mindpuzzle')) { const mp = mindpuzzleCard(); mp.setAttribute('data-mtask', 'mindpuzzle'); c.appendChild(mp); }
+    if (!off.includes('dyst')) { const dy = dystCard(); dy.setAttribute('data-mtask', 'dyst'); c.appendChild(dy); }
     if (!c.children.length) c.appendChild(el('div.card', {}, [el('p.muted', { text: 'Ingen pengeopgaver er åbne lige nu — spørg værten.' })]));
     return c;
   }
   function taskLauncher(name, desc, key, onStart) {
     const cd = cooldownLeft(key);
     const card = el('div.card');
+    card.setAttribute('data-mtask', key);
     card.appendChild(el('div.row.between', {}, [el('h3', { text: name }), cd ? el('span.chip.red', { text: 'Cooldown ' + cd, 'data-cooldown': key }) : null]));
     card.appendChild(el('p.muted', { text: desc, style: 'margin:6px 0' }));
     const b = el('button.btn.block', { text: 'Start', disabled: cd ? 'true' : null }); b.addEventListener('click', onStart); card.appendChild(b);
