@@ -32,7 +32,7 @@ const gameConfig = {
   maxTeams: 12,
 
   // ---- Race ----
-  raceTrackLength: 30,
+  raceTrackLength: 25,          // matcher den fysiske bane (25 felter)
   normalRaceRolls: 4,
   finalRaceRolls: 5,
   diceBaseMin: 2,               // diceMin = diceBaseMin + jockeyLevel
