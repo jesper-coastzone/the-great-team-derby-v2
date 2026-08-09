@@ -175,8 +175,41 @@
     c.appendChild(bottom);
     return c;
   }
+  // v2.14: pre-season-gennemgang — kun det der findes i prøverunden,
+  // synkroniseret med hostens fremhævning (S.preseasonFocus).
   function preseason() {
     if (window.__psTourTimer) { clearInterval(window.__psTourTimer); window.__psTourTimer = null; }
+    const off = (S.disabled && S.disabled.moneyTasks) || [];
+    const items = [
+      { k: 'tip13', emoji: '🎯', name: "Tip en 13'er", desc: '13 hurtige spørgsmål på tabletten', reward: '100 DD pr. rigtigt svar' },
+      { k: 'tidslinje', emoji: '🕰️', name: 'Tidslinjen', desc: 'Træk 5 numre — find kortene i lokalet og læg dem i kronologisk rækkefølge', reward: '300 DD pr. tidslinje' },
+      { k: 'mindpuzzle', emoji: '🧩', name: 'Mind Puzzle', desc: 'Byg banen på spillepladen efter opgavekortet — sværere for hvert niveau', reward: '300 DD pr. niveau' },
+      { k: 'dyst', emoji: '⚔️', name: 'Dysten', desc: 'Udfordr en anden stald til estimerings-duel — bedst af 3', reward: '500 DD til vinderen' },
+      { k: 'faste', emoji: '📌', name: 'De faste opgaver', desc: 'Puslespil (Derby-licens), pynt hesten og design staldskiltet', reward: 'Åbner når sæsonen starter' },
+    ].filter((it) => it.k === 'faste' || !off.includes(it.k));
+    const f = S.preseasonFocus;
+    const wrap = el('div');
+    wrap.appendChild(el('div.eyebrow', { text: 'Pre-season · det her møder I i prøverunden' }));
+    wrap.appendChild(el('h2', { text: 'Sådan tjener I Derby Dollars', style: 'margin-bottom:1.6vh' }));
+    const grid = el('div', { style: 'display:grid;grid-template-columns:repeat(' + Math.min(items.length, 5) + ',1fr);gap:1vw;align-items:stretch' });
+    items.forEach((it) => {
+      const focused = f === it.k; const dimmed = f && !focused;
+      const card = el('div', { style: 'background:#fff;border:1px solid var(--line);border-radius:16px;padding:1.4vw 1.1vw;display:flex;flex-direction:column;gap:.7vh;transition:all .35s;'
+        + (focused ? 'transform:scale(1.06);box-shadow:0 0 0 .35vw var(--gold), 0 18px 44px rgba(201,162,39,.35);' : '')
+        + (dimmed ? 'opacity:.28;filter:grayscale(.5);' : '') });
+      if (focused) card.appendChild(el('div', { style: 'font-size:.9vw;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--gold)', text: '👉 Lige nu' }));
+      card.appendChild(el('div', { style: 'font-size:3vw;line-height:1', text: it.emoji }));
+      card.appendChild(el('div', { style: 'font-family:var(--font-display);font-weight:800;font-size:1.5vw;color:var(--navy)', text: it.name }));
+      card.appendChild(el('div', { style: 'font-size:1.02vw;color:var(--text-dim);flex:1', text: it.desc }));
+      card.appendChild(el('div', { style: 'font-family:var(--font-num);font-weight:800;font-size:1.1vw;color:var(--turf)', text: it.reward }));
+      grid.appendChild(card);
+    });
+    wrap.appendChild(grid);
+    wrap.appendChild(el('p.lead', { style: 'margin-top:2.2vh', text: f ? 'Kig på jeres tablet — punktet er fremhævet dér også.' : 'Tag tabletten frem — I har præcis den samme liste foran jer.' }));
+    return wrap;
+  }
+
+  function __psOldTour() {
     const PS_CSS = '.ps-wrap{display:flex;gap:2.4vw;align-items:stretch}.ps-tablet{flex:1.1;background:#1c1c1e;border-radius:26px;padding:1vw;box-shadow:0 22px 50px rgba(0,0,0,.35)}.ps-screen{background:var(--cream);border-radius:16px;height:100%;display:flex;flex-direction:column;overflow:hidden}.ps-top{background:var(--navy);color:#fff;padding:.7vw 1vw;display:flex;align-items:center;gap:.7vw}.ps-top .b{width:2vw;height:2vw;border-radius:50%;background:var(--burgundy);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1vw}.ps-top .nm{font-family:var(--font-display);font-weight:800;font-size:1.2vw}.ps-top .m{margin-left:auto;text-align:right;font-size:.75vw;opacity:.85}.ps-top .m b{display:block;font-size:1.05vw;font-family:var(--font-num)}.ps-body{flex:1;padding:1vw;display:flex;flex-direction:column;gap:.7vw}.ps-body .bt{font-family:var(--font-display);font-weight:800;font-size:1.7vw;color:var(--navy)}.ps-skel{background:#fff;border:1px solid var(--line);border-radius:12px;padding:.8vw;display:flex;flex-direction:column;gap:.45vw}.ps-skel i{display:block;height:.7vw;border-radius:99px;background:#e7e0cc}.ps-skel i.w60{width:60%}.ps-skel i.w85{width:85%}.ps-skel .btn{height:1.7vw;border-radius:8px;background:var(--gold);opacity:.85}.ps-nav{display:flex;background:#fff;border-top:1px solid var(--line)}.ps-nav div{flex:1;text-align:center;padding:.65vw .2vw;font-size:.78vw;font-weight:700;color:var(--text-dim);border-top:3px solid transparent;transition:all .3s;cursor:pointer;white-space:nowrap}.ps-nav div.on{color:var(--navy);border-top-color:var(--gold);background:var(--cream)}.ps-panel{flex:1;background:var(--navy);color:var(--on-navy);border-radius:20px;padding:2vw;display:flex;flex-direction:column;justify-content:center;box-shadow:var(--shadow-lg)}.ps-panel .pe{font-size:1vw;letter-spacing:3px;text-transform:uppercase;color:var(--gold-soft);font-weight:700;margin-bottom:1vh}.ps-panel .pt{font-family:var(--font-display);font-size:2.7vw;line-height:1.05;margin-bottom:1.4vh}.ps-panel .pd{font-size:1.45vw;line-height:1.55;opacity:.93}.ps-dots{display:flex;gap:.6vw;margin-top:2.4vh}.ps-dots i{width:.9vw;height:.9vw;border-radius:50%;background:rgba(255,255,255,.28);transition:background .3s}.ps-dots i.on{background:var(--gold)}';
     const tabs = [
       { label: 'Opgaver', title: 'Opgaver', eyebrow: 'Fane 1 af 7', desc: 'Puslespillet, der giver jeres Derby-licens, og de kreative opgaver ligger her. Kald hosten, når I vil have noget godkendt.' },
