@@ -97,6 +97,16 @@
       case 'warmup-race': return raceTrack('Warm-up løb');
       case 'auction': return auction();
       case 'round': return round();
+      case 'paddock-intro': return explainCards('Paddocken — sådan virker den', 'Nyt element · følg med her', [
+        ['🏆', 'Præmietavlen', 'Før hvert løb ser I dagens præmier — og husk: vinderhestens værdi FORDOBLES. Så ved I, hvad der er værd at investere i.'],
+        ['🥕', 'Dagsform', 'Køb gulerødder, pep-talk eller stjernefoder til hesten. Virker KUN i det næste løb — varige forbedringer tjener I på øvelserne.'],
+        ['🎫', 'Odds-tavlen', 'Sæt ét væddemål pr. stald på den hest, I tror vinder — også jeres egen. Rammer I rigtigt, får I indsats × odds.'],
+      ], 'Paddocken åbner på næste slide — 3 minutter, så gælder det!')
+      case 'race-intro': return explainCards('Løbet — sådan virker det', 'Nyt element · følg med her', [
+        ['🎲', '5 spurter', 'Hver stald slår terningen 5 gange. Jockey og pep-talk løfter BUNDEN, hest og gulerødder løfter TOPPEN.'],
+        ['⚡', 'Alt kan ske', 'Dyrlægetjek, vind og publikum rammer tilfældigt — og heste langt bagud får en opløbsfight-bonus.'],
+        ['🏁', 'Målstregen', 'Længst fremme vinder: dagens 1. præmie + hestens værdi fordobles. Væddemål udbetales lige efter løbet.'],
+      ], 'Gør jer klar — hestene føres til start!')
       case 'paddock': return paddock();
       case 'race': return raceTrack(S.slide.screenTitle);
       case 'leaderboard': return leaderboard('Stilling');
@@ -399,6 +409,25 @@
     c.appendChild(el('div.row.between', {}, [el('h1', { text: S.slide.screenTitle, style: 'font-size:4.2vw' }), t ? el('div.big-num', { text: t, 'data-endsat': S.timers.round.endsAt }) : null]));
     c.appendChild(el('p.lead', { style: 'margin:.2vh 0 .8vh', text: 'Løs opgaver og fyld staldkassen — investeringen venter i Paddocken før løbet.' }));
     c.appendChild(stableOverview());
+    return c;
+  }
+
+  // v2.17: generisk forklarings-slide til nye elementer (facilitator-princippet:
+  // alt nyt præsenteres på storskærmen, FØR det bruges første gang)
+  function explainCards(title, eyebrow, items, footer) {
+    const c = el('div');
+    c.appendChild(el('div.eyebrow', { text: eyebrow }));
+    c.appendChild(el('h2', { text: title, style: 'margin-bottom:2.2vh' }));
+    const grid = el('div', { style: 'display:grid;grid-template-columns:repeat(3,1fr);gap:1.4vw' });
+    items.forEach(([emoji, head, body]) => {
+      const card = el('div', { style: 'background:#fff;border:1px solid var(--line);border-radius:18px;padding:1.8vw;display:flex;flex-direction:column;gap:1vh' });
+      card.appendChild(el('div', { style: 'font-size:3.4vw;line-height:1', text: emoji }));
+      card.appendChild(el('div', { style: 'font-family:var(--font-display);font-weight:800;font-size:1.7vw;color:var(--navy)', text: head }));
+      card.appendChild(el('div', { style: 'font-size:1.15vw;color:var(--text-dim);line-height:1.5', text: body }));
+      grid.appendChild(card);
+    });
+    c.appendChild(grid);
+    if (footer) c.appendChild(el('p.lead', { style: 'margin-top:2.6vh;font-weight:700', text: footer }));
     return c;
   }
 
