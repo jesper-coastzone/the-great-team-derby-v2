@@ -280,6 +280,7 @@
     col.appendChild(tradesPanel());
     col.appendChild(changeCardsPanel());
     col.appendChild(exercisesPanel());
+    col.appendChild(botPanel());
     col.appendChild(soundPanel());
     col.appendChild(gamesPanel());
     col.appendChild(toolsPanel());
@@ -469,6 +470,25 @@
   }
 
   // Lyd på storskærmen: musik-toggles + dansk TTS-speaker
+  // Bot-styring (v2.13): skru op/ned for botternes tempo — live, midt i spillet.
+  function botPanel() {
+    const bots = (S.teams || []).filter((t) => t.isBot);
+    if (!bots.length) return el('div');
+    const c = el('div.card.sec');
+    c.appendChild(el('h3', { text: '🤖 Bot-niveau' }));
+    const cur = S.botFactor != null ? S.botFactor : 1;
+    const row = el('div.row.wrap', { style: 'gap:6px' });
+    [[0, 'Sluk'], [0.5, 'Svag'], [0.75, 'Rolig'], [1, 'Normal'], [1.25, 'Stærk']].forEach(([f, label]) => {
+      const active = Math.abs(cur - f) < 0.01;
+      const b = el('button.btn.sm' + (active ? '.gold' : '.ghost'), { text: label + ' (' + Math.round(f * 100) + '%)' });
+      b.addEventListener('click', () => TG.emit('host:setBotLevel', { factor: f }).then(check));
+      row.appendChild(b);
+    });
+    c.appendChild(row);
+    c.appendChild(el('p.mini', { style: 'margin-top:6px', text: `Gælder ${bots.length} bot-stald${bots.length > 1 ? 'e' : ''}s indtjening i runderne — virker med det samme. Brug det til at sikre, at de rigtige spillere er med i toppen.` }));
+    return c;
+  }
+
   function soundPanel() {
     const c = el('div.card.sec');
     c.appendChild(el('h3', { text: '🔊 Lyd på storskærmen' }));
