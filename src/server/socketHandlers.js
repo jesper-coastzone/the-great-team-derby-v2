@@ -165,6 +165,15 @@ function register(io) {
     }, cb));
 
     // Lyd-toggles til storskærmen (rundemusik / løbsmusik / TTS-speaker)
+    // Pre-season-gennemgang (v2.14): fremhæv ét punkt ad gangen på tablets + storskærm
+    socket.on('host:setPreseasonFocus', (p, cb) => hostMut((g) => {
+      const valid = ['tip13', 'tidslinje', 'mindpuzzle', 'dyst', 'faste'];
+      const step = p && p.step;
+      if (step != null && !valid.includes(step)) return { ok: false, error: 'Ukendt punkt.' };
+      g.preseasonFocus = step || null;
+      return { ok: true };
+    }, cb));
+
     // Bot-styring (v2.13): skru op/ned for botternes indtjening live
     socket.on('host:setBotLevel', (p, cb) => hostMut((g) => {
       const f = Number(p && p.factor);

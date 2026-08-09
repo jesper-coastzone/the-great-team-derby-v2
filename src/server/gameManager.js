@@ -18,6 +18,7 @@ function goToSlide(game, index) {
   game.activeSlideIndex = index;
   game.screenMessageOverride = null;
   game.tabletModeOverride = null;
+  game.preseasonFocus = null;
   const slide = currentSlide(game);
   game.currentPhase = slide.phase;
   if (slide.meta && slide.meta.round) game.currentRound = slide.meta.round;

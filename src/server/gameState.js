@@ -355,6 +355,8 @@ function buildStateFor(game, role, teamId) {
     warmupPaid: game.warmupPaid,
     sound: game.sound || { roundMusic: false, raceMusic: false, tts: false },
     disabled: game.disabled || { exercises: [], moneyTasks: [] },
+    // Pre-season-gennemgang: hvilket punkt fremhæver hosten lige nu? (v2.14)
+    preseasonFocus: game.preseasonFocus || null,
     // Forandringskort: aktivt kort (alle roller) + multiplikatorer til visning
     activeChangeCard: game.changeCard
       ? { id: game.changeCard.id, emoji: game.changeCard.emoji, title: game.changeCard.title, text: game.changeCard.text, manual: game.changeCard.manual, playedAt: game.changeCard.playedAt }
