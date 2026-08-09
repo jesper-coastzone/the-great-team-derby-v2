@@ -172,7 +172,9 @@
       // Paddocken: investeringsvinduet — timeren starter automatisk ved slide-skift
       const row = el('div.row.wrap');
       row.appendChild(btn('Genstart Paddock (3 min)', 'host:startPaddockTimer', {}, '.gold'));
-      row.appendChild(btn('Genstart (1 min)', 'host:startPaddockTimer', { seconds: 60 }, '.ghost'));
+      row.appendChild(btn('+1 min', 'host:adjustPaddockTimer', { deltaSeconds: 60 }, '.turf'));
+      row.appendChild(btn('+2 min', 'host:adjustPaddockTimer', { deltaSeconds: 120 }, '.turf'));
+      row.appendChild(btn('−1 min', 'host:adjustPaddockTimer', { deltaSeconds: -60 }, '.ghost'));
       row.appendChild(btn('Luk Paddocken nu', 'host:stopPaddockTimer', {}, '.burgundy'));
       box.appendChild(row);
       if (S.timers && S.timers.paddock) {
@@ -385,7 +387,7 @@
       const dot = el('span', { title: t.connected ? 'Online' : 'Offline', style: `width:10px;height:10px;border-radius:50%;flex:none;background:${t.joined ? (t.connected ? '#2E7D4F' : '#B83232') : 'var(--line)'}` });
       line.appendChild(dot);
       line.appendChild(el('div.badge', { style: `background:${t.color.hex};width:28px;height:28px;font-size:14px`, text: String(t.teamNumber) }));
-      const info = el('div', {}, [el('b', { text: t.stableName }), el('div.mini', { text: `${money(t.cash)} kontant · total ${money(t.totalValue)} · H${t.horseLevel}/J${t.jockeyLevel}${t.derbyLicense ? ' · 🎫' : ''}` })]);
+      const info = el('div', {}, [el('b', { text: t.stableName + (t.managerName ? ` · 👤 ${t.managerName}` : '') }), el('div.mini', { text: `${money(t.cash)} kontant · total ${money(t.totalValue)} · H${t.horseLevel}/J${t.jockeyLevel}${t.derbyLicense ? ' · 🎫' : ''}` })]);
       line.appendChild(info);
       line.appendChild(t.ready ? el('span.chip.turf', { text: 'Klar' }) : el('span.chip', { text: t.joined ? '—' : 'Ledig' }));
       const edit = el('button.btn.sm.ghost', { text: '✎' }); edit.addEventListener('click', () => editTeam(t)); line.appendChild(edit);
