@@ -376,6 +376,7 @@ function buildStateFor(game, role, teamId) {
   if (role === 'host') {
     state.log = game.log.slice(0, 60);
     state.settings = game.settings;
+    state.botFactor = game.botFactor != null ? game.botFactor : 1;
     state.pendingApprovals = collectPendingApprovals(game);
     state.trades = game.trades;
     state.deck = game.deck.map((s) => ({ index: s.index, title: s.title, phase: s.phase }));

@@ -35,7 +35,9 @@ function botTick(game) {
       const perMin = table[Math.min(Math.max(game.currentRound || 1, 1) - 1, table.length - 1)] || 0;
       const interval = bc.earnIntervalSeconds || 40;
       const jitter = 1 + ((Math.random() * 2 - 1) * (bc.earnJitter || 0));
-      const amount = Math.round((perMin * (interval / 60) * jitter) / 10) * 10;
+      // v2.13: host kan skrue op/ned for botterne live (game.botFactor, default 1)
+      const factor = game.botFactor != null ? game.botFactor : 1;
+      const amount = Math.round((perMin * (interval / 60) * jitter * factor) / 10) * 10;
       if (amount > 0) {
         const flavor = BOT_FLAVORS[Math.floor(Math.random() * BOT_FLAVORS.length)];
         econ.addTransaction(game, bot, amount, 'task', flavor);
@@ -163,6 +165,15 @@ function register(io) {
     }, cb));
 
     // Lyd-toggles til storskærmen (rundemusik / løbsmusik / TTS-speaker)
+    // Bot-styring (v2.13): skru op/ned for botternes indtjening live
+    socket.on('host:setBotLevel', (p, cb) => hostMut((g) => {
+      const f = Number(p && p.factor);
+      if (!(f >= 0 && f <= 2)) return { ok: false, error: 'Ugyldigt bot-niveau.' };
+      g.botFactor = f;
+      gs.logEvent(g, `Bot-niveau sat til ${Math.round(f * 100)}%.`);
+      return { ok: true };
+    }, cb));
+
     socket.on('host:setSound', (p, cb) => hostMut((g) => {
       g.sound = g.sound || { roundMusic: false, raceMusic: false, tts: false };
       for (const k of ['roundMusic', 'raceMusic', 'tts']) if (p && typeof p[k] === 'boolean') g.sound[k] = p[k];
