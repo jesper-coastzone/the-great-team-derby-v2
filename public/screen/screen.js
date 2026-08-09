@@ -504,7 +504,7 @@
     c.id = 'raceStage';
     c.setAttribute('data-race-id', race.id);
     c.appendChild(el('div.row.between', {}, [el('h2', { text: title }), el('span.chip#raceChip', { text: '' })]));
-    const marks = [5, 10, 15, 20, 25];
+    const marks = [5, 10, 15, 20]; // 25 = målstregen
     const trackWrap = el('div.track-wrap');
     const dist = el('div.dist-row');
     marks.forEach((m) => dist.appendChild(el('span', { style: `left:${pctFor(m, race.trackLength)}%`, text: String(m) })));
@@ -545,6 +545,8 @@
   }
 
   function pctFor(pos, trackLength) {
+    // I mål: hesten krydser målstregen (stregen står ved 97% af banen)
+    if (pos >= trackLength) return 97;
     return Math.min(93, (pos / trackLength) * 92) + 1;
   }
 
