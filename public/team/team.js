@@ -102,6 +102,8 @@
       'how-to-win': introHowToWin,
       'game-flow': introGameFlow,
     }[S.slide.kind];
+    if (S.slide.kind === 'paddock-intro') return centerMsg('🏇 Paddocken', 'Kig på storskærmen — instruktøren forklarer præmietavlen, dagsform og odds-tavlen. Om lidt åbner Paddocken på jeres tablet!');
+    if (S.slide.kind === 'race-intro') return centerMsg('🏁 Løbet', 'Kig på storskærmen — instruktøren forklarer løbet. Gør jer klar til at slå jeres spurter!');
     if (!mirror) return centerMsg('Velkommen til<br>The Great Team Derby', 'Vent på værten…');
     const c = el('div.col');
     c.appendChild(el('div.eyebrow', { text: 'Følg med — her eller på storskærmen' }));
@@ -182,11 +184,11 @@
     };
     c.appendChild(mk('Staldnavn', 'stableName', me.stableName));
     c.appendChild(mk('Hestens navn', 'horseName', me.horseName));
-    c.appendChild(mk('Jockeyens navn', 'jockeyName', me.jockeyName));
+    c.appendChild(mk('Staldansvarlig (jeres kontaktperson)', 'managerName', me.managerName));
     const save = el('button.btn.block', { text: 'Gem' });
-    save.addEventListener('click', () => TG.emit('team:setStable', { stableName: f.stableName.value, horseName: f.horseName.value, jockeyName: f.jockeyName.value }).then((r) => { if (r.ok) { ui.setupDraft = {}; toast('Gemt', 'ok'); } }));
+    save.addEventListener('click', () => TG.emit('team:setStable', { stableName: f.stableName.value, horseName: f.horseName.value, managerName: f.managerName.value }).then((r) => { if (r.ok) { ui.setupDraft = {}; toast('Gemt', 'ok'); } }));
     const ready = el('button.btn.gold.block', { text: me.ready ? '✓ Vi er klar (tryk for at fortryde)' : 'Vi er klar!' , style: 'margin-top:10px' });
-    ready.addEventListener('click', () => TG.emit('team:setStable', { stableName: f.stableName.value, horseName: f.horseName.value, jockeyName: f.jockeyName.value, ready: !me.ready }).then((r) => { if (r.ok) ui.setupDraft = {}; }));
+    ready.addEventListener('click', () => TG.emit('team:setStable', { stableName: f.stableName.value, horseName: f.horseName.value, managerName: f.managerName.value, ready: !me.ready }).then((r) => { if (r.ok) ui.setupDraft = {}; }));
     c.appendChild(save); c.appendChild(ready);
     return c;
   }
