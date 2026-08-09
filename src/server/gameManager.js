@@ -84,6 +84,7 @@ function setStableInfo(game, team, info) {
   if (info.stableName != null) team.stableName = String(info.stableName).slice(0, 40) || team.stableName;
   if (info.horseName != null) team.horseName = String(info.horseName).slice(0, 40);
   if (info.jockeyName != null) team.jockeyName = String(info.jockeyName).slice(0, 40);
+  if (info.managerName != null) team.managerName = String(info.managerName).slice(0, 40); // staldansvarlig (v2.17)
   if (info.ready != null) team.ready = !!info.ready;
   return { ok: true };
 }

@@ -43,6 +43,7 @@ function makeTeam(game, number) {
     stableName: `Stald ${number}`,
     horseName: '',
     jockeyName: '',
+    managerName: '',            // staldansvarlig (v2.17)
     ready: false,
     joined: false,
     connected: false,
@@ -231,6 +232,7 @@ function publicTeam(t) {
     stableName: t.stableName,
     horseName: t.horseName,
     jockeyName: t.jockeyName,
+    managerName: t.managerName || '',
     ready: t.ready,
     joined: t.joined,
     connected: t.connected,

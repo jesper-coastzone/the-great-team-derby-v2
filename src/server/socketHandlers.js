@@ -244,6 +244,14 @@ function register(io) {
     // Paddocken (v2.13): genstart/luk investeringsvinduet manuelt
     socket.on('host:startPaddockTimer', (p, cb) => hostMut((g) => gm.startPaddockTimer(g, p && p.seconds), cb));
     socket.on('host:stopPaddockTimer', (_, cb) => hostMut((g) => gm.stopPaddockTimer(g), cb));
+    // v2.17: forlæng/afkort den kørende paddock-timer
+    socket.on('host:adjustPaddockTimer', (p, cb) => hostMut((g) => {
+      if (!(g.timers && g.timers.paddock)) return { ok: false, error: 'Ingen aktiv paddock-timer.' };
+      const delta = Number(p && p.deltaSeconds) || 0;
+      g.timers.paddock.endsAt = Math.max(g.timers.paddock.endsAt + delta * 1000, Date.now() + 10 * 1000);
+      gs.logEvent(g, `Paddock-timer justeret ${delta >= 0 ? '+' : '−'}${Math.round(Math.abs(delta) / 60 * 10) / 10} min.`);
+      return { ok: true };
+    }, cb));
     // Justér den kørende rundetimer løbende (fx +1/−1/+5 min) — aldrig kortere end nu+10s
     socket.on('host:adjustRoundTimer', (p, cb) => hostMut((g) => {
       if (!(g.timers && g.timers.round)) return { ok: false, error: 'Ingen aktiv rundetimer.' };
