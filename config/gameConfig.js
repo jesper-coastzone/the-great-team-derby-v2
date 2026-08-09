@@ -144,8 +144,10 @@ const gameConfig = {
     horseNames: ['Komet', 'Tordenhov', 'Guldfaks'],
     jockeyNames: ['Robo-Rita', 'Auto-Anders', 'Mekaniske Mads'],
     earnIntervalSeconds: 40,           // hvor ofte en bot tjener under en runde
-    earnPerMinuteByRound: [460, 150],  // runde 1: stærk · runde 2+: falder af (index = min(runde-1, længde-1))
-    earnJitter: 0.25,                  // ±25% tilfældighed pr. udbetaling
+    // v2.13: fladt og lavere niveau — samme tempo alle runder, så rigtige hold kan vinde.
+    // Host kan skrue op/ned live med bot-styringen (game.botFactor).
+    earnPerMinuteByRound: [250],       // DD/min i alle runder (index = min(runde-1, længde-1))
+    earnJitter: 0.15,                  // ±15% tilfældighed pr. udbetaling (mere forudsigelige)
     raceRollChancePerTick: 0.22,       // sandsynlighed pr. sekund for at botten slår i åbent løb
   },
 
