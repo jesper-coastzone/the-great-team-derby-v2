@@ -412,8 +412,34 @@
       open ? el('div.big-num', { text: TG.countdown(t.endsAt), 'data-endsat': t.endsAt, style: 'color:var(--gold)' }) : el('div.big-num', { text: 'LUKKET' }),
     ]));
     c.appendChild(el('p.lead', { style: 'margin:.2vh 0 .8vh', text: open
-      ? 'Paddocken er åben! Brug jeres Derby Dollars på hest, jockey og stald — vinduet lukker, når tiden er gået.'
+      ? 'Paddocken er åben! Køb dagsform til hesten og sæt jeres væddemål på odds-tavlen — vinduet lukker, når tiden er gået.'
       : 'Paddocken er lukket — hestene føres til start!' }));
+    // v2.16: Præmietavle + odds-tavle side om side
+    const boards = el('div', { style: 'display:grid;grid-template-columns:1fr 1.4fr;gap:1vw;margin:.6vh 0' });
+    const pv = S.nextRacePrizes;
+    if (pv) {
+      const pb = el('div', { style: 'background:#fff;border:1px solid var(--line);border-radius:14px;padding:1vw' });
+      pb.appendChild(el('div', { style: 'font-family:var(--font-display);font-weight:800;font-size:1.4vw;color:var(--navy)', text: pv.isFinal ? '🏆 Finalens præmier' : '🏆 Dagens præmier' }));
+      Object.entries(pv.prizes).filter(([k]) => k !== 'default').slice(0, 4).forEach(([place, amt]) => {
+        pb.appendChild(el('div', { style: 'display:flex;justify-content:space-between;font-size:1.05vw;padding:.25vh 0', html: `<span>${place}. plads</span><b>${Number(amt).toLocaleString('da-DK')} DD</b>` }));
+      });
+      if (pv.winnerMultiplier > 1) pb.appendChild(el('div', { style: 'margin-top:.5vh;font-weight:800;color:var(--gold);font-size:1vw', text: `🐎 Vinderhestens værdi × ${pv.winnerMultiplier}!` }));
+      boards.appendChild(pb);
+    }
+    if (S.paddockOdds) {
+      const ob = el('div', { style: 'background:var(--navy);color:var(--on-navy);border-radius:14px;padding:1vw' });
+      ob.appendChild(el('div', { style: 'font-family:var(--font-display);font-weight:800;font-size:1.4vw;color:var(--gold)', text: '🎫 Odds-tavlen' }));
+      const grid = el('div', { style: 'display:grid;grid-template-columns:1fr 1fr;gap:.2vh 1.4vw;margin-top:.4vh' });
+      S.teams.forEach((t) => {
+        const odds = S.paddockOdds[t.id]; if (odds == null) return;
+        const backers = (S.raceBets || []).filter((b) => b.targetTeamId === t.id).length;
+        grid.appendChild(el('div', { style: 'display:flex;justify-content:space-between;font-size:1vw;padding:.15vh 0;border-bottom:1px dashed rgba(255,255,255,.15)', html: `<span>${t.horseName || t.stableName}${backers ? ' 🎫×' + backers : ''}</span><b style="color:var(--gold)">${odds}x</b>` }));
+      });
+      ob.appendChild(grid);
+      ob.appendChild(el('div', { style: 'font-size:.85vw;opacity:.8;margin-top:.4vh', text: 'Sæt jeres væddemål på tabletten — ét pr. stald pr. løb.' }));
+      boards.appendChild(ob);
+    }
+    if (boards.children.length) c.appendChild(boards);
     c.appendChild(stableOverview());
     return c;
   }
