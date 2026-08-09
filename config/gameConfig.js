@@ -33,7 +33,7 @@ const gameConfig = {
 
   // ---- Race ----
   raceTrackLength: 25,          // matcher den fysiske bane (25 felter)
-  normalRaceRolls: 4,
+  normalRaceRolls: 5,           // v2.17: 5 slag passer 25-felts banen (vinder-snit ~21, målgang med niveauer/boosts)
   finalRaceRolls: 5,
   diceBaseMin: 2,               // diceMin = diceBaseMin + jockeyLevel (+ løbsdags-boosts)
   diceBaseMax: 5,               // diceMax = diceBaseMax + horseLevel (+ løbsdags-boosts)

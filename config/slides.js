@@ -15,7 +15,9 @@ const PHASES = {
   AUCTION_INTRO: 'auction-intro',
   AUCTION: 'auction',
   ROUND: 'round',
+  PADDOCK_INTRO: 'paddock-intro',
   PADDOCK: 'paddock',
+  RACE_INTRO: 'race-intro',
   RACE: 'race',
   LEADERBOARD: 'leaderboard',
   FINAL_READY: 'final-ready',
@@ -92,9 +94,20 @@ function buildDeck(settings) {
     push({ kind: 'round', phase: PHASES.ROUND, title: season,
       screenTitle: season, tabletMode: 'round-dashboard', meta: { round: r },
       hostHint: 'Start rundetimer. Godkend opgaver undervejs. Investering er LUKKET — den åbner først i Paddocken.' });
+    if (r === 1) {
+      // Facilitator-princip: alt nyt præsenteres, FØR det bruges første gang.
+      push({ kind: 'paddock-intro', phase: PHASES.PADDOCK_INTRO, title: 'Paddocken forklaret',
+        screenTitle: 'Paddocken — sådan virker den', tabletMode: 'welcome',
+        hostHint: 'Forklar Paddocken: 1) Præmietavlen viser dagens præmier + at vinderhesten fordobles. 2) Dagsform-boosts gælder KUN næste løb. 3) Odds-tavlen: ét væddemål pr. stald på en hvilken som helst hest. Intet kan købes endnu — det åbner på næste slide.' });
+    }
     push({ kind: 'paddock', phase: PHASES.PADDOCK, title: `Paddocken · ${season}`,
       screenTitle: `Paddocken · ${season}`, tabletMode: 'paddock', meta: { round: r },
-      hostHint: 'Paddock-timeren starter automatisk (3 min). KUN her kan staldene investere Derby Dollars i hest, jockey og stald. Gå videre til løbet, når tiden er gået.' });
+      hostHint: 'Paddock-timeren starter automatisk (3 min — kan forlænges herunder). KUN her kan staldene købe dagsform, investere i stalden og sætte væddemål.' });
+    if (r === 1) {
+      push({ kind: 'race-intro', phase: PHASES.RACE_INTRO, title: 'Løbet forklaret',
+        screenTitle: 'Løbet — sådan virker det', tabletMode: 'welcome',
+        hostHint: 'Forklar løbet: 5 spurter pr. stald, terningen viser felter (bund løftes af jockey/pep-talk, top af hest/gulerødder). Events kan ramme undervejs, og hold langt bagud får opløbsfight. Vinderen tager dagens 1. præmie + fordobler hestens værdi.' });
+    }
     push({ kind: 'race', phase: PHASES.RACE, title: `Løb · ${season}`,
       screenTitle: `Løb · ${season}`, tabletMode: 'race', meta: { round: r, raceType: 'normal' },
       hostHint: 'Åbn rolling → hold slår → afslut løb → udbetal præmier.' });
