@@ -177,9 +177,19 @@
       box.appendChild(row);
       if (S.timers && S.timers.paddock) {
         box.appendChild(el('div.big-num', { style: 'font-size:32px;color:var(--navy)', text: TG.countdown(S.timers.paddock.endsAt), 'data-endsat': S.timers.paddock.endsAt }));
-        box.appendChild(el('div.mini', { text: 'Kun mens timeren kører, kan staldene investere. Gå videre til løbet, når vinduet er lukket.' }));
+        box.appendChild(el('div.mini', { text: 'Kun mens timeren kører, kan staldene investere og vædde. Gå videre til løbet, når vinduet er lukket.' }));
       } else {
         box.appendChild(el('div.mini', { text: 'Paddocken er lukket — staldene kan ikke investere.' }));
+      }
+      // Odds-tavlens væddemål (v2.16)
+      const bets = S.raceBets || [];
+      if (bets.length) {
+        const nameOf = (id) => (S.teams.find((t) => t.id === id) || {});
+        box.appendChild(el('div.mini', { style: 'margin-top:6px', text: '🎫 ' + bets.map((b) => {
+          const from = nameOf(b.bettorId).stableName || '?';
+          const to = nameOf(b.targetTeamId);
+          return `${from} → ${to.horseName || to.stableName} (${b.amount} DD · ${b.odds}x)`;
+        }).join(' · ') }));
       }
     } else if (phase === 'race' || phase === 'final-race') {
       box.appendChild(raceControls());
