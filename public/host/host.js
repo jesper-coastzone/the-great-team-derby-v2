@@ -186,6 +186,20 @@
     } else if (phase === 'final-ready') {
       box.appendChild(creativePanel());
       box.appendChild(btn('Giv alle Derby-licens', 'host:grantAllLicenses', {}, '.ghost'));
+    } else if (phase === 'preseason' && kind === 'preseason-tasks') {
+      // Punkt-for-punkt gennemgang (v2.14): fremhæv det du taler om — tablets/skærm følger med
+      box.appendChild(el('p.mini', { text: 'Gennemgå ét punkt ad gangen — tablets og storskærm fremhæver det valgte. Tryk igen for at fjerne fremhævningen.' }));
+      const off = (S.disabled && S.disabled.moneyTasks) || [];
+      const steps = [['tip13', "1 · Tip en 13'er"], ['tidslinje', '2 · Tidslinjen'], ['mindpuzzle', '3 · Mind Puzzle'], ['dyst', '4 · Dysten'], ['faste', '5 · De faste opgaver']]
+        .filter(([k]) => k === 'faste' || !off.includes(k));
+      const row = el('div.row.wrap', { style: 'gap:6px' });
+      steps.forEach(([k, l]) => {
+        const active = S.preseasonFocus === k;
+        const b = el('button.btn.sm' + (active ? '.gold' : '.ghost'), { text: l });
+        b.addEventListener('click', () => TG.emit('host:setPreseasonFocus', { step: active ? null : k }).then(check));
+        row.appendChild(b);
+      });
+      box.appendChild(row);
     } else if (phase === 'setup') {
       box.appendChild(el('p.mini', { text: 'Tablets viser setup-formularen. Ret evt. navne i hold-panelet →' }));
     } else {
