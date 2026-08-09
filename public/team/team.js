@@ -959,33 +959,96 @@
     return c;
   }
 
-  // ---------- INVEST ----------
-  // Investering sker KUN i Paddocken (v2.13). Uden for vinduet vises listen låst.
+  // ---------- INVEST / LØBSDAGSØKONOMI (v2.16) ----------
+  // Varige point tjenes KUN på øvelser. Penge køber løbsdags-boosts (ét løb) og stald-værdi.
   function investContent(locked) {
     const wrap = el('div.col');
-    const groups = [['horse', 'Hest', 'cat-top-horse', 'hest-opgradering'], ['jockey', 'Jockey', 'cat-top-jockey', 'jockey'], ['stable', 'Stald', 'cat-top-money', 'hestesko']];
-    groups.forEach(([type, label, catClass, icon]) => {
-      const card = el('div.card.' + catClass);
-      const hd = el('div.row', { style: 'align-items:center;gap:10px' });
-      hd.appendChild(TG.assetImg(icon, { style: 'width:30px;height:30px' }));
-      hd.appendChild(el('h3', { text: label }));
-      card.appendChild(hd);
-      ((S.config.investmentOptions || {})[type] || []).forEach((p) => {
-        const bought = (S.me.investmentsMade || {})[p.id] >= (S.config.maxPurchasesPerOption || 1);
-        const row = el('div.row.between', { style: 'padding:8px 0;border-bottom:1px dashed var(--line)' });
-        row.appendChild(el('div', {}, [el('b', { text: p.label }), el('div.muted', { style: 'font-size:13px', text: `+${money(p.valueIncrease)} værdi${p.performancePoints ? ' · +' + p.performancePoints + ' point' : ''}` })]));
-        const b = el('button.btn.sm', { text: bought ? '✓ Købt' : money(p.cost) + ' DD', disabled: (bought || locked) ? 'true' : null });
-        if (!bought && !locked) b.addEventListener('click', () => TG.emit('team:invest', { assetType: type, productId: p.id }).then((r) => { check(r); if (r.ok) toast('Investeret', 'ok'); }));
-        row.appendChild(b); card.appendChild(row);
-      });
-      wrap.appendChild(card);
+    wrap.appendChild(boostShop(locked));
+    // Stald: sikker varig værdi
+    const card = el('div.card.cat-top-money');
+    const hd = el('div.row', { style: 'align-items:center;gap:10px' });
+    hd.appendChild(TG.assetImg('hestesko', { style: 'width:30px;height:30px' }));
+    hd.appendChild(el('h3', { text: 'Stalden (varig værdi)' }));
+    card.appendChild(hd);
+    ((S.config.investmentOptions || {}).stable || []).forEach((p) => {
+      const bought = (S.me.investmentsMade || {})[p.id] >= (S.config.maxPurchasesPerOption || 1);
+      const row = el('div.row.between', { style: 'padding:8px 0;border-bottom:1px dashed var(--line)' });
+      row.appendChild(el('div', {}, [el('b', { text: p.label }), el('div.muted', { style: 'font-size:13px', text: `+${money(p.valueIncrease)} værdi` })]));
+      const b = el('button.btn.sm', { text: bought ? '✓ Købt' : money(p.cost) + ' DD', disabled: (bought || locked) ? 'true' : null });
+      if (!bought && !locked) b.addEventListener('click', () => TG.emit('team:invest', { assetType: 'stable', productId: p.id }).then((r) => { check(r); if (r.ok) toast('Investeret', 'ok'); }));
+      row.appendChild(b); card.appendChild(row);
     });
+    wrap.appendChild(card);
     return wrap;
+  }
+
+  // Løbsdags-boosts: gælder KUN næste løb — forbruges når løbet er kørt
+  function boostShop(locked) {
+    const card = el('div.card.cat-top-horse');
+    card.appendChild(el('h3', { text: '🏇 Dagsform — kun næste løb' }));
+    card.appendChild(el('p.muted', { style: 'font-size:13px;margin:4px 0 6px', text: 'Boosts forbruges i næste løb og forsvinder bagefter. Varige forbedringer tjener I på øvelserne.' }));
+    (S.config.paddockBoosts || []).forEach((b) => {
+      const owned = (S.me.raceBoosts || []).includes(b.id);
+      const row = el('div.row.between', { style: 'padding:8px 0;border-bottom:1px dashed var(--line)' });
+      row.appendChild(el('div', {}, [el('b', { text: `${b.emoji} ${b.label}` }), el('div.muted', { style: 'font-size:13px', text: b.desc })]));
+      const btn = el('button.btn.sm' + (owned ? '' : '.gold'), { text: owned ? '✓ Klar til løbet' : money(b.cost) + ' DD', disabled: (owned || locked) ? 'true' : null });
+      if (!owned && !locked) btn.addEventListener('click', () => TG.emit('team:buyBoost', { boostId: b.id }).then((r) => { check(r); if (r.ok) { toast(b.emoji + ' ' + b.label + ' købt!', 'ok'); } }));
+      row.appendChild(btn); card.appendChild(row);
+    });
+    return card;
+  }
+
+  // Præmietavlen: hvad løber vi om i næste løb?
+  function prizeBoard() {
+    const pv = S.nextRacePrizes;
+    if (!pv) return el('div');
+    const card = el('div.card', { style: 'border-color:var(--navy)' });
+    card.appendChild(el('h3', { text: pv.isFinal ? '🏆 Finalens præmier' : '🏆 Dagens præmier' }));
+    const grid = el('div.grid', { style: 'grid-template-columns:1fr 1fr;gap:4px;margin-top:6px' });
+    Object.entries(pv.prizes).filter(([k]) => k !== 'default').forEach(([place, amt]) => {
+      grid.appendChild(el('div.row.between', { style: 'padding:4px 8px' }, [el('span', { text: place + '. plads' }), el('b.num', { text: money(amt) + ' DD' })]));
+    });
+    card.appendChild(grid);
+    if (pv.prizes.default) card.appendChild(el('div.muted', { style: 'font-size:12px;margin-top:2px', text: 'Øvrige pladser: ' + money(pv.prizes.default) + ' DD' }));
+    if (pv.winnerMultiplier > 1) card.appendChild(el('div.chip.gold', { style: 'margin-top:8px', text: `🐎 Vinderhestens værdi ganges med ${pv.winnerMultiplier}!` }));
+    return card;
+  }
+
+  // Odds-tavlen: spil på hvilken hest der vinder løbet
+  function oddsBoard() {
+    const rb = S.config.raceBetting || {};
+    if (!rb.enabled || !S.paddockOdds) return el('div');
+    const card = el('div.card.cat-top-jockey');
+    card.appendChild(el('h3', { text: '🎫 Odds-tavlen — hvem vinder løbet?' }));
+    if (S.myBet) {
+      const target = S.teams.find((t) => t.id === S.myBet.targetTeamId) || {};
+      card.appendChild(el('div.chip.gold', { style: 'margin-top:6px;font-size:14px', text: `💰 I har spillet ${money(S.myBet.amount)} DD på ${target.horseName || target.stableName} (odds ${S.myBet.odds})` }));
+      card.appendChild(el('p.muted', { style: 'font-size:12px;margin-top:4px', text: 'Vinder hesten, får I indsats × odds. Ét væddemål pr. løb.' }));
+      return card;
+    }
+    card.appendChild(el('p.muted', { style: 'font-size:13px;margin:4px 0 6px', text: `Sæt ${money(rb.minStake || 100)}–${money(rb.maxStake || 1000)} DD på en hest — også jeres egen. Vinder den, får I indsats × odds.` }));
+    S.teams.forEach((t) => {
+      const odds = S.paddockOdds[t.id]; if (odds == null) return;
+      const row = el('div.row.between', { style: 'padding:7px 0;border-bottom:1px dashed var(--line);align-items:center' });
+      row.appendChild(el('div', {}, [el('b', { text: (t.horseName || t.stableName) + (t.id === S.me.id ? ' (jer)' : '') }), el('div.muted', { style: 'font-size:12px', text: t.stableName })]));
+      const right = el('div.row', { style: 'gap:6px;align-items:center' });
+      right.appendChild(el('span.num', { style: 'font-weight:800', text: odds + 'x' }));
+      const btn = el('button.btn.sm.gold', { text: 'Spil' });
+      btn.addEventListener('click', () => {
+        const amt = Number(prompt(`Hvor mange DD vil I sætte på ${t.horseName || t.stableName} (odds ${odds})?`, '500'));
+        if (!amt) return;
+        TG.emit('team:bet', { targetTeamId: t.id, amount: amt }).then((r) => { check(r); if (r.ok) toast('Væddemål registreret! 🎫', 'ok'); });
+      });
+      right.appendChild(btn);
+      row.appendChild(right);
+      card.appendChild(row);
+    });
+    return card;
   }
 
   function investView() {
     const c = el('div.col');
-    c.appendChild(head('Investér', 'Hesten løfter toppen, jockeyen bunden. Stald = sikker værdi.'));
+    c.appendChild(head('Investér', 'Dagsform og væddemål købes i Paddocken før løbet — varige point tjener I på øvelserne.'));
     const locked = S.phase !== 'paddock';
     if (locked) {
       const lockCard = el('div.card', { style: 'border-color:var(--gold);background:#fdf8e7' });
@@ -1011,6 +1074,8 @@
       timer.appendChild(v);
       timer.appendChild(el('div.muted', { style: 'font-size:13px', text: `I har ${money(S.me.cash)} DD i kassen` }));
       c.appendChild(timer);
+      c.appendChild(prizeBoard());
+      c.appendChild(oddsBoard());
       c.appendChild(investContent(false));
     } else {
       const lockCard = el('div.card.center');
@@ -1047,6 +1112,15 @@
     c.appendChild(head(S.slide.title, race ? (race.rollingOpen ? 'Løbet er i gang — slå jeres terning!' : 'Vent på at værten åbner for rolling…') : 'Klargør…'));
     if (!race) return c;
     if (race.favoriteTeamId === me.id && !race.favoriteUsed) c.appendChild(el('div.chip.gold', { style: 'align-self:center;font-size:15px;padding:8px 14px', text: '📣 I er publikumsfavorit — fan-boost på næste slag!' }));
+    // v2.16: vis aktive løbsdags-boosts og væddemål
+    if ((me.raceBoosts || []).length) {
+      const names = (S.config.paddockBoosts || []).filter((b) => me.raceBoosts.includes(b.id)).map((b) => b.emoji + ' ' + b.label);
+      c.appendChild(el('div.chip', { style: 'align-self:center;margin-top:4px', text: 'Dagsform: ' + names.join(' · ') }));
+    }
+    if (S.myBet) {
+      const target = S.teams.find((t) => t.id === S.myBet.targetTeamId) || {};
+      c.appendChild(el('div.chip.gold', { style: 'align-self:center;margin-top:4px', text: `🎫 ${money(S.myBet.amount)} DD på ${target.horseName || target.stableName} (${S.myBet.odds}x)` }));
+    }
     if (race.type === 'final' && (S.config.finalBetting || {}).enabled) c.appendChild(betCard());
     const used = (me.race.rolls || []).length; const allowed = me.race.allowed || race.rollsPerTeam;
     const card = el('div.card.center');
