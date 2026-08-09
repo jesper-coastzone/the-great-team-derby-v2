@@ -55,8 +55,9 @@ function enterPhase(game, slide) {
       break;
     }
     case PHASES.PADDOCK: {
-      // Paddocken åbner automatisk med timer — kun her kan der investeres.
+      // Paddocken åbner automatisk med timer — kun her kan der investeres og væddes.
       startPaddockTimer(game);
+      races.computePaddockOdds(game); // lås odds-tavlen ("morning line")
       break;
     }
     default: break;

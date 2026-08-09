@@ -181,8 +181,12 @@ function totalStableValue(t) {
   return Math.round(t.cash + t.horseValue + t.jockeyValue + t.stableValue);
 }
 function diceRange(t) {
-  const min = cfg.diceBaseMin + t.jockeyLevel;
-  const max = cfg.diceBaseMax + t.horseLevel;
+  // Løbsdags-boosts (v2.16) tæller med, så tabletten viser den reelle terning
+  let bMin = 0, bMax = 0;
+  const owned = t.raceBoosts || {};
+  (cfg.paddockBoosts || []).forEach((b) => { if (owned[b.id]) { bMin += b.diceMin || 0; bMax += b.diceMax || 0; } });
+  const min = cfg.diceBaseMin + t.jockeyLevel + bMin;
+  const max = cfg.diceBaseMax + t.horseLevel + bMax;
   return { min, max: Math.max(max, min) };
 }
 function exerciseById(game, id) {
@@ -231,6 +235,7 @@ function publicTeam(t) {
     joined: t.joined,
     connected: t.connected,
     isBot: !!t.isBot,
+    raceBoosts: Object.keys(t.raceBoosts || {}),
     cash: Math.round(t.cash),
     horseValue: Math.round(t.horseValue),
     jockeyValue: Math.round(t.jockeyValue),
@@ -327,6 +332,8 @@ function buildStateFor(game, role, teamId) {
       maxPurchasesPerOption: cfg.maxPurchasesPerOption || 0,
       roles: cfg.roles || [],
       finalBetting: cfg.finalBetting || { enabled: false },
+      paddockBoosts: cfg.paddockBoosts || [],
+      raceBetting: cfg.raceBetting || { enabled: false },
       // Niveau-tærskler til progressbarer på tabletten
       horseLevelThresholds: cfg.horseLevelThresholds,
       jockeyLevelThresholds: cfg.jockeyLevelThresholds,
@@ -357,6 +364,10 @@ function buildStateFor(game, role, teamId) {
     disabled: game.disabled || { exercises: [], moneyTasks: [] },
     // Pre-season-gennemgang: hvilket punkt fremhæver hosten lige nu? (v2.14)
     preseasonFocus: game.preseasonFocus || null,
+    // Løbsdagsøkonomi (v2.16): odds-tavle + præmietavle i Paddocken
+    paddockOdds: game.paddockOdds || null,
+    nextRacePrizes: (game.currentPhase === 'paddock' || game.currentPhase === 'race' || game.currentPhase === 'final-race')
+      ? require('./races').prizePreview(game) : null,
     // Forandringskort: aktivt kort (alle roller) + multiplikatorer til visning
     activeChangeCard: game.changeCard
       ? { id: game.changeCard.id, emoji: game.changeCard.emoji, title: game.changeCard.title, text: game.changeCard.text, manual: game.changeCard.manual, playedAt: game.changeCard.playedAt }
@@ -394,7 +405,14 @@ function buildStateFor(game, role, teamId) {
     state.debrief = debriefStats(game);
   }
 
+  // Odds-tavlens væddemål: host/skærm ser alle; et hold ser kun sit eget
+  const allBets = Object.entries(game.raceBets || {}).map(([bettorId, b]) => ({
+    bettorId, targetTeamId: b.targetTeamId, amount: b.amount, odds: b.odds,
+  }));
+  if (role === 'host' || role === 'screen') state.raceBets = allBets;
+
   if (role === 'team' && me) {
+    state.myBet = (game.raceBets || {})[me.id] || null;
     state.me = {
       ...publicTeam(me),
       mindPuzzleLevel: me.mindPuzzleLevel,

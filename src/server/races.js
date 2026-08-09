@@ -90,23 +90,55 @@ function pushFeed(race, entry) {
   if (race.feed.length > 60) race.feed.shift();
 }
 
-// Finale-væddemål: sats på egen sejr FØR rolling åbner. Indsats trækkes straks.
-function placeBet(game, team, amount) {
-  const race = gs.currentRace(game);
-  if (!race) return { ok: false, error: 'Intet aktivt løb.' };
-  if (race.type !== 'final') return { ok: false, error: 'Der kan kun væddes på finaleløbet.' };
-  if (!(cfg.finalBetting && cfg.finalBetting.enabled)) return { ok: false, error: 'Væddemål er slået fra.' };
-  if (race.rollingOpen || race.status === 'finished') return { ok: false, error: 'Væddemål er lukket — løbet er i gang.' };
-  if (race.bets[team.id]) return { ok: false, error: 'I har allerede satset.' };
+// ---------- Odds-tavlen (v2.16): væddemål i Paddocken på hvilken hest der vinder ----------
+// Odds ("morning line") låses når Paddocken åbner — ud fra hestenes varige styrke.
+function computePaddockOdds(game) {
+  const rb = cfg.raceBetting || {};
+  const minOdds = rb.minOdds || 1.5, maxOdds = rb.maxOdds || 5;
+  const strengths = game.teams.map((t) => ({ id: t.id, str: t.horseLevel + t.jockeyLevel }));
+  const strMin = Math.min(...strengths.map((s) => s.str));
+  const strMax = Math.max(...strengths.map((s) => s.str));
+  const odds = {};
+  strengths.forEach((s) => {
+    if (strMax === strMin) { odds[s.id] = Math.round(((minOdds + maxOdds) / 2) * 10) / 10; return; }
+    const norm = (s.str - strMin) / (strMax - strMin); // 1 = stærkest
+    odds[s.id] = Math.round((maxOdds - norm * (maxOdds - minOdds)) * 10) / 10;
+  });
+  game.paddockOdds = odds;
+  game.raceBets = game.raceBets || {};
+  return odds;
+}
+
+// Væddemål i Paddocken: én pr. stald pr. løb, på en HVILKEN SOM HELST hest.
+function placeBet(game, team, targetTeamId, amount) {
+  const rb = cfg.raceBetting || {};
+  if (!rb.enabled) return { ok: false, error: 'Væddemål er slået fra.' };
+  const gm = require('./gameManager');
+  if (!gm.paddockOpen(game)) return { ok: false, error: 'Odds-tavlen er kun åben i Paddocken.' };
+  if (!game.paddockOdds) computePaddockOdds(game);
+  const target = gs.getTeam(game, targetTeamId);
+  if (!target) return { ok: false, error: 'Ukendt hest.' };
+  game.raceBets = game.raceBets || {};
+  if (game.raceBets[team.id]) return { ok: false, error: 'I har allerede sat jeres væddemål til dette løb.' };
   amount = Math.round(amount);
-  if (!(amount > 0)) return { ok: false, error: 'Indsatsen skal være større end 0.' };
-  if (amount > team.cash) return { ok: false, error: 'I kan ikke satse mere end I har på kontoen.' };
-  const odds = race.odds[team.id] || cfg.finalBetting.minOdds;
-  econ.addTransaction(game, team, -amount, 'bet', `Væddemål: ${amount} ${cfg.currencyAbbr} på sejr (odds ${odds})`, race.id);
-  race.bets[team.id] = { amount, odds, resolved: false, payout: 0 };
-  pushFeed(race, { kind: 'bet', teamId: team.id, stableName: team.stableName, text: `💰 ${team.stableName} satser ${amount} ${cfg.currencyAbbr} på sejr til odds ${odds}!` });
-  gs.logEvent(game, `${team.stableName} satsede ${amount} ${cfg.currencyAbbr} på sejr (odds ${odds}).`);
+  const minStake = rb.minStake || 100, maxStake = rb.maxStake || 1000;
+  if (!(amount >= minStake)) return { ok: false, error: `Mindste indsats er ${minStake} ${cfg.currencyAbbr}.` };
+  if (amount > maxStake) return { ok: false, error: `Højeste indsats er ${maxStake} ${cfg.currencyAbbr}.` };
+  if (amount > team.cash) return { ok: false, error: 'I kan ikke satse mere end I har i kassen.' };
+  const odds = game.paddockOdds[targetTeamId] || rb.minOdds || 1.5;
+  econ.addTransaction(game, team, -amount, 'bet', `Væddemål: ${amount} ${cfg.currencyAbbr} på ${target.horseName || target.stableName} (odds ${odds})`);
+  game.raceBets[team.id] = { targetTeamId, amount, odds, resolved: false, payout: 0 };
+  gs.logEvent(game, `${team.stableName} spillede ${amount} ${cfg.currencyAbbr} på ${target.horseName || target.stableName} (odds ${odds}).`);
   return { ok: true, amount, odds };
+}
+
+// Præmie-forhåndsvisning til Paddockens præmietavle
+function prizePreview(game) {
+  const slide = game.deck[game.activeSlideIndex] || {};
+  const isFinal = !!(slide.meta && slide.meta.final) || slide.phase === 'final-race';
+  const round = game.currentRound || 1;
+  const table = isFinal ? cfg.finalRacePrizes : prizeTableFor(round);
+  return { isFinal, round, prizes: table, winnerMultiplier: cfg.winnerHorseValueMultiplier || 1 };
 }
 
 function pickRandomEvent() {
@@ -122,6 +154,16 @@ function leaderPosition(race) {
   return Math.max(0, ...Object.values(race.positions));
 }
 
+// Summér terning-modifikationer fra holdets løbsdags-boosts
+function boostMods(team) {
+  const owned = team.raceBoosts || {};
+  let min = 0, max = 0;
+  (cfg.paddockBoosts || []).forEach((b) => {
+    if (owned[b.id]) { min += b.diceMin || 0; max += b.diceMax || 0; }
+  });
+  return { min, max };
+}
+
 function rollForTeam(game, team) {
   const race = gs.currentRace(game);
   if (!race) return { ok: false, error: 'Intet aktivt løb.' };
@@ -129,8 +171,10 @@ function rollForTeam(game, team) {
   const used = race.rolls[team.id].length;
   if (used >= race.allowed[team.id]) return { ok: false, error: 'I har brugt alle jeres slag.' };
 
-  const min = cfg.diceBaseMin + team.jockeyLevel;
-  const max = Math.max(cfg.diceBaseMax + team.horseLevel, min);
+  // Løbsdags-boosts (v2.16): købt i Paddocken, gælder kun dette løb
+  const bm = boostMods(team);
+  const min = cfg.diceBaseMin + team.jockeyLevel + bm.min;
+  const max = Math.max(cfg.diceBaseMax + team.horseLevel + bm.max, min);
   const base = randomInt(min, max);
 
   // Catch-up: langt bagud → lille nøk
@@ -191,8 +235,17 @@ function allRolled(game) {
   return game.teams.every((t) => race.rolls[t.id].length >= race.allowed[t.id]);
 }
 
-function prizeFor(place, type) {
-  const table = type === 'final' ? cfg.finalRacePrizes : cfg.normalRacePrizes;
+// Præmietabel pr. sæson (v2.16) — falder tilbage til normalRacePrizes
+function prizeTableFor(round) {
+  const byRound = cfg.normalRacePrizesByRound || {};
+  const keys = Object.keys(byRound).map(Number);
+  if (!keys.length) return cfg.normalRacePrizes;
+  const k = Math.min(Math.max(round || 1, Math.min(...keys)), Math.max(...keys));
+  return byRound[k] || cfg.normalRacePrizes;
+}
+
+function prizeFor(place, type, round) {
+  const table = type === 'final' ? cfg.finalRacePrizes : prizeTableFor(round);
   return table[place] != null ? table[place] : table.default;
 }
 
@@ -217,7 +270,7 @@ function finishRace(game) {
   ranked.forEach((r, idx) => {
     const place = r.position === prevPos ? prevPlace : idx + 1;
     prevPos = r.position; prevPlace = place;
-    const prize = prizeFor(place, race.type);
+    const prize = prizeFor(place, race.type, race.round);
     results.push({ ...r, place, prize, deadHeat: false });
   });
   // markér dødt løb
@@ -234,20 +287,45 @@ function finishRace(game) {
   race.status = 'finished';
   pushFeed(race, { kind: 'finish', text: `🏁 Løbet er slut! ${results[0].stableName} vinder${results[0].deadHeat ? ' (dødt løb!)' : ''}.` });
 
-  // Afgør væddemål: vandt holdet løbet (plads 1), udbetales indsats × odds
-  for (const [teamId, bet] of Object.entries(race.bets || {})) {
-    if (bet.resolved) continue;
-    bet.resolved = true;
-    const res = results.find((r) => r.teamId === teamId);
-    const team = gs.getTeam(game, teamId);
-    if (res && team && res.place === 1) {
-      bet.payout = Math.round(bet.amount * bet.odds);
-      econ.addTransaction(game, team, bet.payout, 'bet', `Væddemål vundet! (odds ${bet.odds})`, race.id);
-      pushFeed(race, { kind: 'bet', teamId, stableName: team.stableName, text: `💰 ${team.stableName} vandt væddemålet: +${bet.payout} ${cfg.currencyAbbr}!` });
-    } else if (team) {
-      pushFeed(race, { kind: 'bet', teamId, stableName: team.stableName, text: `💸 ${team.stableName} tabte væddemålet (${bet.amount} ${cfg.currencyAbbr}).` });
+  const isRealRace = !race.isAutoWarmup && (race.round || 0) > 0;
+
+  // v2.16: Vinderhestens værdi ganges op (annonceret på præmietavlen)
+  const mult = cfg.winnerHorseValueMultiplier || 1;
+  if (isRealRace && mult > 1) {
+    results.filter((r) => r.place === 1).forEach((r) => {
+      const team = gs.getTeam(game, r.teamId);
+      if (!team) return;
+      const before = Math.round(team.horseValue);
+      team.horseValue = Math.round(before * mult);
+      pushFeed(race, { kind: 'double', teamId: r.teamId, stableName: team.stableName, text: `🐎 ${team.horseName || team.stableName} fordobler sin værdi: ${before} → ${Math.round(team.horseValue)} ${cfg.currencyAbbr}!` });
+      gs.logEvent(game, `${team.stableName}s hest steg i værdi: ${before} → ${Math.round(team.horseValue)} ${cfg.currencyAbbr}.`);
+    });
+  }
+
+  // v2.16: Afgør odds-tavlens væddemål — vandt den hest man spillede på?
+  if (isRealRace) {
+    for (const [bettorId, bet] of Object.entries(game.raceBets || {})) {
+      if (bet.resolved) continue;
+      bet.resolved = true;
+      const bettor = gs.getTeam(game, bettorId);
+      const target = gs.getTeam(game, bet.targetTeamId);
+      const res = results.find((r) => r.teamId === bet.targetTeamId);
+      if (!bettor || !target) continue;
+      const horseName = target.horseName || target.stableName;
+      if (res && res.place === 1) {
+        bet.payout = Math.round(bet.amount * bet.odds);
+        econ.addTransaction(game, bettor, bet.payout, 'bet', `Væddemål vundet: ${horseName} vandt! (odds ${bet.odds})`, race.id);
+        pushFeed(race, { kind: 'bet', teamId: bettorId, stableName: bettor.stableName, text: `💰 ${bettor.stableName} spillede rigtigt på ${horseName}: +${bet.payout} ${cfg.currencyAbbr}!` });
+      } else {
+        pushFeed(race, { kind: 'bet', teamId: bettorId, stableName: bettor.stableName, text: `💸 ${bettor.stableName} tabte væddemålet på ${horseName} (${bet.amount} ${cfg.currencyAbbr}).` });
+      }
     }
   }
+  game.raceBets = {};
+  game.paddockOdds = null;
+  // Løbsdags-boosts er brugt — ryd dem
+  game.teams.forEach((t) => { t.raceBoosts = {}; });
+
   gs.logEvent(game, `Løb afsluttet. Vinder på banen: ${results[0].stableName}.`);
   return { ok: true, results };
 }
@@ -317,6 +395,6 @@ function finishWarmupTie(game) {
 
 module.exports = {
   startRace, setRolling, setFavorite, placeBet, rollForTeam, hostRollForTeam: rollForTeam,
-  allRolled, finishRace, prizeFor,
+  allRolled, finishRace, prizeFor, computePaddockOdds, prizePreview,
   buildWarmupPlan, applyScriptedRoll, finishWarmupTie,
 };

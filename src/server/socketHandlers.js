@@ -335,7 +335,23 @@ function register(io) {
 
     // ---------- TEAM: løb ----------
     socket.on('team:roll', (_, cb) => mut((g) => { const t = teamOf(); return t ? races.rollForTeam(g, t) : { ok: false }; }, cb));
-    socket.on('team:bet', (p, cb) => mut((g) => { const t = teamOf(); return t ? races.placeBet(g, t, p && p.amount) : { ok: false }; }, cb));
+    // v2.16: Odds-tavlen — væddemål i Paddocken på en hvilken som helst hest
+    socket.on('team:bet', (p, cb) => mut((g) => { const t = teamOf(); return t ? races.placeBet(g, t, p && p.targetTeamId, p && p.amount) : { ok: false }; }, cb));
+
+    // v2.16: Løbsdags-boosts — købes i Paddocken, gælder kun næste løb
+    socket.on('team:buyBoost', (p, cb) => mut((g) => {
+      const t = teamOf(); if (!t) return { ok: false };
+      if (!gm.paddockOpen(g)) return { ok: false, error: 'Boosts kan kun købes i Paddocken.' };
+      const boost = (cfg.paddockBoosts || []).find((b) => b.id === (p && p.boostId));
+      if (!boost) return { ok: false, error: 'Ukendt boost.' };
+      t.raceBoosts = t.raceBoosts || {};
+      if (t.raceBoosts[boost.id]) return { ok: false, error: 'I har allerede købt denne boost til løbet.' };
+      if (!econ.canAfford(t, boost.cost)) return { ok: false, error: 'I har ikke nok i kassen.' };
+      econ.addTransaction(g, t, -boost.cost, 'boost', `Løbsdags-boost: ${boost.label} (kun næste løb)`);
+      t.raceBoosts[boost.id] = true;
+      gs.logEvent(g, `${t.stableName} købte ${boost.label} til næste løb.`);
+      return { ok: true };
+    }, cb));
 
     // ---------- TEAM: rollekort ----------
     socket.on('team:setRoles', (p, cb) => mut((g) => {
