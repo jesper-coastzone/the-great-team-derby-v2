@@ -35,15 +35,40 @@ const gameConfig = {
   raceTrackLength: 25,          // matcher den fysiske bane (25 felter)
   normalRaceRolls: 4,
   finalRaceRolls: 5,
-  diceBaseMin: 2,               // diceMin = diceBaseMin + jockeyLevel
-  diceBaseMax: 5,               // diceMax = diceBaseMax + horseLevel
-  normalRacePrizes: { 1: 1200, 2: 900, 3: 700, 4: 500, default: 300 },
+  diceBaseMin: 2,               // diceMin = diceBaseMin + jockeyLevel (+ løbsdags-boosts)
+  diceBaseMax: 5,               // diceMax = diceBaseMax + horseLevel (+ løbsdags-boosts)
+  normalRacePrizes: { 1: 1200, 2: 900, 3: 700, 4: 500, default: 300 }, // fallback
+  // v2.16: præmierne vokser pr. sæson og ANNONCERES i Paddocken før løbet
+  normalRacePrizesByRound: {
+    1: { 1: 1500, 2: 1000, 3: 700, 4: 500, default: 300 },
+    2: { 1: 2500, 2: 1700, 3: 1100, 4: 700, default: 400 },
+    3: { 1: 4000, 2: 2700, 3: 1800, 4: 1000, default: 500 },
+  },
+  // Vinderhestens værdi ganges med denne faktor efter hvert rigtigt løb (annonceres på præmietavlen)
+  winnerHorseValueMultiplier: 2,
+
+  // ---- Løbsdags-boosts (v2.16): købes i Paddocken, gælder KUN næste løb ----
+  // Varige hest/jockey-point kommer KUN fra øvelserne — penge køber dagsform.
+  paddockBoosts: [
+    { id: 'boost-carrots', emoji: '🥕', label: 'Friske gulerødder', cost: 400, diceMax: 1, desc: 'Hesten løber hurtigere: +1 på terningens TOP — kun i næste løb.' },
+    { id: 'boost-peptalk', emoji: '🗣️', label: 'Pep-talk til jockeyen', cost: 400, diceMin: 1, desc: 'Jockeyen rider sikkert: +1 på terningens BUND — kun i næste løb.' },
+    { id: 'boost-superfeed', emoji: '⭐', label: 'Stjernefoder', cost: 900, diceMin: 1, diceMax: 1, desc: 'Dagsformen i top: +1 på BÅDE top og bund — kun i næste løb.' },
+  ],
+
+  // ---- Odds-tavlen (v2.16): væddemål i Paddocken på hvilken hest der vinder løbet ----
+  raceBetting: {
+    enabled: true,
+    minStake: 100,
+    maxStake: 1000,
+    minOdds: 1.5,   // favoritten
+    maxOdds: 5,     // outsideren
+  },
   // Finalen skal kunne flytte stillingen — spænd 5.000 SD (ekspert-review pkt. 3)
   finalRacePrizes: { 1: 6000, 2: 4200, 3: 3000, 4: 1800, default: 1000 },
 
   // ---- Finale-væddemål: sats på egen sejr med omvendte odds (comeback-mekanik) ----
   finalBetting: {
-    enabled: true,
+    enabled: false,             // v2.16: erstattet af odds-tavlen (raceBetting) i Paddocken
     minOdds: 1.5,               // odds for holdet der fører
     maxOdds: 4,                 // odds for holdet der ligger sidst
   },
@@ -99,23 +124,10 @@ const gameConfig = {
   investmentOptions: {
     // Hest/jockey: værdineutrale (1000→1000) men point-tunge — ægte valg mellem
     // likviditet + terninger nu vs. stald-afkast til sidst (ekspert-review pkt. 5)
-    horse: [
-      // Basale ting først — billige køb der sikrer hesten præsterer 100% (v2.13)
-      { id: 'horse-carrots', label: 'Friske gulerødder', cost: 250, valueIncrease: 250, performancePoints: 1 },
-      { id: 'horse-0', label: 'Nye hestesko', cost: 500, valueIncrease: 500, performancePoints: 1 },
-      { id: 'horse-1', label: 'Bedre foder', cost: 1000, valueIncrease: 1000, performancePoints: 3 },
-      { id: 'horse-massage', label: 'Hestemassage', cost: 1500, valueIncrease: 1500, performancePoints: 4 },
-      { id: 'horse-2', label: 'Elitetræning', cost: 2000, valueIncrease: 2000, performancePoints: 5 },
-      { id: 'horse-3', label: 'Stjernetræner', cost: 3500, valueIncrease: 3500, performancePoints: 8 },
-    ],
-    jockey: [
-      { id: 'jockey-peptalk', label: 'Pep-talk før løbet', cost: 250, valueIncrease: 250, performancePoints: 1 },
-      { id: 'jockey-0', label: 'Nye ridestøvler', cost: 500, valueIncrease: 500, performancePoints: 1 },
-      { id: 'jockey-1', label: 'Ridekursus', cost: 1000, valueIncrease: 1000, performancePoints: 3 },
-      { id: 'jockey-saddle', label: 'Ny sadel', cost: 1500, valueIncrease: 1500, performancePoints: 4 },
-      { id: 'jockey-2', label: 'Mentaltræning', cost: 2000, valueIncrease: 2000, performancePoints: 5 },
-      { id: 'jockey-3', label: 'Personlig fysioterapeut', cost: 3500, valueIncrease: 3500, performancePoints: 8 },
-    ],
+    // v2.16: Varige hest/jockey-point kan IKKE længere købes for penge — de tjenes
+    // udelukkende på øvelserne. Penge køber løbsdags-boosts (paddockBoosts) og stald-værdi.
+    horse: [],
+    jockey: [],
     stable: [
       // Stald = sikker værdi med lille afkast; max 1 køb pr. option holder det i skak.
       { id: 'stable-carrots', label: 'Gulerodslager', cost: 250, valueIncrease: 280, performancePoints: 0 },

@@ -107,6 +107,9 @@ function buildDeck(settings) {
   push({ kind: 'derby-readiness', phase: PHASES.FINAL_READY, title: 'Klar til finalen',
     screenTitle: 'The Great Team Derby — klargøring', tabletMode: 'bank',
     hostHint: 'Kør kreativ showcase-scoring og tjek Derby-licenser.' });
+  push({ kind: 'paddock', phase: PHASES.PADDOCK, title: 'Paddocken · Finalen',
+    screenTitle: 'Paddocken · Finalen', tabletMode: 'paddock', meta: { round: rounds, final: true },
+    hostHint: 'Sidste Paddock før finalen: boosts, stald-investering og væddemål på odds-tavlen. Timeren starter automatisk (3 min).' });
   push({ kind: 'final-race', phase: PHASES.FINAL_RACE, title: 'The Great Team Derby',
     screenTitle: 'The Great Team Derby', tabletMode: 'final-race', meta: { raceType: 'final' },
     hostHint: 'Kør finaleløbet. Udbetal de store præmier.' });
