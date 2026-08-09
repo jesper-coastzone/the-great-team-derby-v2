@@ -66,7 +66,7 @@ function buildDeck(settings) {
   // ---- Pre-season: pengeopgaverne forklares → spilbar prøverunde ----
   push({ kind: 'preseason-tasks', phase: PHASES.PRESEASON, title: 'Pengeopgaverne',
     screenTitle: 'Sådan tjener I Derby Dollars', tabletMode: 'pre-season',
-    hostHint: 'Forklar de fire pengeopgaver kort: Tip en 13\'er, Tidslinjen, Dysten og Mind Puzzle. Tablets kan trykke rundt imens.' });
+    hostHint: 'Gennemgå punkterne ét ad gangen med fremhæv-knapperne herunder — tablets og storskærm fremhæver det punkt, du taler om.' });
   push({ kind: 'preseason-round', phase: PHASES.PRESEASON_ROUND, title: 'Pre-season — prøverunden',
     screenTitle: 'Pre-season er i gang!', tabletMode: 'preseason-dashboard',
     hostHint: 'Start rundetimeren (fx 10 min). Holdene tjener ÆGTE Derby Dollars på pengeopgaverne og kan læse om de faste opgaver.' });
