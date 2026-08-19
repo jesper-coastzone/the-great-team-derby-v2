@@ -144,10 +144,10 @@
     head.appendChild(el('p.muted', { text: '🔁 Loopet gentages hver sæson.' }));
     wrap.appendChild(head);
     const steps = [
-      ['Auktion', 'Byd på jeres øvelse', 'hammer-auktion', '#6E1F2E'],
-      ['Runde', 'Løs opgaver · tjen Derby Dollars', 'puslespil-opgaver', '#C9A227'],
-      ['Investér', 'Hest · jockey · stald', 'diagram-investering', '#2D4A3D'],
-      ['Løb', 'Slå terninger · vind præmier', 'maalflag', '#B83232'],
+      ['Auktion', 'Byd på jeres øvelse', 'hammer-auktion', '#6F191E'],
+      ['Runde', 'Løs opgaver · tjen Derby Dollars', 'puslespil-opgaver', '#B8A993'],
+      ['Investér', 'Hest · jockey · stald', 'diagram-investering', '#2A4B3B'],
+      ['Løb', 'Slå terninger · vind præmier', 'maalflag', '#6F191E'],
     ];
     steps.forEach(([t, d, icon, color], i) => {
       const card = el('div.card', { style: `border-left:8px solid ${color};display:flex;align-items:center;gap:14px` });
@@ -162,7 +162,7 @@
     fin.appendChild(TG.assetImg('pokal', { style: 'width:44px;height:44px;flex:none' }));
     fin.appendChild(el('div', {}, [
       el('div', { style: 'font-family:var(--font-display);font-weight:800;font-size:18px;color:#fff', text: 'Til sidst: The Great Team Derby' }),
-      el('div', { style: 'font-size:13px;color:rgba(250,246,234,.85)', text: 'Væddemål, store præmier og plads til comeback — den mest værdifulde stald vinder.' }),
+      el('div', { style: 'font-size:13px;color:rgba(233,220,200,.85)', text: 'Væddemål, store præmier og plads til comeback — den mest værdifulde stald vinder.' }),
     ]));
     wrap.appendChild(fin);
     return wrap;
@@ -526,7 +526,7 @@
   function myStableCard() {
     const me = S.me;
     const stars = (lvl) => '★'.repeat(lvl) + '☆'.repeat(Math.max(0, 4 - lvl));
-    const card = el('div.card', { style: `border-top:6px solid ${me.color.hex};background:linear-gradient(150deg,#fff 55%,#faf6ea)` });
+    const card = el('div.card', { style: `border-top:6px solid ${me.color.hex};background:linear-gradient(150deg,#fff 55%,#E9DCC8)` });
     const top = el('div.row', { style: 'gap:14px;align-items:center' });
     top.appendChild(TG.tintedAsset('hest-silhuet', me.color.hex, { style: 'width:74px;height:74px;flex:none' }));
     const info = el('div', { style: 'flex:1;min-width:0' });
@@ -1069,7 +1069,7 @@
     const open = t && t.endsAt > Date.now();
     c.appendChild(head('Paddocken', open ? 'Paddocken er åben — sidste chance for at ruste hest, jockey og stald før løbet!' : 'Paddocken er lukket.'));
     if (open) {
-      const timer = el('div.card.center', { style: 'border-color:var(--gold);box-shadow:0 0 0 3px #f6eec9' });
+      const timer = el('div.card.center', { style: 'border-color:var(--gold);box-shadow:0 0 0 3px #E5D9C0' });
       timer.appendChild(el('div', { style: 'font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);font-weight:800', text: 'Paddocken lukker om' }));
       const v = el('div', { text: TG.countdown(t.endsAt), style: 'font-family:var(--font-num);font-weight:800;font-size:52px;line-height:1.1' });
       v.setAttribute('data-countdown', String(t.endsAt));
