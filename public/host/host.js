@@ -30,7 +30,7 @@
     clear(root);
     const wrap = el('div', { style: 'max-width:420px;margin:12vh auto;padding:20px' });
     const card = el('div.card');
-    card.appendChild(el('div', { style: 'width:48px;height:48px;margin-bottom:10px', html: TG.motif.compass('#C9A227') }));
+    card.appendChild(el('div', { style: 'width:48px;height:48px;margin-bottom:10px', html: TG.motif.compass('#B8A993') }));
     card.appendChild(el('div.eyebrow', { text: 'Host · login' }));
     card.appendChild(el('h1', { text: 'The Great Team Derby', style: 'font-size:30px;margin:6px 0 16px' }));
     const inp = el('input', { type: 'password', placeholder: 'Kodeord', style: 'font-size:18px' });
@@ -100,7 +100,7 @@
 
   function hostbar() {
     const b = el('div.hostbar');
-    b.appendChild(el('div', { style: 'width:34px;height:34px', html: TG.motif.compass('#C9A227') }));
+    b.appendChild(el('div', { style: 'width:34px;height:34px', html: TG.motif.compass('#B8A993') }));
     b.appendChild(el('div', {}, [el('div', { style: 'font-size:11px;letter-spacing:2px;opacity:.7', text: 'SPILKODE' }), el('div.code', { text: S.code })]));
     const urls = el('div.urls', { html: `Skærm: ${ORIGIN}/screen?code=${S.code}<br>Tablet: ${ORIGIN}/team` });
     b.appendChild(urls);
@@ -384,7 +384,7 @@
     c.appendChild(el('div.row.between', {}, [el('h3', { text: `Stalde (${joined})` }), el('span.mini', { text: `${online}/${joined} online` })]));
     S.teams.forEach((t) => {
       const line = el('div.teamline');
-      const dot = el('span', { title: t.connected ? 'Online' : 'Offline', style: `width:10px;height:10px;border-radius:50%;flex:none;background:${t.joined ? (t.connected ? '#2E7D4F' : '#B83232') : 'var(--line)'}` });
+      const dot = el('span', { title: t.connected ? 'Online' : 'Offline', style: `width:10px;height:10px;border-radius:50%;flex:none;background:${t.joined ? (t.connected ? '#2E7D4F' : '#6F191E') : 'var(--line)'}` });
       line.appendChild(dot);
       line.appendChild(el('div.badge', { style: `background:${t.color.hex};width:28px;height:28px;font-size:14px`, text: String(t.teamNumber) }));
       const info = el('div', {}, [el('b', { text: t.stableName + (t.managerName ? ` · 👤 ${t.managerName}` : '') }), el('div.mini', { text: `${money(t.cash)} kontant · total ${money(t.totalValue)} · H${t.horseLevel}/J${t.jockeyLevel}${t.derbyLicense ? ' · 🎫' : ''}` })]);
