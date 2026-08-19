@@ -56,9 +56,9 @@
 
   API.motif = {
     // "compass" tegner nu en hestesko (brand-motiv). Noglenavnet bevares for at undgaa aendringer i kaldesteder.
-    compass: (fill) => `<svg viewBox="0 0 64 64" width="100%" height="100%"><path d="M22 14 C10 24 10 43 24 53 C29 56 35 56 40 53 C54 43 54 24 42 14" fill="none" stroke="${fill || '#C9A227'}" stroke-width="9" stroke-linecap="round"/></svg>`,
-    horseshoe: (fill) => `<svg viewBox="0 0 64 64" width="100%" height="100%"><path d="M22 14 C10 24 10 43 24 53 C29 56 35 56 40 53 C54 43 54 24 42 14" fill="none" stroke="${fill || '#C9A227'}" stroke-width="9" stroke-linecap="round"/></svg>`,
-    horse: (fill) => `<svg viewBox="0 0 64 64" width="100%" height="100%"><path fill="${fill || '#1F3E63'}" d="M20 54 L22 34 C16 32 12 26 14 18 C18 22 22 22 26 20 C28 12 36 8 44 12 C42 14 42 16 44 18 L52 20 C50 26 44 30 38 30 L40 54 L34 54 L32 38 L30 54 Z"/></svg>`,
+    compass: (fill) => `<svg viewBox="0 0 64 64" width="100%" height="100%"><path d="M22 14 C10 24 10 43 24 53 C29 56 35 56 40 53 C54 43 54 24 42 14" fill="none" stroke="${fill || '#B8A993'}" stroke-width="9" stroke-linecap="round"/></svg>`,
+    horseshoe: (fill) => `<svg viewBox="0 0 64 64" width="100%" height="100%"><path d="M22 14 C10 24 10 43 24 53 C29 56 35 56 40 53 C54 43 54 24 42 14" fill="none" stroke="${fill || '#B8A993'}" stroke-width="9" stroke-linecap="round"/></svg>`,
+    horse: (fill) => `<svg viewBox="0 0 64 64" width="100%" height="100%"><path fill="${fill || '#032F4A'}" d="M20 54 L22 34 C16 32 12 26 14 18 C18 22 22 22 26 20 C28 12 36 8 44 12 C42 14 42 16 44 18 L52 20 C50 26 44 30 38 30 L40 54 L34 54 L32 38 L30 54 Z"/></svg>`,
   };
 
   // Assets: appen loader billeder fra /assets. Skift filerne ud (samme navne) for at opgradere grafikken.

@@ -1,22 +1,22 @@
 /* tokens.css — Katjas Grafisk Linje omsat til design-tokens.
    Palette 60/30/10: cream (baggrund) · navy (anker) · accenter (burgundy/rød/guld/turf). */
 :root {
-  --cream: #FAF6EA;
-  --cream-2: #F1E9D6;
-  --cream-3: #E7DCC2;
-  --navy: #1F3E63;
-  --navy-2: #17314f;
-  --navy-ink: #0f2440;
-  --burgundy: #6E1F2E;
-  --red: #B83232;
-  --gold: #C9A227;
-  --gold-soft: #E3C766;
-  --turf: #2D4A3D;
+  --cream: #E9DCC8;
+  --cream-2: #DFD2BA;
+  --cream-3: #D2C1A4;
+  --navy: #032F4A;
+  --navy-2: #06283C;
+  --navy-ink: #021E30;
+  --burgundy: #6F191E;
+  --red: #6F191E;
+  --gold: #B8A993;
+  --gold-soft: #CFC2AE;
+  --turf: #2A4B3B;
 
   --text: #1b2a3d;
   --text-dim: #5b6b7d;
   --text-faint: #8a97a6;
-  --on-navy: #FAF6EA;
+  --on-navy: #E9DCC8;
 
   --line: rgba(31, 62, 99, 0.16);
   --line-strong: rgba(31, 62, 99, 0.30);
