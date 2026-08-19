@@ -33,7 +33,7 @@
     }
     clear(root);
     const stage = el('div.stage');
-    stage.appendChild(el('div.corner-motif', { html: TG.motif.horse('#C9A227') }));
+    stage.appendChild(el('div.corner-motif', { html: TG.motif.horse('#B8A993') }));
     stage.appendChild(brandbar());
     if (S.activeChangeCard) stage.appendChild(changeBanner());
     const content = el('div.content');
@@ -58,7 +58,7 @@
     if (!cc || window.__ccKey === key) { if (!cc) window.__ccKey = null; return; }
     window.__ccKey = key;
     // Fuldskærms-afsløring i ~9 sekunder
-    const ov = el('div', { style: 'position:fixed;inset:0;z-index:70;display:grid;place-items:center;background:rgba(15,36,64,.88)' });
+    const ov = el('div', { style: 'position:fixed;inset:0;z-index:70;display:grid;place-items:center;background:rgba(2,30,48,.88)' });
     const card = el('div', { style: 'background:var(--cream);border:6px solid var(--gold);border-radius:24px;padding:3vw 4vw;max-width:60vw;text-align:center;box-shadow:0 30px 80px rgba(0,0,0,.5)' });
     card.appendChild(el('div', { style: 'font-size:1.1vw;letter-spacing:4px;text-transform:uppercase;color:var(--burgundy);font-weight:800', text: '🃏 Forandringskort' }));
     card.appendChild(el('div', { style: 'font-size:5vw;margin:.8vh 0', text: cc.emoji }));
@@ -158,10 +158,10 @@
     const c = el('div');
     c.appendChild(el('h1', { text: 'Spillets gang', style: 'font-size:4.6vw;margin-bottom:2.2vh' }));
     const steps = [
-      { t: 'Auktion', d: 'Byd på jeres øvelse', icon: 'hammer-auktion', color: '#6E1F2E' },
-      { t: 'Runde', d: 'Løs opgaver · tjen Derby Dollars', icon: 'puslespil-opgaver', color: '#C9A227' },
-      { t: 'Investér', d: 'Hest · jockey · stald', icon: 'diagram-investering', color: '#2D4A3D' },
-      { t: 'Løb', d: 'Slå terninger · vind præmier', icon: 'maalflag', color: '#B83232' },
+      { t: 'Auktion', d: 'Byd på jeres øvelse', icon: 'hammer-auktion', color: '#6F191E' },
+      { t: 'Runde', d: 'Løs opgaver · tjen Derby Dollars', icon: 'puslespil-opgaver', color: '#B8A993' },
+      { t: 'Investér', d: 'Hest · jockey · stald', icon: 'diagram-investering', color: '#2A4B3B' },
+      { t: 'Løb', d: 'Slå terninger · vind præmier', icon: 'maalflag', color: '#6F191E' },
     ];
     const loop = el('div', { style: 'display:flex;align-items:stretch;gap:.8vw' });
     steps.forEach((s, i) => {
@@ -283,10 +283,10 @@
     document.querySelectorAll('#psDots i').forEach((d, di) => d.classList.toggle('on', di === i));
   }
 
-  function hammerSvg() { return '<svg viewBox="0 0 64 64" width="100%" height="100%"><rect x="8" y="44" width="48" height="7" rx="2" fill="#6E1F2E"/><rect x="30" y="12" width="9" height="26" rx="3" transform="rotate(40 34 25)" fill="#6E1F2E"/><rect x="18" y="18" width="22" height="10" rx="3" transform="rotate(40 29 23)" fill="#B83232"/></svg>'; }
-  function puzzleSvg() { return '<svg viewBox="0 0 64 64" width="100%" height="100%"><rect x="12" y="12" width="18" height="18" rx="3" fill="#C9A227"/><rect x="34" y="12" width="18" height="18" rx="3" fill="#1F3E63"/><rect x="12" y="34" width="18" height="18" rx="3" fill="#1F3E63"/><rect x="34" y="34" width="18" height="18" rx="3" fill="#C9A227"/></svg>'; }
-  function chartSvg() { return '<svg viewBox="0 0 64 64" width="100%" height="100%"><rect x="12" y="34" width="9" height="18" rx="2" fill="#2D4A3D"/><rect x="27" y="24" width="9" height="28" rx="2" fill="#2D4A3D"/><rect x="42" y="14" width="9" height="38" rx="2" fill="#2D4A3D"/></svg>'; }
-  function flagSvg() { return '<svg viewBox="0 0 64 64" width="100%" height="100%"><rect x="14" y="10" width="4" height="44" fill="#1F3E63"/><path d="M18 12 h30 v20 h-30 z" fill="#1F3E63"/><path d="M18 12 h10 v10 h-10 z M38 12 h10 v10 h-10 z M28 22 h10 v10 h-10 z" fill="#FAF6EA"/></svg>'; }
+  function hammerSvg() { return '<svg viewBox="0 0 64 64" width="100%" height="100%"><rect x="8" y="44" width="48" height="7" rx="2" fill="#6F191E"/><rect x="30" y="12" width="9" height="26" rx="3" transform="rotate(40 34 25)" fill="#6F191E"/><rect x="18" y="18" width="22" height="10" rx="3" transform="rotate(40 29 23)" fill="#6F191E"/></svg>'; }
+  function puzzleSvg() { return '<svg viewBox="0 0 64 64" width="100%" height="100%"><rect x="12" y="12" width="18" height="18" rx="3" fill="#B8A993"/><rect x="34" y="12" width="18" height="18" rx="3" fill="#032F4A"/><rect x="12" y="34" width="18" height="18" rx="3" fill="#032F4A"/><rect x="34" y="34" width="18" height="18" rx="3" fill="#B8A993"/></svg>'; }
+  function chartSvg() { return '<svg viewBox="0 0 64 64" width="100%" height="100%"><rect x="12" y="34" width="9" height="18" rx="2" fill="#2A4B3B"/><rect x="27" y="24" width="9" height="28" rx="2" fill="#2A4B3B"/><rect x="42" y="14" width="9" height="38" rx="2" fill="#2A4B3B"/></svg>'; }
+  function flagSvg() { return '<svg viewBox="0 0 64 64" width="100%" height="100%"><rect x="14" y="10" width="4" height="44" fill="#032F4A"/><path d="M18 12 h30 v20 h-30 z" fill="#032F4A"/><path d="M18 12 h10 v10 h-10 z M38 12 h10 v10 h-10 z M28 22 h10 v10 h-10 z" fill="#E9DCC8"/></svg>'; }
 
   // ---- pre-season prøverunde: timer + kontant-kapløb ----
   function preseasonRound() {
@@ -310,10 +310,10 @@
     const c = el('div');
     c.appendChild(el('h1', { text: 'Auktionen — sådan virker den', style: 'font-size:4.2vw;margin-bottom:1.8vh' }));
     const steps = [
-      { t: 'Byd fra tabletten', d: 'Alle stalde byder samtidig på de 6 specialøvelser', icon: 'hammer-auktion', color: '#6E1F2E' },
-      { t: 'Højeste bud vinder', d: 'Max én øvelse pr. stald — vælg med omhu', icon: 'pokal', color: '#C9A227' },
-      { t: 'Øvelsen arbejder for jer', d: 'Giver Derby Dollars eller hest/jockey-point hele sæsonen', icon: 'penge', color: '#2D4A3D' },
-      { t: 'Fortrudt? Byt!', d: 'Byt med en anden stald — eller i auktionshuset for 100 DD', icon: 'hestesko', color: '#B83232' },
+      { t: 'Byd fra tabletten', d: 'Alle stalde byder samtidig på de 6 specialøvelser', icon: 'hammer-auktion', color: '#6F191E' },
+      { t: 'Højeste bud vinder', d: 'Max én øvelse pr. stald — vælg med omhu', icon: 'pokal', color: '#B8A993' },
+      { t: 'Øvelsen arbejder for jer', d: 'Giver Derby Dollars eller hest/jockey-point hele sæsonen', icon: 'penge', color: '#2A4B3B' },
+      { t: 'Fortrudt? Byt!', d: 'Byt med en anden stald — eller i auktionshuset for 100 DD', icon: 'hestesko', color: '#6F191E' },
     ];
     const row = el('div', { style: 'display:flex;gap:.8vw;align-items:stretch' });
     steps.forEach((s, i) => {
@@ -676,7 +676,7 @@
   }
 
   function confetti() {
-    const colors = ['#C9A227', '#6E1F2E', '#1F3E63', '#2D4A3D', '#B83232', '#FAF6EA'];
+    const colors = ['#B8A993', '#6F191E', '#032F4A', '#2A4B3B', '#6F191E', '#E9DCC8'];
     for (let i = 0; i < 90; i++) {
       const p = el('div.confetti');
       const size = 6 + Math.random() * 9;
@@ -724,7 +724,7 @@
     const c = el('div.winner-hero');
     if (!winner) return el('h1', { text: 'Afsløring' });
     const spot = el('div.spotlight');
-    const horse = TG.tintedAsset('hest-silhuet', winner.color ? winner.color.hex : '#6E1F2E', { style: 'width:100%;height:100%' });
+    const horse = TG.tintedAsset('hest-silhuet', winner.color ? winner.color.hex : '#6F191E', { style: 'width:100%;height:100%' });
     const hw = el('div.heroH'); hw.appendChild(horse); spot.appendChild(hw);
     const pk = el('div.pokal'); pk.appendChild(TG.assetImg('pokal', { style: 'width:100%;height:100%' })); spot.appendChild(pk);
     c.appendChild(spot);

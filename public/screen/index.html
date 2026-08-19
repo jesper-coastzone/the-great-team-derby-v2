@@ -4,14 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>The Great Team Derby — Storskærm</title>
-<meta name="theme-color" content="#1F3E63">
+<meta name="theme-color" content="#032F4A">
 <link rel="icon" href="/icon.png?size=64">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/shared/tokens.css">
 <link rel="stylesheet" href="/shared/components.css">
 <style>
-  body { background: linear-gradient(rgba(250,246,234,0.86), rgba(250,246,234,0.86)), url('/assets/hero-baggrund.png') no-repeat center/cover; background-color: var(--cream); overflow: hidden; }
+  body { background: linear-gradient(rgba(233,220,200,0.86), rgba(233,220,200,0.86)), url('/assets/hero-baggrund.png') no-repeat center/cover; background-color: var(--cream); overflow: hidden; }
   .stage { position: fixed; inset: 0; display: flex; flex-direction: column; padding: 4vh 5vw; }
   .brandbar { display: flex; align-items: center; gap: 16px; }
   .brandbar .eyebrow { font-size: 1.1vw; }
@@ -42,8 +42,8 @@
   .lane .marker { position: absolute; top: 0; bottom: 0; width: 2px; background: rgba(255,255,255,.13); }
   .lane .finish { position: absolute; right: 3%; top: 0; bottom: 0; width: 6px; background-image: repeating-linear-gradient(180deg,#fff 0 8px,#111 8px 16px); }
   .goal-portal { position: absolute; right: 3%; top: 0; bottom: 0; width: 0; z-index: 5; }
-  .goal-portal .beam { position: absolute; left: -1px; top: 0; bottom: 0; width: 3px; background: rgba(250,246,234,.35); }
-  .goal-portal .sign { position: absolute; top: -3.2vh; left: 50%; transform: translateX(-50%); background: #1F3E63; color: #FAF6EA; font-family: var(--font-display); font-weight: 900; font-size: 1.8vh; letter-spacing: 4px; padding: .35vh 1.1vw; border-radius: 8px; border: 2px solid var(--gold); white-space: nowrap; box-shadow: 0 6px 18px rgba(0,0,0,.25); }
+  .goal-portal .beam { position: absolute; left: -1px; top: 0; bottom: 0; width: 3px; background: rgba(233,220,200,.35); }
+  .goal-portal .sign { position: absolute; top: -3.2vh; left: 50%; transform: translateX(-50%); background: #032F4A; color: #E9DCC8; font-family: var(--font-display); font-weight: 900; font-size: 1.8vh; letter-spacing: 4px; padding: .35vh 1.1vw; border-radius: 8px; border: 2px solid var(--gold); white-space: nowrap; box-shadow: 0 6px 18px rgba(0,0,0,.25); }
   .lane .horse { position: absolute; top: 50%; transform: translateY(-50%); left: 1%; width: 4vh; height: 4vh; transition: left .9s cubic-bezier(.25,.8,.35,1); }
   .lane .horse .silhouette { width: 100%; height: 100%; }
   .lane.galloping .horse .silhouette { animation: gallop .5s ease-in-out infinite; }
@@ -54,7 +54,7 @@
   .lane .dots { position: absolute; left: .6vw; bottom: .5vh; display: flex; gap: .3vw; z-index: 2; }
   .lane .dots i { width: .55vw; height: .55vw; border-radius: 50%; background: rgba(255,255,255,.35); }
   .lane .dots i.used { background: var(--gold); }
-  .feedbar { margin-top: 1vh; background: rgba(31,62,99,.94); color: #fff; border-radius: 12px; padding: .8vh 1.2vw; min-height: 9vh; display: flex; flex-direction: column; justify-content: center; gap: .3vh; box-shadow: var(--shadow); }
+  .feedbar { margin-top: 1vh; background: rgba(3,47,74,.94); color: #fff; border-radius: 12px; padding: .8vh 1.2vw; min-height: 9vh; display: flex; flex-direction: column; justify-content: center; gap: .3vh; box-shadow: var(--shadow); }
   .feedbar .fe { font-size: 1.35vw; line-height: 1.35; opacity: .5; }
   .feedbar .fe:first-child { opacity: 1; font-weight: 700; font-size: 1.55vw; }
   .race-banner { position: fixed; left: 50%; top: 38%; transform: translate(-50%,-50%) scale(.8); background: var(--burgundy); color: #fff; font-family: var(--font-display); font-weight: 900; font-size: 3.2vw; padding: 1.6vh 3vw; border-radius: 18px; border: 4px solid var(--gold); box-shadow: 0 20px 60px rgba(0,0,0,.45); opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s; z-index: 50; text-align: center; }
