@@ -3,6 +3,7 @@
   const { el, clear, sd, money } = TG;
   const root = document.getElementById('root');
   let S = null; const base = location.origin;
+  const TX = (da, en) => (S && S.lang === 'en' ? en : da);
 
   // join
   const q = new URLSearchParams(location.search);
@@ -77,7 +78,7 @@
     // Vis kun tekst ved siden af logoet, hvis eventet har eget kundenavn
     if (S.eventName && S.eventName !== 'The Great Team Derby') b.appendChild(el('div.eyebrow', { text: S.eventName + ' · CoastZone' }));
     const showCode = ['intro-coastzone', 'program', 'derby-intro', 'stable-setup', 'ready-check'].includes(S.slide.kind);
-    if (showCode) b.appendChild(el('div.code', {}, [el('div.lbl', { text: 'Spilkode' }), el('div.val', { text: S.code })]));
+    if (showCode) b.appendChild(el('div.code', {}, [el('div.lbl', { text: TX('Spilkode', 'Game code') }), el('div.val', { text: S.code })]));
     return b;
   }
 
@@ -97,19 +98,20 @@
       case 'warmup-race': return raceTrack('Warm-up løb');
       case 'auction': return auction();
       case 'round': return round();
-      case 'paddock-intro': return explainCards('Paddocken — sådan virker den', 'Nyt element · følg med her', [
-        ['🏆', 'Præmietavlen', 'Før hvert løb ser I dagens præmier — og husk: vinderhestens værdi FORDOBLES. Så ved I, hvad der er værd at investere i.'],
-        ['🥕', 'Dagsform', 'Køb gulerødder, pep-talk eller stjernefoder til hesten. Virker KUN i det næste løb — varige forbedringer tjener I på øvelserne.'],
-        ['🎫', 'Odds-tavlen', 'Sæt ét væddemål pr. stald på den hest, I tror vinder — også jeres egen. Rammer I rigtigt, får I indsats × odds.'],
-      ], 'Paddocken åbner på næste slide — 3 minutter, så gælder det!')
-      case 'race-intro': return explainCards('Løbet — sådan virker det', 'Nyt element · følg med her', [
-        ['🎲', '5 spurter', 'Hver stald slår terningen 5 gange. Jockey og pep-talk løfter BUNDEN, hest og gulerødder løfter TOPPEN.'],
-        ['⚡', 'Alt kan ske', 'Dyrlægetjek, vind og publikum rammer tilfældigt — og heste langt bagud får en opløbsfight-bonus.'],
-        ['🏁', 'Målstregen', 'Længst fremme vinder: dagens 1. præmie + hestens værdi fordobles. Væddemål udbetales lige efter løbet.'],
-      ], 'Gør jer klar — hestene føres til start!')
+      case 'paddock-intro': return explainCards(TX('Paddocken — sådan virker den', 'The Paddock — how it works'), TX('Nyt element · følg med her', 'New element · follow along here'), [
+        [TX('🏇', '🏇'), TX('Jockey-auktionen', 'The Jockey Auction'), TX('Byd på dagens seks jockeyer — ÉN til hver stald. Hyren betales af Staldkassen og gælder kun sæsonens løb.', "Bid on the day's six jockeys — ONE per stable. The hire is paid from the Stable Fund and covers this season's race only.")],
+        ['🏆', TX('Præmietavlen', 'The prize board'), TX('Før hvert løb ser I dagens præmier — og husk: vinderhestens værdi FORDOBLES. Så ved I, hvad der er værd at investere i.', "Before every race you see the day's prizes — and remember: the winning horse's value is DOUBLED.")],
+        ['🥕', TX('Dagsform', 'Race-day form'), TX('Køb gulerødder, pep-talk eller stjernefoder til hesten. Virker KUN i det næste løb.', 'Buy carrots, a pep talk or star feed for the horse. Works ONLY in the next race.')],
+        ['🎫', TX('Odds-tavlen', 'The odds board'), TX('Sæt ét væddemål pr. stald på den hest, I tror vinder — også jeres egen. Rammer I rigtigt, får I indsats × odds.', 'Place one bet per stable on the horse you think will win — including your own. Guess right and you get stake × odds.')],
+      ], TX('Paddocken åbner på næste slide — 3 minutter, så gælder det!', 'The Paddock opens on the next slide — 3 minutes, then it counts!'))
+      case 'race-intro': return explainCards(TX('Løbet — sådan virker det', 'The Race — how it works'), TX('Nyt element · følg med her', 'New element · follow along here'), [
+        ['🎲', TX('5 spurter', '5 sprints'), TX('Hver stald slår terningen 5 gange. Jockey og pep-talk løfter BUNDEN, hest og gulerødder løfter TOPPEN.', 'Each stable rolls the dice 5 times. The jockey and pep talk lift the BOTTOM, carrots lift the TOP.')],
+        ['⚡', TX('Alt kan ske', 'Anything can happen'), TX('Dyrlægetjek, vind og publikum rammer tilfældigt — og heste langt bagud får en opløbsfight-bonus.', 'Vet checks, wind and the crowd strike at random — and horses far behind get a home-stretch bonus.')],
+        ['🏁', TX('Målstregen', 'The finish line'), TX('Længst fremme vinder: dagens 1. præmie + hestens værdi fordobles. Væddemål udbetales lige efter løbet.', "Furthest ahead wins: the day's 1st prize + the horse's value doubles. Bets pay out right after the race.")],
+      ], TX('Gør jer klar — hestene føres til start!', 'Get ready — the horses are being led to the start!'))
       case 'paddock': return paddock();
       case 'race': return raceTrack(S.slide.screenTitle);
-      case 'leaderboard': return leaderboard('Stilling');
+      case 'leaderboard': return leaderboard(TX('Stillingen — løbspoint', 'Standings — Race Points'));
       case 'derby-readiness': return readiness();
       case 'final-race': return raceTrack('The Great Team Derby');
       case 'final-reveal': return reveal();
@@ -121,24 +123,24 @@
   // ---- intro slides ----
   function intro() {
     const c = el('div');
-    c.appendChild(el('div.eyebrow', { text: 'Velkommen til' }));
+    c.appendChild(el('div.eyebrow', { text: TX('Velkommen til', 'Welcome to') }));
     c.appendChild(el('h1', { text: 'CoastZone' }));
-    c.appendChild(el('p.lead', { text: 'Vi skaber teamoplevelser der bliver husket. I dag går vi på banen til The Great Team Derby.' }));
+    c.appendChild(el('p.lead', { text: TX('Vi skaber teamoplevelser der bliver husket. I dag går vi på banen til The Great Team Derby.', 'We create team experiences to remember. Today we take to the track for The Great Team Derby.') }));
     return c;
   }
   function derbyIntro() {
     const row = el('div', { style: 'display:flex;align-items:center;gap:3vw' });
     const c = el('div', { style: 'flex:1' });
-    c.appendChild(el('div.eyebrow', { text: 'Dagens dyst' }));
+    c.appendChild(el('div.eyebrow', { text: TX('Dagens dyst', "Today's contest") }));
     c.appendChild(el('img', { src: TG.assetURL('logo'), alt: 'The Great Team Derby', style: 'width:34vw;max-width:100%;margin:1vh 0' }));
-    c.appendChild(el('p.lead', { text: 'Samarbejde, strategi, investeringer og forandringsparathed. Byg jeres stald — og gør den mest værdifuld, også når planen vælter.' }));
+    c.appendChild(el('p.lead', { text: TX('Samarbejde, strategi og forandringsparathed. Træn, invester og vind løbspoint — også når planen vælter.', 'Teamwork, strategy and adaptability. Train, invest and win Race Points — even when the plan falls apart.') }));
     row.appendChild(c);
     row.appendChild(TG.assetImg('hest-og-jockey', { style: 'width:34vw;max-height:58vh' }));
     return row;
   }
   function program() {
     const c = el('div');
-    c.appendChild(el('h1', { text: 'Dagens program', style: 'font-size:4.5vw' }));
+    c.appendChild(el('h1', { text: TX('Dagens program', "Today's programme"), style: 'font-size:4.5vw' }));
     const list = el('div', { style: 'margin-top:2vh' });
     (S.programItems || []).forEach((p, i) => { const row = el('div.row', { style: 'font-size:2vw;padding:.8vh 0;border-bottom:1px solid var(--line)' }, [el('span.num', { style: 'color:var(--gold);width:2.5vw', text: String(i + 1) }), el('span', { text: p })]); list.appendChild(row); });
     c.appendChild(list);
@@ -146,22 +148,21 @@
   }
   function howToWin() {
     const c = el('div');
-    c.appendChild(el('h1', { text: 'Sådan vinder I', style: 'font-size:5vw' }));
-    const steps = ['Løs opgaver og tjen Derby Dollars', 'Vind løb og få præmiepenge', 'Investér i hest, jockey og stald', 'Byt, justér planen og træf skarpe beslutninger'];
+    c.appendChild(el('h1', { text: TX('Sådan vinder I', 'How to win'), style: 'font-size:5vw' }));
+    const steps = [TX('Tjen Derby Dollars på opgaver og stationer', 'Earn Derby Dollars on tasks and stations'), TX('Brug dem klogt i Paddocken før hvert løb', 'Spend them wisely in the Paddock before every race'), TX('Placeringen i løbet giver LØBSPOINT', 'Your finishing position earns RACE POINTS'), TX('Finalen — The Great Team Derby — giver dobbelt', 'The final — The Great Team Derby — pays double')];
     const list = el('div', { style: 'margin-top:1vh' });
     steps.forEach((s, i) => list.appendChild(el('div.row', { style: 'font-size:2vw;padding:.6vh 0' }, [el('span.num', { style: 'color:var(--gold);width:2.5vw', text: String(i + 1) }), el('span', { text: s })])));
     c.appendChild(list);
-    c.appendChild(el('p.lead', { style: 'margin-top:2vh', html: 'Den mest værdifulde stald vinder — <b>ikke</b> nødvendigvis vinderen af finaleløbet.' }));
+    c.appendChild(el('p.lead', { style: 'margin-top:2vh', html: TX('Stalden med flest <b>løbspoint</b> vinder. Derby Dollars er midlet — point er målet.', 'The stable with the most <b>Race Points</b> wins. Derby Dollars are the means — points are the goal.') }));
     return c;
   }
   function gameFlow() {
     const c = el('div');
-    c.appendChild(el('h1', { text: 'Spillets gang', style: 'font-size:4.6vw;margin-bottom:2.2vh' }));
+    c.appendChild(el('h1', { text: TX('Spillets gang', 'How the game flows'), style: 'font-size:4.6vw;margin-bottom:2.2vh' }));
     const steps = [
-      { t: 'Auktion', d: 'Byd på jeres øvelse', icon: 'hammer-auktion', color: '#6F191E' },
-      { t: 'Runde', d: 'Løs opgaver · tjen Derby Dollars', icon: 'puslespil-opgaver', color: '#B8A993' },
-      { t: 'Investér', d: 'Hest · jockey · stald', icon: 'diagram-investering', color: '#2A4B3B' },
-      { t: 'Løb', d: 'Slå terninger · vind præmier', icon: 'maalflag', color: '#6F191E' },
+      { t: TX('Træning', 'Training'), d: TX('Løs opgaver og stationer · tjen Derby Dollars', 'Solve tasks and stations · earn Derby Dollars'), icon: 'puslespil-opgaver', color: '#2A4B3B' },
+      { t: TX('Paddocken', 'The Paddock'), d: TX('Jockey-auktion · dagsform · odds-tavlen', 'Jockey auction · race-day form · the odds board'), icon: 'hammer-auktion', color: '#B8A993' },
+      { t: TX('Løbet', 'The Race'), d: TX('5 spurter — placeringen giver løbspoint', '5 sprints — placement earns Race Points'), icon: 'maalflag', color: '#6F191E' },
     ];
     const loop = el('div', { style: 'display:flex;align-items:stretch;gap:.8vw' });
     steps.forEach((s, i) => {
@@ -174,12 +175,12 @@
     });
     c.appendChild(loop);
     const bottom = el('div', { style: 'display:flex;align-items:center;gap:1.4vw;margin-top:2.4vh' });
-    bottom.appendChild(el('div', { style: 'background:#fff;border:1px solid var(--line);border-radius:999px;padding:.7vw 1.4vw;font-size:1.35vw;font-weight:700;box-shadow:var(--shadow);white-space:nowrap', text: '🔁 Gentages hver runde' }));
+    bottom.appendChild(el('div', { style: 'background:#fff;border:1px solid var(--line);border-radius:999px;padding:.7vw 1.4vw;font-size:1.35vw;font-weight:700;box-shadow:var(--shadow);white-space:nowrap', text: TX('🔁 Gentages hver sæson', '🔁 Repeats every season') }));
     const fin = el('div', { style: 'flex:1;background:var(--navy);color:#fff;border-radius:18px;padding:1.1vw 1.5vw;display:flex;align-items:center;gap:1.2vw;box-shadow:var(--shadow-lg)' });
     fin.appendChild(el('div', { style: 'width:4vw;height:4vw;flex:none', html: TG.assetTag('pokal') }));
     fin.appendChild(el('div', {}, [
-      el('div', { style: 'font-family:var(--font-display);font-weight:800;font-size:1.8vw', text: 'Til sidst: The Great Team Derby' }),
-      el('div', { style: 'font-size:1.15vw;opacity:.85', text: 'Væddemål, store præmier og plads til comeback — den mest værdifulde stald vinder' }),
+      el('div', { style: 'font-family:var(--font-display);font-weight:800;font-size:1.8vw', text: TX('Til sidst: The Great Team Derby', 'At the end: The Great Team Derby') }),
+      el('div', { style: 'font-size:1.15vw;opacity:.85', text: TX('Finalen vejer dobbelt i løbspoint — der er altid plads til comeback', 'The final counts double in Race Points — there is always room for a comeback') }),
     ]));
     bottom.appendChild(fin);
     c.appendChild(bottom);
@@ -191,23 +192,24 @@
     if (window.__psTourTimer) { clearInterval(window.__psTourTimer); window.__psTourTimer = null; }
     const off = (S.disabled && S.disabled.moneyTasks) || [];
     const items = [
-      { k: 'tip13', emoji: '🎯', name: "Tip en 13'er", desc: '13 hurtige spørgsmål på tabletten', reward: '100 DD pr. rigtigt svar' },
-      { k: 'tidslinje', emoji: '🕰️', name: 'Tidslinjen', desc: 'Træk 5 numre — find kortene i lokalet og læg dem i kronologisk rækkefølge', reward: '300 DD pr. tidslinje' },
-      { k: 'mindpuzzle', emoji: '🧩', name: 'Mind Puzzle', desc: 'Byg banen på spillepladen efter opgavekortet — sværere for hvert niveau', reward: '300 DD pr. niveau' },
-      { k: 'dyst', emoji: '⚔️', name: 'Dysten', desc: 'Udfordr en anden stald til estimerings-duel — bedst af 3', reward: '500 DD til vinderen' },
-      { k: 'faste', emoji: '📌', name: 'De faste opgaver', desc: 'Puslespil (Derby-licens), pynt hesten og design staldskiltet', reward: 'Åbner når sæsonen starter' },
-    ].filter((it) => it.k === 'faste' || !off.includes(it.k));
+      { k: 'tip13', emoji: '🎯', name: TX("Tip en 13'er", 'Lucky 13'), desc: TX('13 hurtige spørgsmål på tabletten', '13 quick questions on the tablet'), reward: TX('100 DD pr. rigtigt svar', '100 DD per correct answer') },
+      { k: 'tidslinje', emoji: '🕰️', name: TX('Tidslinjen', 'The Timeline'), desc: TX('Træk 5 numre — find kortene i lokalet og læg dem i kronologisk rækkefølge', 'Draw 5 numbers — find the cards in the room and put them in chronological order'), reward: TX('300 DD pr. tidslinje', '300 DD per timeline') },
+      { k: 'mindpuzzle', emoji: '🧩', name: 'Mind Puzzle', desc: TX('Byg banen på spillepladen efter opgavekortet — sværere for hvert niveau', 'Build the course on the game board from the task card — harder every level'), reward: TX('300 DD pr. niveau', '300 DD per level') },
+      { k: 'dyst', emoji: '⚔️', name: TX('Dysten', 'The Duel'), desc: TX('Udfordr en anden stald til estimerings-duel — bedst af 3', 'Challenge another stable to an estimation duel — best of 3'), reward: TX('500 DD til vinderen', '500 DD to the winner') },
+      { k: 'stationer', emoji: '🎯', name: TX('Stationerne', 'The Stations'), desc: TX('Seks frie stationer i lokalet — HELE stalden skal være samlet ved det officielle forsøg', 'Six free stations in the room — the WHOLE stable must be gathered for the official attempt'), reward: TX('Op til 1.000 DD pr. succes', 'Up to 1,000 DD per success') },
+      { k: 'faste', emoji: '📌', name: TX('De faste opgaver', 'The standing tasks'), desc: TX('Puslespil (Derby-licens), pynt hesten og design staldskiltet', 'The puzzle (Derby Licence), style the horse and design the stable sign'), reward: TX('Åbner når sæsonen starter', 'Open when the season starts') },
+    ].filter((it) => it.k === 'faste' || it.k === 'stationer' || !off.includes(it.k));
     const f = S.preseasonFocus;
     const wrap = el('div');
-    wrap.appendChild(el('div.eyebrow', { text: 'Pre-season · det her møder I i prøverunden' }));
-    wrap.appendChild(el('h2', { text: 'Sådan tjener I Derby Dollars', style: 'margin-bottom:1.6vh' }));
-    const grid = el('div', { style: 'display:grid;grid-template-columns:repeat(' + Math.min(items.length, 5) + ',1fr);gap:1vw;align-items:stretch' });
+    wrap.appendChild(el('div.eyebrow', { text: TX('Planlægning · det her møder I i Træningen', 'Planning · this is what awaits you in the Training') }));
+    wrap.appendChild(el('h2', { text: TX('Sådan tjener I Derby Dollars', 'How to earn Derby Dollars'), style: 'margin-bottom:1.6vh' }));
+    const grid = el('div', { style: 'display:grid;grid-template-columns:repeat(' + Math.min(items.length, 6) + ',1fr);gap:1vw;align-items:stretch' });
     items.forEach((it) => {
       const focused = f === it.k; const dimmed = f && !focused;
       const card = el('div', { style: 'background:#fff;border:1px solid var(--line);border-radius:16px;padding:1.4vw 1.1vw;display:flex;flex-direction:column;gap:.7vh;transition:all .35s;'
         + (focused ? 'transform:scale(1.06);box-shadow:0 0 0 .35vw var(--gold), 0 18px 44px rgba(201,162,39,.35);' : '')
         + (dimmed ? 'opacity:.28;filter:grayscale(.5);' : '') });
-      if (focused) card.appendChild(el('div', { style: 'font-size:.9vw;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--gold)', text: '👉 Lige nu' }));
+      if (focused) card.appendChild(el('div', { style: 'font-size:.9vw;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--gold)', text: TX('👉 Lige nu', '👉 Right now') }));
       card.appendChild(el('div', { style: 'font-size:3vw;line-height:1', text: it.emoji }));
       card.appendChild(el('div', { style: 'font-family:var(--font-display);font-weight:800;font-size:1.5vw;color:var(--navy)', text: it.name }));
       card.appendChild(el('div', { style: 'font-size:1.02vw;color:var(--text-dim);flex:1', text: it.desc }));
@@ -215,7 +217,7 @@
       grid.appendChild(card);
     });
     wrap.appendChild(grid);
-    wrap.appendChild(el('p.lead', { style: 'margin-top:2.2vh', text: f ? 'Kig på jeres tablet — punktet er fremhævet dér også.' : 'Tag tabletten frem — I har præcis den samme liste foran jer.' }));
+    wrap.appendChild(el('p.lead', { style: 'margin-top:2.2vh', text: f ? TX('Kig på jeres tablet — punktet er fremhævet dér også.', 'Look at your tablet — the item is highlighted there too.') : TX('Tag tabletten frem — I har præcis den samme liste foran jer.', 'Take out the tablet — you have exactly the same list in front of you.') }));
     return wrap;
   }
 
@@ -228,7 +230,7 @@
       { label: 'Byt', title: 'Byttehandel', eyebrow: 'Fane 4 af 7', desc: 'Byt jeres øvelse med en anden stald — evt. med penge oveni. Begge stalde skal acceptere handlen.' },
       { label: 'Auktionshus', title: 'Auktionshus', eyebrow: 'Fane 5 af 7', desc: 'Fortrudt jeres køb? Byt til en ledig øvelse mod et fast gebyr på 100 SD.' },
       { label: 'Invester', title: 'Investering', eyebrow: 'Fane 6 af 7', desc: 'Hesten løfter terningens TOP, jockeyen løfter BUNDEN, stalden er sikker værdi. Max ét køb pr. mulighed — vælg klogt.' },
-      { label: 'Bank', title: 'Bank & stilling', eyebrow: 'Fane 7 af 7', desc: 'Jeres samlede staldværdi og stillingen. Husk: den mest værdifulde stald vinder — ikke nødvendigvis løbsvinderen.' },
+      { label: 'Staldkontoret', title: 'Staldkontoret', eyebrow: 'Fane 7 af 7', desc: 'Staldkassen og stillingen i løbspoint. Husk: flest løbspoint vinder — Derby Dollars er kun midlet.' },
     ];
     const wrap = el('div');
     wrap.appendChild(el('style', { html: PS_CSS }));
@@ -336,7 +338,7 @@
   // ---- setup / ready ----
   function stableSetup() {
     const c = el('div');
-    c.appendChild(el('h2', { text: 'Skab jeres stald' }));
+    c.appendChild(el('h2', { text: TX('Skab jeres stald', 'Create your stable') }));
     const grid = el('div.teamgrid', { style: 'grid-template-columns:repeat(3,1fr);margin-top:1.4vh' });
     S.teams.forEach((t) => grid.appendChild(teamCard(t)));
     c.appendChild(grid);
@@ -346,8 +348,8 @@
     const card = el('div.teamcard');
     card.appendChild(el('div.badge', { style: `background:${t.color.hex}`, text: String(t.teamNumber) }));
     const info = el('div', { style: 'flex:1' });
-    info.appendChild(el('div.tn', { text: t.joined ? t.stableName : 'Ledig plads' }));
-    info.appendChild(el('div.sub', { text: t.joined ? (t.horseName || '—') + ' · ' + (t.jockeyName || '—') : 'Venter på tablet' }));
+    info.appendChild(el('div.tn', { text: t.joined ? t.stableName : TX('Ledig plads', 'Open slot') }));
+    info.appendChild(el('div.sub', { text: t.joined ? (t.horseName || '—') + ' · ' + (t.jockeyName || '—') : TX('Venter på tablet', 'Waiting for tablet') }));
     card.appendChild(info);
     if (t.ready) card.appendChild(el('span.chip.turf', { text: '✓ Klar' }));
     return card;
@@ -355,7 +357,7 @@
   function readyCheck() {
     const c = el('div');
     const ready = S.teams.filter((t) => t.ready).length; const joined = S.teams.filter((t) => t.joined).length;
-    c.appendChild(el('h2', { text: `Er alle stalde klar? (${ready}/${joined})` }));
+    c.appendChild(el('h2', { text: `${TX('Er alle stalde klar?', 'Are all stables ready?')} (${ready}/${joined})` }));
     const grid = el('div.teamgrid', { style: 'margin-top:1vh' });
     S.teams.filter((t) => t.joined).forEach((t) => grid.appendChild(teamCard(t)));
     c.appendChild(grid);
@@ -392,7 +394,7 @@
           el('span', { text: teamName(top.teamId) }),
         ]));
       } else {
-        bidBox.appendChild(el('div', { style: 'font-size:1.1vw;color:var(--text-faint);font-style:italic', text: 'Ingen bud endnu' }));
+        bidBox.appendChild(el('div', { style: 'font-size:1.1vw;color:var(--text-faint);font-style:italic', text: TX('Ingen bud endnu', 'No bids yet') }));
       }
       card.appendChild(bidBox);
       if (ex.currentOwnerTeamId) card.appendChild(el('span.chip', { style: 'align-self:flex-start;font-size:.8vw', text: 'Ejer nu: ' + teamName(ex.currentOwnerTeamId) }));
@@ -407,7 +409,7 @@
     const c = el('div');
     const t = S.timers && S.timers.round ? TG.countdown(S.timers.round.endsAt) : null;
     c.appendChild(el('div.row.between', {}, [el('h1', { text: S.slide.screenTitle, style: 'font-size:4.2vw' }), t ? el('div.big-num', { text: t, 'data-endsat': S.timers.round.endsAt }) : null]));
-    c.appendChild(el('p.lead', { style: 'margin:.2vh 0 .8vh', text: 'Løs opgaver og fyld staldkassen — investeringen venter i Paddocken før løbet.' }));
+    c.appendChild(el('p.lead', { style: 'margin:.2vh 0 .8vh', text: TX('Løs opgaver og fyld Staldkassen — Paddocken venter før løbet.', 'Solve tasks and fill the Stable Fund — the Paddock awaits before the race.') }));
     c.appendChild(stableOverview());
     return c;
   }
@@ -438,26 +440,26 @@
     const open = t && t.endsAt > Date.now();
     c.appendChild(el('div.row.between', {}, [
       el('h1', { text: S.slide.screenTitle, style: 'font-size:4.2vw' }),
-      open ? el('div.big-num', { text: TG.countdown(t.endsAt), 'data-endsat': t.endsAt, style: 'color:var(--gold)' }) : el('div.big-num', { text: 'LUKKET' }),
+      open ? el('div.big-num', { text: TG.countdown(t.endsAt), 'data-endsat': t.endsAt, style: 'color:var(--gold)' }) : el('div.big-num', { text: TX('LUKKET', 'CLOSED') }),
     ]));
     c.appendChild(el('p.lead', { style: 'margin:.2vh 0 .8vh', text: open
-      ? 'Paddocken er åben! Køb dagsform til hesten og sæt jeres væddemål på odds-tavlen — vinduet lukker, når tiden er gået.'
-      : 'Paddocken er lukket — hestene føres til start!' }));
+      ? TX('Paddocken er åben! Hyr en jockey, køb dagsform og sæt jeres væddemål — vinduet lukker, når tiden er gået.', 'The Paddock is open! Hire a jockey, buy race-day form and place your bets — the window closes when time runs out.')
+      : TX('Paddocken er lukket — hestene føres til start!', 'The Paddock is closed — the horses are being led to the start!') }));
     // v2.16: Præmietavle + odds-tavle side om side
     const boards = el('div', { style: 'display:grid;grid-template-columns:1fr 1.4fr;gap:1vw;margin:.6vh 0' });
     const pv = S.nextRacePrizes;
     if (pv) {
       const pb = el('div', { style: 'background:#fff;border:1px solid var(--line);border-radius:14px;padding:1vw' });
-      pb.appendChild(el('div', { style: 'font-family:var(--font-display);font-weight:800;font-size:1.4vw;color:var(--navy)', text: pv.isFinal ? '🏆 Finalens præmier' : '🏆 Dagens præmier' }));
+      pb.appendChild(el('div', { style: 'font-family:var(--font-display);font-weight:800;font-size:1.4vw;color:var(--navy)', text: pv.isFinal ? TX('🏆 Finalens præmier', "🏆 The final's prizes") : TX('🏆 Dagens præmier', "🏆 Today's prizes") }));
       Object.entries(pv.prizes).filter(([k]) => k !== 'default').slice(0, 4).forEach(([place, amt]) => {
-        pb.appendChild(el('div', { style: 'display:flex;justify-content:space-between;font-size:1.05vw;padding:.25vh 0', html: `<span>${place}. plads</span><b>${Number(amt).toLocaleString('da-DK')} DD</b>` }));
+        pb.appendChild(el('div', { style: 'display:flex;justify-content:space-between;font-size:1.05vw;padding:.25vh 0', html: `<span>${place}${TX('. plads', '. place')}</span><b>${Number(amt).toLocaleString('da-DK')} DD</b>` }));
       });
-      if (pv.winnerMultiplier > 1) pb.appendChild(el('div', { style: 'margin-top:.5vh;font-weight:800;color:var(--gold);font-size:1vw', text: `🐎 Vinderhestens værdi × ${pv.winnerMultiplier}!` }));
+      if (pv.winnerMultiplier > 1) pb.appendChild(el('div', { style: 'margin-top:.5vh;font-weight:800;color:var(--gold);font-size:1vw', text: `${TX('🐎 Vinderhestens værdi ×', "🐎 Winning horse's value ×")} ${pv.winnerMultiplier}!` }));
       boards.appendChild(pb);
     }
     if (S.paddockOdds) {
       const ob = el('div', { style: 'background:var(--navy);color:var(--on-navy);border-radius:14px;padding:1vw' });
-      ob.appendChild(el('div', { style: 'font-family:var(--font-display);font-weight:800;font-size:1.4vw;color:var(--gold)', text: '🎫 Odds-tavlen' }));
+      ob.appendChild(el('div', { style: 'font-family:var(--font-display);font-weight:800;font-size:1.4vw;color:var(--gold)', text: TX('🎫 Odds-tavlen', '🎫 The odds board') }));
       const grid = el('div', { style: 'display:grid;grid-template-columns:1fr 1fr;gap:.2vh 1.4vw;margin-top:.4vh' });
       S.teams.forEach((t) => {
         const odds = S.paddockOdds[t.id]; if (odds == null) return;
@@ -465,12 +467,42 @@
         grid.appendChild(el('div', { style: 'display:flex;justify-content:space-between;font-size:1vw;padding:.15vh 0;border-bottom:1px dashed rgba(255,255,255,.15)', html: `<span>${t.horseName || t.stableName}${backers ? ' 🎫×' + backers : ''}</span><b style="color:var(--gold)">${odds}x</b>` }));
       });
       ob.appendChild(grid);
-      ob.appendChild(el('div', { style: 'font-size:.85vw;opacity:.8;margin-top:.4vh', text: 'Sæt jeres væddemål på tabletten — ét pr. stald pr. løb.' }));
+      ob.appendChild(el('div', { style: 'font-size:.85vw;opacity:.8;margin-top:.4vh', text: TX('Sæt jeres væddemål på tabletten — ét pr. stald pr. løb.', 'Place your bets on the tablet — one per stable per race.') }));
       boards.appendChild(ob);
     }
     if (boards.children.length) c.appendChild(boards);
+    c.appendChild(jockeyBoard());
     c.appendChild(stableOverview());
     return c;
+  }
+
+  // v3 etape 2: Jockey-tavlen på storskærmen — live bud + tildeling
+  function jockeyBoard() {
+    const ja = S.jockeyAuction;
+    if (!ja || ja.status === 'idle' || !(ja.jockeys || []).length) return el('span');
+    const box = el('div', { style: 'background:#fff;border:2px solid var(--burgundy);border-radius:14px;padding:1vw;margin:.6vh 0' });
+    box.appendChild(el('div.row.between', {}, [
+      el('div', { style: 'font-family:var(--font-display);font-weight:800;font-size:1.5vw;color:var(--burgundy)', text: TX('🏇 Jockey-auktionen — én til hver stald', '🏇 The Jockey Auction — one per stable') }),
+      el('div', { style: 'font-size:1vw;font-weight:800;color:var(--navy)', text: ja.status === 'open' ? TX('ÅBEN BUDRUNDE', 'OPEN BIDDING') : TX('AFGJORT', 'SETTLED') }),
+    ]));
+    const grid = el('div', { style: 'display:grid;grid-template-columns:repeat(3,1fr);gap:.6vw;margin-top:.5vh' });
+    ja.jockeys.forEach((j) => {
+      const w = j.winner;
+      const cell = el('div', { style: `border:1.5px solid ${w ? 'var(--gold)' : 'var(--line)'};border-radius:10px;padding:.5vw` });
+      cell.appendChild(el('div', { style: 'font-weight:800;font-size:1.1vw;color:var(--navy)', text: `${j.emoji || '🏇'} ${j.name}` }));
+      cell.appendChild(el('div', { style: 'font-size:.9vw;color:var(--text-dim)', text: `🎲 ${j.dice.min}–${j.dice.max} · min. ${j.minPrice} DD` }));
+      if (w) {
+        cell.appendChild(el('div', { style: 'font-size:.95vw;font-weight:800;color:var(--burgundy);margin-top:.2vh', text: `→ ${w.stableName} (${Number(w.amount).toLocaleString('da-DK')} DD${w.atMinPrice ? TX(' · mindstepris', ' · minimum price') : ''})` }));
+      } else if (j.topBid) {
+        const bidder = (S.teams || []).find((t) => t.id === j.topBid.teamId) || {};
+        cell.appendChild(el('div', { style: 'font-size:.95vw;font-weight:800;color:var(--turf);margin-top:.2vh', text: `${TX('Højeste bud', 'Top bid')}: ${Number(j.topBid.amount).toLocaleString('da-DK')} DD (${bidder.stableName || '?'})` }));
+      } else {
+        cell.appendChild(el('div', { style: 'font-size:.9vw;font-style:italic;color:var(--text-faint);margin-top:.2vh', text: TX('Ingen bud endnu', 'No bids yet') }));
+      }
+      grid.appendChild(cell);
+    });
+    box.appendChild(grid);
+    return box;
   }
 
   // Stald-overblik i runderne: udvikling pr. stald i stedet for ren ranking.
@@ -512,16 +544,17 @@
       el('span', { style: 'font-weight:800;font-size:1.25vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis', text: r.stableName }),
     ]);
     card.appendChild(head);
-    if (isFav) card.appendChild(el('div', { style: 'font-size:.85vw;font-weight:800;color:var(--burgundy);letter-spacing:.5px', text: '📣 PUBLIKUMSFAVORIT — bedste hest, fan-boost i løbet' }));
+    if (isFav) card.appendChild(el('div', { style: 'font-size:.85vw;font-weight:800;color:var(--burgundy);letter-spacing:.5px', text: TX('📣 PUBLIKUMSFAVORIT — bedste hest, fan-boost i løbet', '📣 CROWD FAVOURITE — best horse, fan boost in the race') }));
     // Udvikling: hest / jockey / stald / kontant
     const dice = team.dice ? ` · 🎲 ${team.dice.min}–${team.dice.max}` : '';
-    card.appendChild(ovRow('🐎', (team.horseName || 'Hest') + ` · niv. ${team.horseLevel != null ? team.horseLevel : '-'}`, sd(r.horseValue)));
-    card.appendChild(ovRow('🏇', (team.jockeyName || 'Jockey') + ` · niv. ${team.jockeyLevel != null ? team.jockeyLevel : '-'}`, sd(r.jockeyValue)));
-    card.appendChild(ovRow('🏠', 'Stald', sd(r.stableValue)));
-    card.appendChild(ovRow('💰', 'Kontant', sd(r.cash)));
+    card.appendChild(ovRow('🐎', team.horseName || TX('Hest', 'Horse'), sd(r.horseValue)));
+    card.appendChild(ovRow('🏇', team.jockey ? `${team.jockey.name}` : TX('Ingen jockey', 'No jockey'), team.jockey ? `🎲 ${team.dice.min}–${team.dice.max}` : '—'));
+    card.appendChild(ovRow('🏠', TX('Stald', 'Stable'), sd(r.stableValue)));
+    card.appendChild(ovRow('💰', TX('Staldkassen', 'Stable Fund'), sd(r.cash)));
+    card.appendChild(ovRow('💼', TX('Staldværdi', 'Stable value'), sd(r.totalValue)));
     const foot = el('div.row.between', { style: 'margin-top:auto;padding-top:.35vh;align-items:baseline' }, [
-      el('span', { style: 'font-size:.8vw;letter-spacing:1px;text-transform:uppercase;color:var(--text-faint)', text: 'Staldværdi' + dice }),
-      el('span.num', { style: 'font-size:1.7vw;font-weight:800;color:var(--burgundy)', text: sd(r.totalValue) }),
+      el('span', { style: 'font-size:.8vw;letter-spacing:1px;text-transform:uppercase;color:var(--text-faint)', text: TX('Løbspoint', 'Race Points') + dice }),
+      el('span.num', { style: 'font-size:1.7vw;font-weight:800;color:var(--burgundy)', text: (r.racePoints || 0) + ' p' }),
     ]);
     card.appendChild(foot);
     return card;
@@ -540,7 +573,7 @@
           card.animate([{ transform: `translate(${dx}px,${dy}px)` }, { transform: 'translate(0,0)' }], { duration: 700, easing: 'cubic-bezier(.2,.9,.3,1.1)' });
           const prevPlace = ovPrev.places[id];
           if (prevPlace != null && newPlaces[id] < prevPlace) {
-            const flash = el('div', { style: 'position:absolute;top:-1.1vw;right:.6vw;background:var(--gold);color:#fff;font-weight:800;font-size:.95vw;padding:.2vw .7vw;border-radius:999px;box-shadow:var(--shadow);z-index:3', text: '🏇 Overhaling!' });
+            const flash = el('div', { style: 'position:absolute;top:-1.1vw;right:.6vw;background:var(--gold);color:#fff;font-weight:800;font-size:.95vw;padding:.2vw .7vw;border-radius:999px;box-shadow:var(--shadow);z-index:3', text: TX('🏇 Overhaling!', '🏇 Overtake!') });
             card.appendChild(flash);
             flash.animate([{ opacity: 0, transform: 'scale(.6)' }, { opacity: 1, transform: 'scale(1.08)' }, { opacity: 1, transform: 'scale(1)' }], { duration: 450 });
             setTimeout(() => { flash.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 400 }).onfinish = () => flash.remove(); }, 2600);
@@ -555,7 +588,7 @@
   function raceTrack(title) {
     const race = S.race;
     const c = el('div', { style: 'display:flex;flex-direction:column;height:100%' });
-    if (!race) { c.appendChild(el('h2', { text: title })); c.appendChild(el('p.lead', { text: 'Klargør løb…' })); return c; }
+    if (!race) { c.appendChild(el('h2', { text: title })); c.appendChild(el('p.lead', { text: TX('Klargør løb…', 'Preparing race…') })); return c; }
     c.id = 'raceStage';
     c.setAttribute('data-race-id', race.id);
     c.appendChild(el('div.row.between', {}, [el('h2', { text: title }), el('span.chip#raceChip', { text: '' })]));
@@ -585,7 +618,7 @@
     trackWrap.appendChild(track);
     const portal = el('div.goal-portal');
     portal.appendChild(el('div.beam'));
-    portal.appendChild(el('div.sign', { text: 'MÅL' }));
+    portal.appendChild(el('div.sign', { text: TX('MÅL', 'FINISH') }));
     trackWrap.appendChild(portal);
     c.appendChild(trackWrap);
     c.appendChild(el('div.feedbar#raceFeed'));
@@ -611,7 +644,7 @@
     if (chip) {
       chip.className = 'chip' + (race.rollingOpen ? ' turf' : '');
       chip.id = 'raceChip';
-      chip.textContent = race.rollingOpen ? 'Løbet er i gang!' : (race.status === 'finished' ? 'Afsluttet' : 'Afventer start');
+      chip.textContent = race.rollingOpen ? TX('Løbet er i gang!', 'The race is on!') : (race.status === 'finished' ? TX('Afsluttet', 'Finished') : TX('Afventer start', 'Awaiting start'));
     }
     S.teams.forEach((t) => {
       const lane = document.querySelector(`[data-lane="${t.id}"]`); if (!lane) return;
@@ -637,7 +670,7 @@
     if (feedEl) {
       feedEl.innerHTML = '';
       feed.slice(-4).reverse().forEach((f) => feedEl.appendChild(el('div.fe', { text: f.text })));
-      if (!feed.length) feedEl.appendChild(el('div.fe', { text: 'Hestene står klar i boksene…' }));
+      if (!feed.length) feedEl.appendChild(el('div.fe', { text: TX('Hestene står klar i boksene…', 'The horses are ready in the gates…') }));
     }
     // banner ved nye events
     const key = race.id + ':' + feed.length;
@@ -652,7 +685,7 @@
       podium.innerHTML = '';
       if (race.results && race.results.length) {
         const row = el('div.row', { style: 'gap:1.4vw;margin-top:1vh;justify-content:center' });
-        race.results.slice(0, 3).forEach((r) => row.appendChild(el('div.chip.gold', { style: 'font-size:1.4vw;padding:.6vw 1.2vw', text: `${r.place}. ${r.stableName}${r.deadHeat ? ' (dødt løb)' : ''} · +${money(r.prize)} DD` })));
+        race.results.slice(0, 3).forEach((r) => row.appendChild(el('div.chip.gold', { style: 'font-size:1.4vw;padding:.6vw 1.2vw', text: `${r.place}. ${r.stableName}${r.deadHeat ? TX(' (dødt løb)', ' (dead heat)') : ''} · +${money(r.prize)} DD` })));
         podium.appendChild(row);
         if (window.__confettiRace !== race.id) { window.__confettiRace = race.id; confetti(); }
       }
@@ -661,7 +694,7 @@
 
   function bannerText(f) {
     if (f.kind === 'finish') return f.text;
-    if (f.kind === 'favorite') return '📣 Publikumsfavorit: ' + f.stableName + '!';
+    if (f.kind === 'favorite') return TX('📣 Publikumsfavorit: ', '📣 Crowd favourite: ') + f.stableName + '!';
     if (f.event) return `${f.event.emoji || ''} ${f.event.label}! ${f.stableName} ${f.event.effect > 0 ? '+' : ''}${f.event.effect}`;
     return f.text;
   }
@@ -695,7 +728,7 @@
       box.appendChild(el('div.lb-row', {}, [
         el('div.badge', { style: `background:${r.color.hex}`, text: String(r.place) }),
         el('span', { text: r.stableName }),
-        el('span.num', { text: sd(r.totalValue) }),
+        el('span.num', { html: `<b>${r.racePoints || 0} p</b> <span style="opacity:.55;font-size:.6em">· ${sd(r.totalValue)}</span>` }),
       ]));
     });
     c.appendChild(box);
@@ -705,13 +738,13 @@
   // ---- readiness ----
   function readiness() {
     const c = el('div');
-    c.appendChild(el('h2', { text: 'Klar til The Great Team Derby' }));
+    c.appendChild(el('h2', { text: TX('Klar til The Great Team Derby', 'Ready for The Great Team Derby') }));
     const grid = el('div.teamgrid', { style: 'margin-top:1vh' });
     S.teams.filter((t) => t.joined).forEach((t) => {
       const card = el('div.teamcard');
       card.appendChild(el('div.badge', { style: `background:${t.color.hex}`, text: String(t.teamNumber) }));
-      card.appendChild(el('div', { style: 'flex:1' }, [el('div.tn', { text: t.stableName }), el('div.sub', { text: 'Total ' + sd(t.totalValue) })]));
-      card.appendChild(t.derbyLicense ? el('span.chip.turf', { text: '✓ Licens' }) : el('span.chip.red', { text: 'Ingen licens' }));
+      card.appendChild(el('div', { style: 'flex:1' }, [el('div.tn', { text: t.stableName }), el('div.sub', { text: TX('Total ', 'Total ') + sd(t.totalValue) })]));
+      card.appendChild(t.derbyLicense ? el('span.chip.turf', { text: TX('✓ Licens', '✓ Licence') }) : el('span.chip.red', { text: TX('Ingen licens', 'No licence') }));
       grid.appendChild(card);
     });
     c.appendChild(grid);
@@ -722,17 +755,17 @@
   function reveal() {
     const winner = (S.ranking || [])[0];
     const c = el('div.winner-hero');
-    if (!winner) return el('h1', { text: 'Afsløring' });
+    if (!winner) return el('h1', { text: TX('Afsløring', 'The reveal') });
     const spot = el('div.spotlight');
     const horse = TG.tintedAsset('hest-silhuet', winner.color ? winner.color.hex : '#6F191E', { style: 'width:100%;height:100%' });
     const hw = el('div.heroH'); hw.appendChild(horse); spot.appendChild(hw);
     const pk = el('div.pokal'); pk.appendChild(TG.assetImg('pokal', { style: 'width:100%;height:100%' })); spot.appendChild(pk);
     c.appendChild(spot);
-    c.appendChild(el('div.eyebrow', { text: 'Vinderen af The Great Team Derby' }));
+    c.appendChild(el('div.eyebrow', { text: TX('Vinderen af The Great Team Derby', 'The winner of The Great Team Derby') }));
     c.appendChild(el('h1', { text: winner.stableName, style: 'font-size:6vw' }));
-    c.appendChild(el('div.big-num', { text: sd(winner.totalValue), style: 'margin:1vh 0;font-size:6vw' }));
+    c.appendChild(el('div.big-num', { text: (winner.racePoints || 0) + TX(' løbspoint', ' Race Points'), style: 'margin:1vh 0;font-size:6vw' }));
     const bd = el('div.row', { style: 'justify-content:center;gap:1.4vw;margin-top:1vh' });
-    [['Kontant', winner.cash], ['Hest', winner.horseValue], ['Jockey', winner.jockeyValue], ['Stald', winner.stableValue]].forEach(([k, v]) => bd.appendChild(el('div.chip', { style: 'font-size:1.4vw;padding:.6vw 1.2vw', text: `${k}: ${money(v)}` })));
+    [[TX('Staldværdi', 'Stable value'), winner.totalValue], [TX('Staldkassen', 'Stable Fund'), winner.cash], [TX('Hest', 'Horse'), winner.horseValue], [TX('Stald', 'Stable'), winner.stableValue]].forEach(([k, v]) => bd.appendChild(el('div.chip', { style: 'font-size:1.4vw;padding:.6vw 1.2vw', text: `${k}: ${money(v)}` })));
     c.appendChild(bd);
     if (window.__confettiReveal !== S.code) { window.__confettiReveal = S.code; setTimeout(confetti, 400); }
     return c;
@@ -742,7 +775,7 @@
   function debrief() {
     const c = el('div');
     c.appendChild(el('div.eyebrow', { text: 'Debrief' }));
-    c.appendChild(el('h2', { text: 'Hvad skete der egentlig?' }));
+    c.appendChild(el('h2', { text: TX('Hvad skete der egentlig?', 'What actually happened?') }));
     const stats = S.debrief || [];
     const grid = el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fit,minmax(18vw,1fr));gap:1vw;margin-top:1.5vh' });
     stats.forEach((s) => {
@@ -758,7 +791,7 @@
     });
     c.appendChild(grid);
     const qs = el('div', { style: 'margin-top:2.5vh' });
-    qs.appendChild(el('div.eyebrow', { text: 'Tal om det ved bordene' }));
+    qs.appendChild(el('div.eyebrow', { text: TX('Tal om det ved bordene', 'Talk about it at the tables') }));
     ['Hvem traf beslutningerne ved auktionen — og hvordan?', 'Hvornår ændrede I strategi — og hvad udløste det?', 'Da noget uventet væltede jeres plan — holdt I fast, eller lagde I om? Og hvad afgjorde det?', 'Hvad ville I gøre anderledes, hvis runde 1 kom igen?'].forEach((q, i) => {
       qs.appendChild(el('div.row', { style: 'font-size:1.7vw;padding:.6vh 0;gap:1vw' }, [el('span', { style: 'color:var(--gold);font-weight:800', text: String(i + 1) + '.' }), el('span', { text: q })]));
     });
