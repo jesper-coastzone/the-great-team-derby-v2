@@ -3,6 +3,7 @@
  * Alle penge-bevægelser går gennem addTransaction, så vi har fuld sporbarhed.
  */
 const cfg = require('../../config/gameConfig');
+const L = (game, da, en) => ((game.settings && game.settings.lang) === 'en' ? en : da);
 const { uid, now } = require('./util');
 const gs = require('./gameState');
 
@@ -30,18 +31,18 @@ function payWarmup(game) {
 // Direkte investering i hest/jockey/stald
 function invest(game, team, assetType, productId) {
   const products = cfg.investmentOptions[assetType];
-  if (!products) return { ok: false, error: 'Ukendt investeringstype.' };
+  if (!products) return { ok: false, error: L(game, 'Ukendt investeringstype.', 'Unknown investment type.') };
   const product = products.find((p) => p.id === productId);
-  if (!product) return { ok: false, error: 'Ukendt produkt.' };
+  if (!product) return { ok: false, error: L(game, 'Ukendt produkt.', 'Unknown product.') };
   // Forandringskort (fx Foderkrise) kan gøre investeringer dyrere
   const priceFactor = (game.investMultipliers && game.investMultipliers[assetType]) || 1;
   const cost = Math.round(product.cost * priceFactor);
-  if (!canAfford(team, cost)) return { ok: false, error: 'I har ikke nok kontanter.' };
+  if (!canAfford(team, cost)) return { ok: false, error: L(game, 'I har ikke nok i Staldkassen.', 'Not enough in the Stable Fund.') };
 
   // Loft: hvert produkt kan kun købes et begrænset antal gange (lukker degenereret slutspil)
   team.investmentsMade = team.investmentsMade || {};
   const maxBuys = cfg.maxPurchasesPerOption || Infinity;
-  if ((team.investmentsMade[productId] || 0) >= maxBuys) return { ok: false, error: 'I har allerede købt denne investering.' };
+  if ((team.investmentsMade[productId] || 0) >= maxBuys) return { ok: false, error: L(game, 'I har allerede købt denne investering.', 'You have already bought this investment.') };
   team.investmentsMade[productId] = (team.investmentsMade[productId] || 0) + 1;
 
   addTransaction(game, team, -cost, 'invest', `Investering: ${product.label}${priceFactor > 1 ? ' (foderkrise-pris)' : ''}`);

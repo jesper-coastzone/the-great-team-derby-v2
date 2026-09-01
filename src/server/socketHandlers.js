@@ -6,6 +6,7 @@ const cfg = require('../../config/gameConfig');
 const gs = require('./gameState');
 const gm = require('./gameManager');
 const auction = require('./auction');
+const jockeyAuction = require('./jockeyAuction');
 const trades = require('./trades');
 const races = require('./races');
 const tasks = require('./tasks');
@@ -167,7 +168,7 @@ function register(io) {
     // Lyd-toggles til storskærmen (rundemusik / løbsmusik / TTS-speaker)
     // Pre-season-gennemgang (v2.14): fremhæv ét punkt ad gangen på tablets + storskærm
     socket.on('host:setPreseasonFocus', (p, cb) => hostMut((g) => {
-      const valid = ['tip13', 'tidslinje', 'mindpuzzle', 'dyst', 'faste'];
+      const valid = ['tip13', 'tidslinje', 'mindpuzzle', 'dyst', 'stationer', 'faste'];
       const step = p && p.step;
       if (step != null && !valid.includes(step)) return { ok: false, error: 'Ukendt punkt.' };
       g.preseasonFocus = step || null;
@@ -234,6 +235,10 @@ function register(io) {
     });
 
     // ---------- HOST: auktion ----------
+    // v3 etape 2: jockey-auktionen (Paddocken)
+    socket.on('host:openJockeyAuction', (_, cb) => hostMut((g) => jockeyAuction.openAuction(g, g.currentRound || 1), cb));
+    socket.on('host:resolveJockeyAuction', (_, cb) => hostMut((g) => jockeyAuction.resolveAuction(g), cb));
+
     socket.on('host:startAuction', (_, cb) => hostMut((g) => auction.startAuction(g, g.currentRound || 1), cb));
     socket.on('host:closeAuction', (_, cb) => hostMut((g) => auction.closeAuction(g), cb));
     socket.on('host:resolveAuction', (_, cb) => hostMut((g) => auction.resolveAuction(g), cb));
@@ -320,6 +325,8 @@ function register(io) {
     socket.on('team:ready', (p, cb) => mut((g) => { const t = teamOf(); if (t) t.ready = !!p.ready; return { ok: true }; }, cb));
 
     // ---------- TEAM: auktion ----------
+    socket.on('team:jockeyBid', (p, cb) => mut((g) => { const t = teamOf(); return t ? jockeyAuction.placeBid(g, t, p.jockeyId, p.amount) : { ok: false }; }, cb));
+    socket.on('team:retractJockeyBid', (p, cb) => mut((g) => { const t = teamOf(); return t ? jockeyAuction.retractBid(g, t, p.jockeyId) : { ok: false }; }, cb));
     socket.on('team:bid', (p, cb) => mut((g) => { const t = teamOf(); return t ? auction.placeBid(g, t, p.exerciseId, p.amount) : { ok: false }; }, cb));
     socket.on('team:retractBid', (p, cb) => mut((g) => { const t = teamOf(); return t ? auction.retractBid(g, t, p.exerciseId) : { ok: false }; }, cb));
     socket.on('team:exchange', (p, cb) => mut((g) => { const t = teamOf(); return t ? auction.auctionHouseExchange(g, t, p.targetExerciseId) : { ok: false }; }, cb));

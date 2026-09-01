@@ -8,6 +8,7 @@
 const cfg = require('../../config/gameConfig');
 const { uid, randomInt, now, shuffle } = require('./util');
 const gs = require('./gameState');
+const L = (game, da, en) => ((game.settings && game.settings.lang) === 'en' ? en : da);
 const econ = require('./economy');
 
 function allowedRollsFor(game, team, type) {
@@ -44,7 +45,7 @@ function startRace(game, type, round) {
     t.race = { position: 0, rolls: [], lastRoll: 0, rollSum: 0, done: false, hasRolled: false, allowed: race.allowed[t.id] };
   }
   // Uvejr fra forandringskort: gælder præcis ét løb
-  if (game.stormNextRace) { race.storm = true; game.stormNextRace = false; pushFeed(race, { kind: 'event', text: '⛈️ Uvejr over banen — alt kan ske i dette løb!' }); }
+  if (game.stormNextRace) { race.storm = true; game.stormNextRace = false; pushFeed(race, { kind: 'event', text: L(game, '⛈️ Uvejr over banen — alt kan ske i dette løb!', '⛈️ Storm over the track — anything can happen in this race!') }); }
   game.races.push(race);
   game.currentRaceId = race.id;
   // Publikumsfavorit: bedste hest udpeges automatisk ved løbsstart (host kan stadig ændre det).
@@ -55,7 +56,7 @@ function startRace(game, type, round) {
     // Kun når én hest reelt er bedst — i warm-up (alle ens) udpeges ingen favorit.
     if (best.horseValue > sorted[1].horseValue || best.horseLevel > sorted[1].horseLevel) {
       race.favoriteTeamId = best.id;
-      pushFeed(race, { kind: 'favorite', teamId: best.id, stableName: best.stableName, text: `📣 ${best.stableName} har løbets bedste hest og er publikumsfavorit!` });
+      pushFeed(race, { kind: 'favorite', teamId: best.id, stableName: best.stableName, text: L(game, `📣 ${best.stableName} har løbets bedste hest og er publikumsfavorit!`, `📣 ${best.stableName} has the best horse in the race and is the crowd favourite!`) });
       gs.logEvent(game, `${best.stableName} er publikumsfavorit (bedste hest).`);
     }
   }
@@ -79,7 +80,7 @@ function setFavorite(game, teamId) {
   race.favoriteTeamId = team ? team.id : null;
   race.favoriteUsed = false;
   if (team) {
-    pushFeed(race, { kind: 'favorite', teamId: team.id, stableName: team.stableName, text: `📣 ${team.stableName} er publikumsfavorit!` });
+    pushFeed(race, { kind: 'favorite', teamId: team.id, stableName: team.stableName, text: L(game, `📣 ${team.stableName} er publikumsfavorit!`, `📣 ${team.stableName} is the crowd favourite!`) });
     gs.logEvent(game, `${team.stableName} er publikumsfavorit.`);
   }
   return { ok: true };
@@ -95,7 +96,7 @@ function pushFeed(race, entry) {
 function computePaddockOdds(game) {
   const rb = cfg.raceBetting || {};
   const minOdds = rb.minOdds || 1.5, maxOdds = rb.maxOdds || 5;
-  const strengths = game.teams.map((t) => ({ id: t.id, str: t.horseLevel + t.jockeyLevel }));
+  const strengths = game.teams.map((t) => ({ id: t.id, str: t.horseLevel + t.jockeyLevel + (t.jockey ? (t.jockey.topMod + t.jockey.bottomMod) : 0) }));
   const strMin = Math.min(...strengths.map((s) => s.str));
   const strMax = Math.max(...strengths.map((s) => s.str));
   const odds = {};
@@ -112,19 +113,19 @@ function computePaddockOdds(game) {
 // Væddemål i Paddocken: én pr. stald pr. løb, på en HVILKEN SOM HELST hest.
 function placeBet(game, team, targetTeamId, amount) {
   const rb = cfg.raceBetting || {};
-  if (!rb.enabled) return { ok: false, error: 'Væddemål er slået fra.' };
+  if (!rb.enabled) return { ok: false, error: L(game, 'Væddemål er slået fra.', 'Betting is disabled.') };
   const gm = require('./gameManager');
-  if (!gm.paddockOpen(game)) return { ok: false, error: 'Odds-tavlen er kun åben i Paddocken.' };
+  if (!gm.paddockOpen(game)) return { ok: false, error: L(game, 'Odds-tavlen er kun åben i Paddocken.', 'The odds board is only open in the Paddock.') };
   if (!game.paddockOdds) computePaddockOdds(game);
   const target = gs.getTeam(game, targetTeamId);
-  if (!target) return { ok: false, error: 'Ukendt hest.' };
+  if (!target) return { ok: false, error: L(game, 'Ukendt hest.', 'Unknown horse.') };
   game.raceBets = game.raceBets || {};
-  if (game.raceBets[team.id]) return { ok: false, error: 'I har allerede sat jeres væddemål til dette løb.' };
+  if (game.raceBets[team.id]) return { ok: false, error: L(game, 'I har allerede sat jeres væddemål til dette løb.', 'You have already placed your bet for this race.') };
   amount = Math.round(amount);
   const minStake = rb.minStake || 100, maxStake = rb.maxStake || 1000;
-  if (!(amount >= minStake)) return { ok: false, error: `Mindste indsats er ${minStake} ${cfg.currencyAbbr}.` };
-  if (amount > maxStake) return { ok: false, error: `Højeste indsats er ${maxStake} ${cfg.currencyAbbr}.` };
-  if (amount > team.cash) return { ok: false, error: 'I kan ikke satse mere end I har i kassen.' };
+  if (!(amount >= minStake)) return { ok: false, error: L(game, `Mindste indsats er ${minStake} ${cfg.currencyAbbr}.`, `Minimum stake is ${minStake} ${cfg.currencyAbbr}.`) };
+  if (amount > maxStake) return { ok: false, error: L(game, `Højeste indsats er ${maxStake} ${cfg.currencyAbbr}.`, `Maximum stake is ${maxStake} ${cfg.currencyAbbr}.`) };
+  if (amount > team.cash) return { ok: false, error: L(game, 'I kan ikke satse mere end I har i kassen.', 'You cannot stake more than you have in the fund.') };
   const odds = game.paddockOdds[targetTeamId] || rb.minOdds || 1.5;
   econ.addTransaction(game, team, -amount, 'bet', `Væddemål: ${amount} ${cfg.currencyAbbr} på ${target.horseName || target.stableName} (odds ${odds})`);
   game.raceBets[team.id] = { targetTeamId, amount, odds, resolved: false, payout: 0 };
@@ -138,7 +139,8 @@ function prizePreview(game) {
   const isFinal = !!(slide.meta && slide.meta.final) || slide.phase === 'final-race';
   const round = game.currentRound || 1;
   const table = isFinal ? cfg.finalRacePrizes : prizeTableFor(round);
-  return { isFinal, round, prizes: table, winnerMultiplier: cfg.winnerHorseValueMultiplier || 1 };
+  const rp = cfg.racePoints || {};
+  return { isFinal, round, prizes: table, points: (isFinal ? rp.final : rp.normal) || [], winnerMultiplier: cfg.winnerHorseValueMultiplier || 1 };
 }
 
 function pickRandomEvent() {
@@ -166,15 +168,16 @@ function boostMods(team) {
 
 function rollForTeam(game, team) {
   const race = gs.currentRace(game);
-  if (!race) return { ok: false, error: 'Intet aktivt løb.' };
-  if (!race.rollingOpen) return { ok: false, error: 'Rolling er ikke åben endnu.' };
+  if (!race) return { ok: false, error: L(game, 'Intet aktivt løb.', 'No active race.') };
+  if (!race.rollingOpen) return { ok: false, error: L(game, 'Der er ikke åbnet for terningerne endnu.', 'Rolling is not open yet.') };
   const used = race.rolls[team.id].length;
-  if (used >= race.allowed[team.id]) return { ok: false, error: 'I har brugt alle jeres slag.' };
+  if (used >= race.allowed[team.id]) return { ok: false, error: L(game, 'I har brugt alle jeres slag.', 'You have used all your rolls.') };
 
   // Løbsdags-boosts (v2.16): købt i Paddocken, gælder kun dette løb
   const bm = boostMods(team);
-  const min = cfg.diceBaseMin + team.jockeyLevel + bm.min;
-  const max = Math.max(cfg.diceBaseMax + team.horseLevel + bm.max, min);
+  const jk = team.jockey || { topMod: 0, bottomMod: 0 }; // v3: hyret jockey
+  const min = cfg.diceBaseMin + team.jockeyLevel + jk.bottomMod + bm.min;
+  const max = Math.max(cfg.diceBaseMax + team.horseLevel + jk.topMod + bm.max, min);
   const base = randomInt(min, max);
 
   // Catch-up: langt bagud → lille nøk
@@ -213,20 +216,21 @@ function rollForTeam(game, team) {
   };
 
   // Feed til storskærm/kommentator
+  const evLabel = event ? (L(game, '', 'en') === 'en' && event.labelEn ? event.labelEn : event.label) : null;
   const bits = [];
   if (fanBoost) bits.push(`📣 fan-boost +${fanBoost}`);
-  if (catchup) bits.push(`🔥 ${cu.label || 'Opløbsfight'} +${catchup}`);
-  if (event) bits.push(`${event.emoji || ''} ${event.label} ${event.effect > 0 ? '+' : ''}${event.effect}`);
+  if (catchup) bits.push(`🔥 ${L(game, cu.label || 'Opløbsfight', 'Home-stretch fight')} +${catchup}`);
+  if (event) bits.push(`${event.emoji || ''} ${evLabel} ${event.effect > 0 ? '+' : ''}${event.effect}`);
   pushFeed(race, {
     kind: event ? 'event' : 'roll',
     teamId: team.id, stableName: team.stableName,
     base, catchup, fanBoost,
-    event: event ? { id: event.id, label: event.label, emoji: event.emoji, effect: event.effect } : null,
+    event: event ? { id: event.id, label: evLabel, emoji: event.emoji, effect: event.effect } : null,
     roll: total, position: race.positions[team.id],
-    text: `🎲 ${team.stableName} slår ${base}${bits.length ? ' · ' + bits.join(' · ') : ''} → rykker ${total} felter`,
+    text: L(game, `🎲 ${team.stableName} slår ${base}${bits.length ? ' · ' + bits.join(' · ') : ''} → rykker ${total} felter`, `🎲 ${team.stableName} rolls ${base}${bits.length ? ' · ' + bits.join(' · ') : ''} → moves ${total} spaces`),
   });
 
-  return { ok: true, roll: total, base, catchup, fanBoost, event: event ? { label: event.label, emoji: event.emoji, effect: event.effect } : null, position: race.positions[team.id], done: team.race.done };
+  return { ok: true, roll: total, base, catchup, fanBoost, event: event ? { label: evLabel, emoji: event.emoji, effect: event.effect } : null, position: race.positions[team.id], done: team.race.done };
 }
 
 function allRolled(game) {
@@ -247,6 +251,14 @@ function prizeTableFor(round) {
 function prizeFor(place, type, round) {
   const table = type === 'final' ? cfg.finalRacePrizes : prizeTableFor(round);
   return table[place] != null ? table[place] : table.default;
+}
+
+// v3: LØBSPOINT pr. placering — vinderkriteriet. Pladser ud over tabellen får sidste værdi.
+function pointsFor(place, type) {
+  const rp = cfg.racePoints || {};
+  const table = (type === 'final' ? rp.final : rp.normal) || [];
+  if (!table.length) return 0;
+  return table[Math.min(Math.max(place, 1), table.length) - 1];
 }
 
 function finishRace(game) {
@@ -271,21 +283,30 @@ function finishRace(game) {
     const place = r.position === prevPos ? prevPlace : idx + 1;
     prevPos = r.position; prevPlace = place;
     const prize = prizeFor(place, race.type, race.round);
-    results.push({ ...r, place, prize, deadHeat: false });
+    const points = pointsFor(place, race.type);
+    results.push({ ...r, place, prize, points, deadHeat: false });
   });
   // markér dødt løb
   results.forEach((r) => { r.deadHeat = results.some((o) => o !== r && o.place === r.place); });
 
+  const isRealRaceForPoints = !race.isAutoWarmup && (race.round || 0) > 0;
   for (const r of results) {
     const team = gs.getTeam(game, r.teamId);
-    econ.addTransaction(game, team, r.prize, 'race', `${race.type === 'final' ? 'Finaleløb' : 'Løb'}: ${r.place}. plads${r.deadHeat ? ' (dødt løb)' : ''}`, race.id);
+    econ.addTransaction(game, team, r.prize, 'race', L(game, `${race.type === 'final' ? 'Finaleløb' : 'Løb'}: ${r.place}. plads${r.deadHeat ? ' (dødt løb)' : ''}`, `${race.type === 'final' ? 'Final race' : 'Race'}: place ${r.place}${r.deadHeat ? ' (dead heat)' : ''}`), race.id);
+    // v3: tildel LØBSPOINT (vinderkriteriet)
+    if (isRealRaceForPoints && team) {
+      team.racePoints = Math.round((team.racePoints || 0) + (r.points || 0));
+      team.pointsHistory = team.pointsHistory || [];
+      team.pointsHistory.push({ round: race.round, place: r.place, points: r.points || 0, final: race.type === 'final' });
+      if (r.points) pushFeed(race, { kind: 'points', teamId: r.teamId, stableName: r.stableName, text: L(game, `🏅 ${r.stableName}: ${r.place}. plads → +${r.points} løbspoint (i alt ${team.racePoints})`, `🏅 ${r.stableName}: place ${r.place} → +${r.points} Race Points (total ${team.racePoints})`) });
+    }
   }
 
   race.results = results;
   race.prizesApplied = true;
   race.rollingOpen = false;
   race.status = 'finished';
-  pushFeed(race, { kind: 'finish', text: `🏁 Løbet er slut! ${results[0].stableName} vinder${results[0].deadHeat ? ' (dødt løb!)' : ''}.` });
+  pushFeed(race, { kind: 'finish', text: L(game, `🏁 Løbet er slut! ${results[0].stableName} vinder${results[0].deadHeat ? ' (dødt løb!)' : ''}.`, `🏁 The race is over! ${results[0].stableName} wins${results[0].deadHeat ? ' (dead heat!)' : ''}.`) });
 
   const isRealRace = !race.isAutoWarmup && (race.round || 0) > 0;
 
@@ -297,7 +318,7 @@ function finishRace(game) {
       if (!team) return;
       const before = Math.round(team.horseValue);
       team.horseValue = Math.round(before * mult);
-      pushFeed(race, { kind: 'double', teamId: r.teamId, stableName: team.stableName, text: `🐎 ${team.horseName || team.stableName} fordobler sin værdi: ${before} → ${Math.round(team.horseValue)} ${cfg.currencyAbbr}!` });
+      pushFeed(race, { kind: 'double', teamId: r.teamId, stableName: team.stableName, text: L(game, `🐎 ${team.horseName || team.stableName} fordobler sin værdi: ${before} → ${Math.round(team.horseValue)} ${cfg.currencyAbbr}!`, `🐎 ${team.horseName || team.stableName} doubles its value: ${before} → ${Math.round(team.horseValue)} ${cfg.currencyAbbr}!`) });
       gs.logEvent(game, `${team.stableName}s hest steg i værdi: ${before} → ${Math.round(team.horseValue)} ${cfg.currencyAbbr}.`);
     });
   }
@@ -314,10 +335,10 @@ function finishRace(game) {
       const horseName = target.horseName || target.stableName;
       if (res && res.place === 1) {
         bet.payout = Math.round(bet.amount * bet.odds);
-        econ.addTransaction(game, bettor, bet.payout, 'bet', `Væddemål vundet: ${horseName} vandt! (odds ${bet.odds})`, race.id);
-        pushFeed(race, { kind: 'bet', teamId: bettorId, stableName: bettor.stableName, text: `💰 ${bettor.stableName} spillede rigtigt på ${horseName}: +${bet.payout} ${cfg.currencyAbbr}!` });
+        econ.addTransaction(game, bettor, bet.payout, 'bet', L(game, `Væddemål vundet: ${horseName} vandt! (odds ${bet.odds})`, `Bet won: ${horseName} won! (odds ${bet.odds})`), race.id);
+        pushFeed(race, { kind: 'bet', teamId: bettorId, stableName: bettor.stableName, text: L(game, `💰 ${bettor.stableName} spillede rigtigt på ${horseName}: +${bet.payout} ${cfg.currencyAbbr}!`, `💰 ${bettor.stableName} backed the right horse — ${horseName}: +${bet.payout} ${cfg.currencyAbbr}!`) });
       } else {
-        pushFeed(race, { kind: 'bet', teamId: bettorId, stableName: bettor.stableName, text: `💸 ${bettor.stableName} tabte væddemålet på ${horseName} (${bet.amount} ${cfg.currencyAbbr}).` });
+        pushFeed(race, { kind: 'bet', teamId: bettorId, stableName: bettor.stableName, text: L(game, `💸 ${bettor.stableName} tabte væddemålet på ${horseName} (${bet.amount} ${cfg.currencyAbbr}).`, `💸 ${bettor.stableName} lost the bet on ${horseName} (${bet.amount} ${cfg.currencyAbbr}).`) });
       }
     }
   }
@@ -325,6 +346,8 @@ function finishRace(game) {
   game.paddockOdds = null;
   // Løbsdags-boosts er brugt — ryd dem
   game.teams.forEach((t) => { t.raceBoosts = {}; });
+  // v3 etape 2: jockeyen var kun hyret til sæsonens løb — tilbage i puljen
+  if (isRealRace) require('./jockeyAuction').releaseJockeys(game);
 
   gs.logEvent(game, `Løb afsluttet. Vinder på banen: ${results[0].stableName}.`);
   return { ok: true, results };
@@ -395,6 +418,6 @@ function finishWarmupTie(game) {
 
 module.exports = {
   startRace, setRolling, setFavorite, placeBet, rollForTeam, hostRollForTeam: rollForTeam,
-  allRolled, finishRace, prizeFor, computePaddockOdds, prizePreview,
+  allRolled, finishRace, prizeFor, pointsFor, computePaddockOdds, prizePreview,
   buildWarmupPlan, applyScriptedRoll, finishWarmupTie,
 };

@@ -58,6 +58,12 @@ function enterPhase(game, slide) {
       // Paddocken åbner automatisk med timer — kun her kan der investeres og væddes.
       startPaddockTimer(game);
       races.computePaddockOdds(game); // lås odds-tavlen ("morning line")
+      // v3 etape 2: jockey-auktionen åbner automatisk med Paddocken (ny pr. sæson)
+      const ja = game.jockeyAuction;
+      const round = game.currentRound || 1;
+      if (!ja || ja.round !== round || ja.status === 'idle') {
+        require('./jockeyAuction').openAuction(game, round);
+      }
       break;
     }
     default: break;
@@ -74,7 +80,7 @@ function joinTeam(game, requestedTeamId) {
     if (t) { t.joined = true; t.connected = true; return { ok: true, team: t }; }
   }
   const free = game.teams.find((t) => !t.joined);
-  if (!free) return { ok: false, error: 'Alle stalde er optaget.' };
+  if (!free) return { ok: false, error: 'Alle stalde er optaget / All stables are taken.' };
   free.joined = true; free.connected = true;
   gs.logEvent(game, `${free.stableName} tilsluttede sig.`);
   return { ok: true, team: free };

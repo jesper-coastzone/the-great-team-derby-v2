@@ -9,6 +9,8 @@ const { tip13Sets, tidslinjeSets, timelineEvents, dystQuestions } = require('../
 const mindpuzzle = require('../../config/mindpuzzleLevels');
 const { uid, now, shuffle, pick } = require('./util');
 const gs = require('./gameState');
+const L = (game, da, en) => ((game.settings && game.settings.lang) === 'en' ? en : da);
+const isEn = (game) => (game.settings && game.settings.lang) === 'en';
 const econ = require('./economy');
 const perf = require('./performance');
 
@@ -23,13 +25,13 @@ function ensureDuels(game) { if (!game.duels) game.duels = []; return game.duels
 // =========================================================
 function getTip13(game, team) {
   const st = ensureStatus(team, 'tip13');
-  if (onCooldown(team, 'tip13')) return { ok: false, error: 'Tip en 13\'er er på cooldown.' };
+  if (onCooldown(team, 'tip13')) return { ok: false, error: L(game, 'Tip en 13\'er er på cooldown.', 'Lucky 13 is on cooldown.') };
   const set = tip13Sets[(st.count || 0) % tip13Sets.length];
   st.currentSetId = set.id;
   return {
     ok: true,
     setId: set.id,
-    questions: set.questions.map((q, i) => ({ i, q: q.q, options: q.options })),
+    questions: set.questions.map((q, i) => ({ i, q: isEn(game) && q.qEn ? q.qEn : q.q, options: isEn(game) && q.optionsEn ? q.optionsEn : q.options })),
   };
 }
 
@@ -40,12 +42,12 @@ function taskFactor(game, taskId) {
 
 function submitTip13(game, team, answers) {
   const st = ensureStatus(team, 'tip13');
-  if (onCooldown(team, 'tip13')) return { ok: false, error: 'Tip en 13\'er er på cooldown.' };
+  if (onCooldown(team, 'tip13')) return { ok: false, error: L(game, 'Tip en 13\'er er på cooldown.', 'Lucky 13 is on cooldown.') };
   const set = tip13Sets.find((s) => s.id === st.currentSetId) || tip13Sets[0];
   let correct = 0;
   set.questions.forEach((q, i) => { if (Number(answers[i]) === q.correct) correct += 1; });
   const reward = Math.round(correct * cfg.moneyTasks.tip13.rewardPerCorrect * taskFactor(game, 'tip13'));
-  if (reward > 0) econ.addTransaction(game, team, reward, 'task', `Tip en 13'er: ${correct}/${set.questions.length} rigtige`);
+  if (reward > 0) econ.addTransaction(game, team, reward, 'task', L(game, `Tip en 13'er: ${correct}/${set.questions.length} rigtige`, `Lucky 13: ${correct}/${set.questions.length} correct`));
   st.count = (st.count || 0) + 1;
   setCooldown(team, 'tip13', cfg.moneyTasks.tip13.cooldownSeconds);
   gs.logEvent(game, `${team.stableName} løste Tip en 13'er (${correct} rigtige, +${reward} ${cfg.currencyAbbr}).`);
@@ -75,13 +77,13 @@ function getTidslinje(game, team) {
 }
 
 function submitTidslinje(game, team, orderedNumbers) {
-  if (onCooldown(team, 'tidslinje')) return { ok: false, error: 'Tidslinjen er på cooldown.' };
+  if (onCooldown(team, 'tidslinje')) return { ok: false, error: L(game, 'Tidslinjen er på cooldown.', 'The Timeline is on cooldown.') };
   const st = ensureStatus(team, 'tidslinje');
   const draw = st.currentDraw || [];
-  if (!draw.length) return { ok: false, error: 'Hent opgaven igen.' };
+  if (!draw.length) return { ok: false, error: L(game, 'Hent opgaven igen.', 'Fetch the task again.') };
   const submitted = (orderedNumbers || []).map(Number);
   if (submitted.length !== draw.length || submitted.some((n) => !draw.includes(n))) {
-    return { ok: false, error: 'Angiv rækkefølgen af alle jeres kort.' };
+    return { ok: false, error: L(game, 'Angiv rækkefølgen af alle jeres kort.', 'Enter the order of all your cards.') };
   }
   const byN = new Map(timelineEvents.map((e) => [e.n, e]));
   const correctOrder = draw.slice().sort((a, b) => byN.get(a).year - byN.get(b).year);
@@ -90,12 +92,12 @@ function submitTidslinje(game, team, orderedNumbers) {
   st.currentDraw = null; // nyt tilfældigt træk næste gang — uanset udfald
   setCooldown(team, 'tidslinje', cfg.moneyTasks.tidslinje.cooldownSeconds);
   const reward = success ? Math.round(cfg.moneyTasks.tidslinje.rewardOnSuccess * taskFactor(game, 'tidslinje')) : cfg.moneyTasks.tidslinje.rewardOnFail;
-  if (reward) econ.addTransaction(game, team, reward, 'task', `Tidslinjen ${success ? 'korrekt' : 'forkert'}`);
+  if (reward) econ.addTransaction(game, team, reward, 'task', L(game, `Tidslinjen ${success ? 'korrekt' : 'forkert'}`, `The Timeline ${success ? 'correct' : 'incorrect'}`));
   gs.logEvent(game, `${team.stableName} forsøgte Tidslinjen (${success ? `korrekt, +${reward} ${cfg.currencyAbbr}` : 'forkert'}).`);
   const res = { ok: true, success, reward: success ? reward : 0 };
   if (success) {
     res.correctCards = correctOrder;
-    res.correctLabels = correctOrder.map((n) => byN.get(n).label);
+    res.correctLabels = correctOrder.map((n) => (isEn(game) && byN.get(n).labelEn) || byN.get(n).label);
   }
   return res;
 }
@@ -105,13 +107,13 @@ function submitTidslinje(game, team, orderedNumbers) {
 // =========================================================
 function challengeDuel(game, fromTeam, toTeamId) {
   ensureDuels(game);
-  if (onCooldown(fromTeam, 'dyst')) return { ok: false, error: 'Dyst er på cooldown.' };
+  if (onCooldown(fromTeam, 'dyst')) return { ok: false, error: L(game, 'Dyst er på cooldown.', 'The Duel is on cooldown.') };
   const toTeam = gs.getTeam(game, toTeamId);
-  if (!toTeam) return { ok: false, error: 'Ukendt modstander.' };
-  if (toTeam.id === fromTeam.id) return { ok: false, error: 'I kan ikke udfordre jer selv.' };
+  if (!toTeam) return { ok: false, error: L(game, 'Ukendt modstander.', 'Unknown opponent.') };
+  if (toTeam.id === fromTeam.id) return { ok: false, error: L(game, 'I kan ikke udfordre jer selv.', 'You cannot challenge yourselves.') };
   const existing = game.duels.find((d) => ['pending', 'active'].includes(d.status) &&
     [d.fromTeamId, d.toTeamId].includes(fromTeam.id));
-  if (existing) return { ok: false, error: 'I har allerede en aktiv dyst.' };
+  if (existing) return { ok: false, error: L(game, 'I har allerede en aktiv dyst.', 'You already have an active duel.') };
   const duel = {
     id: uid('duel'), fromTeamId: fromTeam.id, toTeamId,
     fromStable: fromTeam.stableName, toStable: toTeam.stableName,
@@ -126,12 +128,12 @@ function challengeDuel(game, fromTeam, toTeamId) {
 function respondDuel(game, team, duelId, accept) {
   ensureDuels(game);
   const duel = game.duels.find((d) => d.id === duelId);
-  if (!duel) return { ok: false, error: 'Dysten findes ikke.' };
-  if (duel.toTeamId !== team.id) return { ok: false, error: 'Kun den udfordrede kan svare.' };
-  if (duel.status !== 'pending') return { ok: false, error: 'Dysten er ikke længere aktiv.' };
+  if (!duel) return { ok: false, error: L(game, 'Dysten findes ikke.', 'The duel does not exist.') };
+  if (duel.toTeamId !== team.id) return { ok: false, error: L(game, 'Kun den udfordrede kan svare.', 'Only the challenged stable can respond.') };
+  if (duel.status !== 'pending') return { ok: false, error: L(game, 'Dysten er ikke længere aktiv.', 'The duel is no longer active.') };
   if (!accept) { duel.status = 'declined'; return { ok: true, duel }; }
   const n = cfg.moneyTasks.dyst.questionsPerDuel;
-  duel.questions = shuffle(dystQuestions).slice(0, n).map((q) => ({ q: q.q, unit: q.unit, answer: q.answer }));
+  duel.questions = shuffle(dystQuestions).slice(0, n).map((q) => ({ q: isEn(game) && q.qEn ? q.qEn : q.q, unit: (isEn(game) && q.unitEn) || q.unit, answer: q.answer }));
   duel.status = 'active';
   duel.answers = {};
   gs.logEvent(game, `Dyst mellem ${duel.fromStable} og ${duel.toStable} er i gang.`);
@@ -140,9 +142,9 @@ function respondDuel(game, team, duelId, accept) {
 
 function submitDuel(game, team, duelId, answers) {
   const duel = (game.duels || []).find((d) => d.id === duelId);
-  if (!duel) return { ok: false, error: 'Dysten findes ikke.' };
-  if (![duel.fromTeamId, duel.toTeamId].includes(team.id)) return { ok: false, error: 'I er ikke med i dysten.' };
-  if (duel.status !== 'active') return { ok: false, error: 'Dysten er ikke aktiv.' };
+  if (!duel) return { ok: false, error: L(game, 'Dysten findes ikke.', 'The duel does not exist.') };
+  if (![duel.fromTeamId, duel.toTeamId].includes(team.id)) return { ok: false, error: L(game, 'I er ikke med i dysten.', 'You are not part of this duel.') };
+  if (duel.status !== 'active') return { ok: false, error: L(game, 'Dysten er ikke aktiv.', 'The duel is not active.') };
   duel.answers[team.id] = answers.map(Number);
   // begge svaret?
   if (duel.answers[duel.fromTeamId] && duel.answers[duel.toTeamId]) resolveDuel(game, duel);
@@ -167,8 +169,8 @@ function resolveDuel(game, duel) {
   if (winner) {
     const loser = winner === from ? to : from;
     duel.winnerTeamId = winner.id;
-    if (cfgd.rewardWinner) econ.addTransaction(game, winner, Math.round(cfgd.rewardWinner * taskFactor(game, 'dyst')), 'task', 'Vandt dyst');
-    if (cfgd.rewardLoser) econ.addTransaction(game, loser, cfgd.rewardLoser, 'task', 'Tabte dyst');
+    if (cfgd.rewardWinner) econ.addTransaction(game, winner, Math.round(cfgd.rewardWinner * taskFactor(game, 'dyst')), 'task', L(game, 'Vandt dyst', 'Won the duel'));
+    if (cfgd.rewardLoser) econ.addTransaction(game, loser, cfgd.rewardLoser, 'task', L(game, 'Tabte dyst', 'Lost the duel'));
   }
   duel.status = 'resolved';
   setCooldown(from, 'dyst', cfgd.cooldownSeconds);
@@ -203,10 +205,11 @@ function duelsForTeam(game, teamId) {
 //  AUKTIONSØVELSER — officielle forsøg (host godkender)
 // =========================================================
 function requestExerciseAttempt(game, team, exerciseId, meta = {}) {
-  if (team.ownedAuctionExerciseId !== exerciseId) return { ok: false, error: 'I ejer ikke den øvelse.' };
+  // v3: FRIE STATIONER — alle stalde kan forsøge alle stationer (ingen ejerskab).
+  // Involverings-reglen håndhæves fysisk af Løbslederen: hele stalden skal være samlet.
   const ex = gs.exerciseById(game, exerciseId);
-  if (!ex) return { ok: false, error: 'Ukendt øvelse.' };
-  if (onCooldown(team, exerciseId)) return { ok: false, error: 'Øvelsen er på cooldown.' };
+  if (!ex) return { ok: false, error: L(game, 'Ukendt station.', 'Unknown station.') };
+  if (onCooldown(team, exerciseId)) return { ok: false, error: L(game, 'Stationen er på cooldown.', 'The station is on cooldown.') };
   const st = ensureStatus(team, exerciseId);
   st.pending = true;
   st.pendingKind = ex.category === 'money' ? 'auction-money' : 'auction-performance';
@@ -228,11 +231,11 @@ function mpCurrentLevel(team) {
   return mindpuzzle.LEVELS[idx] || null;
 }
 
-function mpBuildQuestion(levelDef, q) {
+function mpBuildQuestion(levelDef, q, game) {
   if (q.gate) {
     return {
       type: 'gate',
-      text: 'Ved hvilket bogstav på banens kant står den røde bom?',
+      text: L(game, 'Ved hvilket bogstav på banens kant står den røde bom?', 'At which letter on the edge of the board is the red bar?'),
       options: mindpuzzle.GATE_LETTERS.map((l) => ({ id: l, label: l })),
     };
   }
@@ -246,8 +249,8 @@ function mpBuildQuestion(levelDef, q) {
   const options = shuffle([q.correct, ...wrong]);
   return {
     type: 'color',
-    text: `Hvilken forhindring står tættest på bogstavet ${q.letter} på jeres bane?`,
-    options: options.map((c) => ({ id: c, label: mindpuzzle.COLOR_LABELS[c] })),
+    text: L(game, `Hvilken forhindring står tættest på bogstavet ${q.letter} på jeres bane?`, `Which obstacle is closest to the letter ${q.letter} on your course?`),
+    options: options.map((c) => ({ id: c, label: (isEn(game) ? mindpuzzle.COLOR_LABELS_EN : mindpuzzle.COLOR_LABELS)[c] })),
   };
 }
 
@@ -272,19 +275,19 @@ function getMindPuzzle(game, team) {
     image: `/assets/mindpuzzle/challenge-${String(levelDef.book).padStart(2, '0')}.jpg`,
     nextReward: Math.round((((cfg.moneyTasks.mindpuzzle && cfg.moneyTasks.mindpuzzle.rewardPerLevel) || 300)) * taskFactor(game, 'mindpuzzle')),
     cooldownLeft: cdLeft,
-    questions: qIdx.map((i) => mpBuildQuestion(levelDef, levelDef.questions[i])),
+    questions: qIdx.map((i) => mpBuildQuestion(levelDef, levelDef.questions[i], game)),
   };
 }
 
 // Tjek svar. Rigtigt → belønning + næste niveau. Forkert → straf-cooldown.
 function submitMindPuzzle(game, team, answers) {
-  if (onCooldown(team, 'mindpuzzle')) return { ok: false, error: 'Mind Puzzle er på cooldown.' };
+  if (onCooldown(team, 'mindpuzzle')) return { ok: false, error: L(game, 'Mind Puzzle er på cooldown.', 'Mind Puzzle is on cooldown.') };
   const levelDef = mpCurrentLevel(team);
-  if (!levelDef) return { ok: false, error: 'Alle niveauer er gennemført!' };
+  if (!levelDef) return { ok: false, error: L(game, 'Alle niveauer er gennemført!', 'All levels are complete!') };
   const st = ensureStatus(team, 'mindpuzzle');
   const qIdx = st.mpQuestionIdx || [];
   if (!qIdx.length || !Array.isArray(answers) || answers.length !== qIdx.length) {
-    return { ok: false, error: 'Hent spørgsmålene igen.' };
+    return { ok: false, error: L(game, 'Hent spørgsmålene igen.', 'Fetch the questions again.') };
   }
 
   const allCorrect = qIdx.every((qi, i) => {
@@ -301,7 +304,7 @@ function submitMindPuzzle(game, team, answers) {
 
   const mpCfg = cfg.moneyTasks.mindpuzzle || {};
   const reward = Math.round((mpCfg.rewardPerLevel || 300) * taskFactor(game, 'mindpuzzle')); // fast belønning — banerne bliver sværere af sig selv
-  econ.addTransaction(game, team, reward, 'task', `Mind Puzzle niveau ${levelDef.level} godkendt`);
+  econ.addTransaction(game, team, reward, 'task', L(game, `Mind Puzzle niveau ${levelDef.level} godkendt`, `Mind Puzzle level ${levelDef.level} approved`));
   team.mindPuzzleLevel = (team.mindPuzzleLevel || 0) + 1;
   setCooldown(team, 'mindpuzzle', mpCfg.cooldownSeconds || 300);
   const done = team.mindPuzzleLevel >= mindpuzzle.LEVELS.length;
@@ -314,7 +317,7 @@ function submitMindPuzzle(game, team, answers) {
 // =========================================================
 function requestTaskApproval(game, team, taskId) {
   const st = ensureStatus(team, taskId);
-  if (st.completed && taskId === 'puzzle') return { ok: false, error: 'Puslespillet er allerede godkendt.' };
+  if (st.completed && taskId === 'puzzle') return { ok: false, error: L(game, 'Puslespillet er allerede godkendt.', 'The puzzle is already approved.') };
   st.pending = true;
   st.pendingKind = 'always';
   gs.logEvent(game, `${team.stableName} bad om godkendelse: ${taskId}.`);
@@ -336,9 +339,11 @@ function hostResolveApproval(game, teamId, taskId, approve, extra = {}) {
 
   const ex = gs.exerciseById(game, taskId);
   if (ex && ex.category === 'money') {
-    const reward = gs.nextMoneyReward(ex);
-    econ.addTransaction(game, team, reward, 'exercise', `${ex.name}: godkendt`);
+    const reward = gs.nextMoneyReward(ex, team); // v3: aftagende belønning PR. STALD
+    econ.addTransaction(game, team, reward, 'exercise', `${(isEn(game) && ex.nameEn) || ex.name}: ${L(game, 'godkendt', 'approved')}`);
     ex.successCount += 1;
+    team.stationSuccess = team.stationSuccess || {};
+    team.stationSuccess[ex.id] = (team.stationSuccess[ex.id] || 0) + 1;
     if (ex.progressive) team.mindPuzzleLevel = (team.mindPuzzleLevel || 0) + 1;
     ex.resultHistory.push({ teamId: team.id, reward, at: now() });
     setCooldown(team, ex.id, ex.cooldownSeconds || cfg.auctionExerciseCooldownSeconds);
@@ -367,7 +372,7 @@ function hostResolveApproval(game, teamId, taskId, approve, extra = {}) {
   if (taskId === 'puzzle') {
     st.completed = true;
     if (cfg.puzzle.grantsDerbyLicense) team.derbyLicense = true;
-    if (cfg.puzzle.rewardOnComplete) econ.addTransaction(game, team, cfg.puzzle.rewardOnComplete, 'task', 'Puslespil fuldført');
+    if (cfg.puzzle.rewardOnComplete) econ.addTransaction(game, team, cfg.puzzle.rewardOnComplete, 'task', L(game, 'Puslespil fuldført', 'Puzzle completed'));
     gs.logEvent(game, `${team.stableName} fuldførte puslespillet${team.derbyLicense ? ' (Derby-licens)' : ''}.`);
     return { ok: true, approved: true };
   }
@@ -383,7 +388,7 @@ function setCreativeBonus(game, teamId, taskId, amount) {
   if (!team) return { ok: false, error: 'Ukendt hold.' };
   amount = Math.round(amount) || 0;
   if (cfg.creative.bonusAsStableValue) team.stableValue += amount;
-  else econ.addTransaction(game, team, amount, 'creative', 'Kreativ bonus');
+  else econ.addTransaction(game, team, amount, 'creative', L(game, 'Kreativ bonus', 'Creative bonus'));
   gs.logEvent(game, `${team.stableName} fik kreativ bonus (+${amount}) for ${taskId}.`);
   return { ok: true };
 }

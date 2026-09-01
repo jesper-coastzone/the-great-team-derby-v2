@@ -71,6 +71,10 @@ function makeTeam(game, number) {
 
     race: { position: 0, rolls: [], lastRoll: 0, rollSum: 0, done: false, hasRolled: false },
 
+    jockey: null,               // v3: hyret jockey fra jockey-auktionen (kun sæsonens løb)
+    racePoints: 0,              // v3: VINDERKRITERIET — placeringspoint fra løbene
+    pointsHistory: [],          // [{round, place, points, final}]
+
     taskStatus: {},
     cooldowns: {},
 
@@ -90,16 +94,21 @@ function makeAuctionExercises() {
 }
 
 function createGame(settings = {}) {
+  // v3: format (2t/3t) bestemmer antal sæsoner; lang styrer deltager-sprog
+  const fmtKey = (settings.format === '3t') ? '3t' : '2t';
+  const fmt = (cfg.formats || {})[fmtKey] || { seasons: 3 };
   const s = {
+    format: fmtKey,
+    lang: settings.lang === 'en' ? 'en' : 'da',
     eventName: settings.eventName || 'The Great Team Derby',
     programItems: settings.programItems && settings.programItems.length
       ? settings.programItems
       : ['Velkomst', 'Introduktion', 'Pre-season', 'Auktion', 'Runde', 'Løb', 'The Great Team Derby', 'Afrunding'],
     numTeams: Math.min(settings.numTeams || cfg.defaults.numTeams, cfg.maxTeams),
-    totalRounds: settings.totalRounds || cfg.defaults.totalRounds,
+    totalRounds: settings.totalRounds || fmt.seasons || cfg.defaults.totalRounds,
     roundLengthSeconds: settings.roundLengthSeconds || cfg.defaults.roundLengthSeconds,
     auctionLengthSeconds: settings.auctionLengthSeconds || cfg.defaults.auctionLengthSeconds,
-    includeWarmup: settings.includeWarmup !== false,
+    includeWarmup: settings.includeWarmup === true, // v3: warm-up er UDGÅET (default fra)
     warmupReward: settings.warmupReward != null ? settings.warmupReward : cfg.warmupReward,
   };
 
@@ -186,8 +195,10 @@ function diceRange(t) {
   let bMin = 0, bMax = 0;
   const owned = t.raceBoosts || {};
   (cfg.paddockBoosts || []).forEach((b) => { if (owned[b.id]) { bMin += b.diceMin || 0; bMax += b.diceMax || 0; } });
-  const min = cfg.diceBaseMin + t.jockeyLevel + bMin;
-  const max = cfg.diceBaseMax + t.horseLevel + bMax;
+  // v3: hyret jockey (jockey-auktionen) ændrer top/bund — gælder kun sæsonens løb
+  const jk = t.jockey || { topMod: 0, bottomMod: 0 };
+  const min = cfg.diceBaseMin + t.jockeyLevel + jk.bottomMod + bMin;
+  const max = cfg.diceBaseMax + t.horseLevel + jk.topMod + bMax;
   return { min, max: Math.max(max, min) };
 }
 function exerciseById(game, id) {
@@ -238,6 +249,7 @@ function publicTeam(t) {
     connected: t.connected,
     isBot: !!t.isBot,
     raceBoosts: Object.keys(t.raceBoosts || {}),
+    racePoints: Math.round(t.racePoints || 0),
     cash: Math.round(t.cash),
     horseValue: Math.round(t.horseValue),
     jockeyValue: Math.round(t.jockeyValue),
@@ -246,6 +258,8 @@ function publicTeam(t) {
     horseLevel: t.horseLevel,
     jockeyLevel: t.jockeyLevel,
     dice: diceRange(t),
+    // v3: hyret jockey (kun sæsonens løb)
+    jockey: t.jockey ? { id: t.jockey.id, name: t.jockey.name, emoji: t.jockey.emoji, topMod: t.jockey.topMod, bottomMod: t.jockey.bottomMod, hire: t.jockey.hire } : null,
     ownedAuctionExerciseId: t.ownedAuctionExerciseId,
     derbyLicense: t.derbyLicense,
     race: t.race,
@@ -270,24 +284,28 @@ function activeSlide(game) {
   };
 }
 
-function nextMoneyReward(e) {
+function nextMoneyReward(e, team) {
   if (!e.reward) return null;
   const r = e.reward;
-  return Math.max(r.min, r.start - r.decreasePerSuccess * e.successCount);
+  // v3: frie stationer — belønningen falder pr. STALDENS egne succeser, ikke globalt
+  const count = team ? ((team.stationSuccess || {})[e.id] || 0) : e.successCount;
+  return Math.max(r.min, r.start - r.decreasePerSuccess * count);
 }
 
 function auctionView(game, role, teamId) {
   const hiddenIds = (game.disabled && game.disabled.exercises) || [];
+  const viewTeam = role === 'team' && teamId ? getTeam(game, teamId) : null;
+  const en = (game.settings && game.settings.lang) === 'en';
   const exercises = game.auctionExercisePool
     // Skjulte øvelser vises kun for host (så de kan slås til igen)
     .filter((e) => role === 'host' || !hiddenIds.includes(e.id))
     .map((e) => ({
-      id: e.id, name: e.name, category: e.category, short: e.short,
-      description: e.description, gives: e.gives, thresholds: e.thresholds || null,
+      id: e.id, name: en && e.nameEn ? e.nameEn : e.name, category: e.category, short: en && e.shortEn ? e.shortEn : e.short,
+      description: en && e.descriptionEn ? e.descriptionEn : e.description, gives: en && e.givesEn ? e.givesEn : e.gives, thresholds: e.thresholds || null,
       lowerIsBetter: !!e.lowerIsBetter, progressive: !!e.progressive,
       currentOwnerTeamId: e.currentOwnerTeamId, lastPurchasePrice: e.lastPurchasePrice,
       isInAuctionHouse: e.isInAuctionHouse, successCount: e.successCount,
-      nextReward: e.reward ? nextMoneyReward(e) : null,
+      nextReward: e.reward ? nextMoneyReward(e, viewTeam) : null,
       hidden: hiddenIds.includes(e.id),
     }));
   if (!game.auction) return { status: 'none', exercises, bids: [], topBids: [] };
@@ -321,6 +339,8 @@ function buildStateFor(game, role, teamId) {
   const race = currentRace(game);
   const state = {
     code: game.code,
+    lang: game.settings.lang || 'da',
+    format: game.settings.format || '2t',
     eventName: game.settings.eventName,
     programItems: game.settings.programItems,
     status: game.status,
@@ -341,6 +361,7 @@ function buildStateFor(game, role, teamId) {
       jockeyLevelThresholds: cfg.jockeyLevelThresholds,
       maxHorseLevel: cfg.maxHorseLevel,
       maxJockeyLevel: cfg.maxJockeyLevel,
+      racePoints: cfg.racePoints || { normal: [], final: [] },
     },
     phase: game.currentPhase,
     currentRound: game.currentRound,
@@ -349,6 +370,8 @@ function buildStateFor(game, role, teamId) {
     screenMessageOverride: game.screenMessageOverride,
     teams: game.teams.map(publicTeam),
     auction: auctionView(game, role, teamId),
+    // v3 etape 2: jockey-auktionen i Paddocken
+    jockeyAuction: require('./jockeyAuction').publicAuction(game, role === 'team' ? teamId : null),
     timers: game.timers,
     race: race ? {
       id: race.id, type: race.type, status: race.status, rollingOpen: race.rollingOpen,
@@ -378,14 +401,16 @@ function buildStateFor(game, role, teamId) {
     role,
   };
 
-  // Server-autoritativ stilling efter total staldværdi
+  // Server-autoritativ stilling — v3: LØBSPOINT er vinderkriteriet (staldværdi = tiebreak/info)
   state.ranking = [...game.teams]
     .map((t) => ({
-      teamId: t.id, stableName: t.stableName, color: t.color, totalValue: totalStableValue(t),
+      teamId: t.id, stableName: t.stableName, color: t.color,
+      racePoints: Math.round(t.racePoints || 0),
+      totalValue: totalStableValue(t),
       cash: Math.round(t.cash), horseValue: Math.round(t.horseValue),
       jockeyValue: Math.round(t.jockeyValue), stableValue: Math.round(t.stableValue),
     }))
-    .sort((a, b) => b.totalValue - a.totalValue)
+    .sort((a, b) => (b.racePoints - a.racePoints) || (b.totalValue - a.totalValue))
     .map((r, i) => ({ ...r, place: i + 1 }));
 
   if (role === 'host') {
