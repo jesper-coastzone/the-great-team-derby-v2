@@ -56,20 +56,22 @@
     card.appendChild(el('label.field', {}, [el('span.lbl', { text: 'Program (én linje pr. punkt)' }), prog]));
     const row = el('div.grid', { style: 'grid-template-columns:1fr 1fr' });
     row.appendChild(txt('Antal hold', 'numTeams', '6', 'number'));
-    row.appendChild(txt('Antal runder', 'totalRounds', '2', 'number'));
+    // v3: format bestemmer antal sæsoner (2t = 3 sæsoner · 3t = 4 sæsoner + forandringskort)
+    const fmtSel = el('select'); [['2t', '2 timer (3 sæsoner)'], ['3t', '3 timer (4 sæsoner + forandringskort)']].forEach(([v, l]) => { const o = el('option', { text: l }); o.value = v; fmtSel.appendChild(o); }); f.format = fmtSel;
+    row.appendChild(el('label.field', {}, [el('span.lbl', { text: 'Format' }), fmtSel]));
+    const langSel = el('select'); [['da', 'Dansk'], ['en', 'English']].forEach(([v, l]) => { const o = el('option', { text: l }); o.value = v; langSel.appendChild(o); }); f.lang = langSel;
+    row.appendChild(el('label.field', {}, [el('span.lbl', { text: 'Sprog (deltagere)' }), langSel]));
     row.appendChild(txt('Rundelængde (min)', 'roundMin', '20', 'number'));
-    row.appendChild(txt('Auktionslængde (sek)', 'auctionSec', '180', 'number'));
     row.appendChild(txt('Antal bots (0-3)', 'numBots', '0', 'number'));
     card.appendChild(row);
-    const warm = el('label.row', { style: 'gap:8px;margin:8px 0' }); const cb = el('input', { type: 'checkbox' }); cb.checked = true; f.warm = cb; warm.appendChild(cb); warm.appendChild(el('span', { text: 'Inkludér warm-up løb (startkapital)' })); card.appendChild(warm);
     const btn = el('button.btn.gold.block.lg', { text: 'Opret spil' });
     btn.addEventListener('click', () => {
       const settings = {
         eventName: f.eventName.value, programItems: prog.value.split('\n').map((s) => s.trim()).filter(Boolean),
-        numTeams: Number(f.numTeams.value), totalRounds: Number(f.totalRounds.value),
-        roundLengthSeconds: Number(f.roundMin.value) * 60, auctionLengthSeconds: Number(f.auctionSec.value),
+        numTeams: Number(f.numTeams.value),
+        format: f.format.value, lang: f.lang.value,
+        roundLengthSeconds: Number(f.roundMin.value) * 60,
         numBots: Number(f.numBots.value) || 0,
-        includeWarmup: cb.checked,
       };
       TG.emit('host:createGame', settings).then((r) => {
         if (r.ok) { TG.save('tg_host_code', r.code); ui.expectCode = r.code; ui.creating = false; toast('Spil oprettet: ' + r.code, 'ok'); }
@@ -177,6 +179,18 @@
       row.appendChild(btn('−1 min', 'host:adjustPaddockTimer', { deltaSeconds: -60 }, '.ghost'));
       row.appendChild(btn('Luk Paddocken nu', 'host:stopPaddockTimer', {}, '.burgundy'));
       box.appendChild(row);
+      // v3 etape 2: jockey-auktionen
+      const ja = S.jockeyAuction || { status: 'idle' };
+      const jaRow = el('div.row.wrap', { style: 'margin-top:8px' });
+      if (ja.status === 'open') {
+        jaRow.appendChild(btn('🔨 Afgør jockey-auktionen (alle får én)', 'host:resolveJockeyAuction', {}, '.gold'));
+        const bidCount = (ja.jockeys || []).filter((j) => j.topBid).length;
+        jaRow.appendChild(el('span.mini', { text: `Bud på ${bidCount} af ${(ja.jockeys || []).length} jockeyer — stalde uden vundet bud får rest til mindstepris.` }));
+      } else if (ja.status === 'resolved') {
+        jaRow.appendChild(el('span.mini', { text: '🏇 Jockey-auktionen er afgjort: ' + (ja.jockeys || []).filter((j) => j.winner).map((j) => `${j.name} → ${j.winner.stableName}`).join(' · ') }));
+        jaRow.appendChild(btn('Genåbn auktionen', 'host:openJockeyAuction', {}, '.ghost'));
+      }
+      box.appendChild(jaRow);
       if (S.timers && S.timers.paddock) {
         box.appendChild(el('div.big-num', { style: 'font-size:32px;color:var(--navy)', text: TG.countdown(S.timers.paddock.endsAt), 'data-endsat': S.timers.paddock.endsAt }));
         box.appendChild(el('div.mini', { text: 'Kun mens timeren kører, kan staldene investere og vædde. Gå videre til løbet, når vinduet er lukket.' }));
@@ -202,8 +216,8 @@
       // Punkt-for-punkt gennemgang (v2.14): fremhæv det du taler om — tablets/skærm følger med
       box.appendChild(el('p.mini', { text: 'Gennemgå ét punkt ad gangen — tablets og storskærm fremhæver det valgte. Tryk igen for at fjerne fremhævningen.' }));
       const off = (S.disabled && S.disabled.moneyTasks) || [];
-      const steps = [['tip13', "1 · Tip en 13'er"], ['tidslinje', '2 · Tidslinjen'], ['mindpuzzle', '3 · Mind Puzzle'], ['dyst', '4 · Dysten'], ['faste', '5 · De faste opgaver']]
-        .filter(([k]) => k === 'faste' || !off.includes(k));
+      const steps = [['tip13', "1 · Tip en 13'er"], ['tidslinje', '2 · Tidslinjen'], ['mindpuzzle', '3 · Mind Puzzle'], ['dyst', '4 · Dysten'], ['stationer', '5 · Stationerne'], ['faste', '6 · De faste opgaver']]
+        .filter(([k]) => k === 'faste' || k === 'stationer' || !off.includes(k));
       const row = el('div.row.wrap', { style: 'gap:6px' });
       steps.forEach(([k, l]) => {
         const active = S.preseasonFocus === k;
