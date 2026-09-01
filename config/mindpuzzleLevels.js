@@ -14,6 +14,12 @@
  * VIGTIGT: Løsningsbillederne må IKKE lægges i public/ — så kan holdene gætte URL'en.
  */
 
+const COLOR_LABELS_EN = {
+  orange: 'Orange', gul: 'Yellow', lyseblaa: 'Light blue', moerkeblaa: 'Dark blue',
+  lysegroen: 'Light green', moerkegroen: 'Dark green', lilla: 'Purple', pink: 'Pink',
+  brun: 'Brown', roedhvid: 'Red/white striped',
+};
+
 const COLOR_LABELS = {
   orange: 'Orange',
   gul: 'Gul',
@@ -163,4 +169,4 @@ const LEVELS = [
     ] },
 ];
 
-module.exports = { LEVELS, COLOR_LABELS, GATE_LETTERS };
+module.exports = { LEVELS, COLOR_LABELS, COLOR_LABELS_EN, GATE_LETTERS };

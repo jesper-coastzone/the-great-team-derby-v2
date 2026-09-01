@@ -20,12 +20,27 @@ const gameConfig = {
   baseJockeyValue: 1000,
   baseStableValue: 1000,
 
+  // ---- Formater (v3): 2 timer standard · 3 timer tilkøb ----
+  formats: {
+    '2t': { label: '2 timer (standard)', seasons: 3, changeCards: false },
+    '3t': { label: '3 timer (tilkøb)', seasons: 4, changeCards: true },
+  },
+
+  // ---- Løbspoint (v3): VINDERKRITERIET — flest point vinder (Grand Prix-model) ----
+  // Placering 1-6; pladser derudover får sidste værdi. Delt plads = samme point.
+  racePoints: {
+    normal: [10, 7, 5, 3, 2, 1],
+    final: [20, 14, 10, 6, 4, 2],
+  },
+
   // ---- Spilstruktur (default; kan overrides ved oprettelse) ----
   defaults: {
     numTeams: 6,
-    totalRounds: 2,
+    format: '2t',
+    lang: 'da',
+    totalRounds: 3,
     roundLengthSeconds: 20 * 60,
-    includeWarmup: true,
+    includeWarmup: false,
     auctionLengthSeconds: 3 * 60,
   },
 
@@ -50,10 +65,29 @@ const gameConfig = {
   // ---- Løbsdags-boosts (v2.16): købes i Paddocken, gælder KUN næste løb ----
   // Varige hest/jockey-point kommer KUN fra øvelserne — penge køber dagsform.
   paddockBoosts: [
-    { id: 'boost-carrots', emoji: '🥕', label: 'Friske gulerødder', cost: 400, diceMax: 1, desc: 'Hesten løber hurtigere: +1 på terningens TOP — kun i næste løb.' },
-    { id: 'boost-peptalk', emoji: '🗣️', label: 'Pep-talk til jockeyen', cost: 400, diceMin: 1, desc: 'Jockeyen rider sikkert: +1 på terningens BUND — kun i næste løb.' },
-    { id: 'boost-superfeed', emoji: '⭐', label: 'Stjernefoder', cost: 900, diceMin: 1, diceMax: 1, desc: 'Dagsformen i top: +1 på BÅDE top og bund — kun i næste løb.' },
+    { id: 'boost-carrots', emoji: '🥕', label: 'Friske gulerødder', labelEn: 'Fresh carrots', cost: 400, diceMax: 1, desc: 'Hesten løber hurtigere: +1 på terningens TOP — kun i næste løb.', descEn: 'The horse runs faster: +1 on the TOP of the dice — next race only.' },
+    { id: 'boost-peptalk', emoji: '🗣️', label: 'Pep-talk til jockeyen', labelEn: 'Pep talk for the jockey', cost: 400, diceMin: 1, desc: 'Jockeyen rider sikkert: +1 på terningens BUND — kun i næste løb.', descEn: 'The jockey rides safely: +1 on the BOTTOM of the dice — next race only.' },
+    { id: 'boost-superfeed', emoji: '⭐', label: 'Stjernefoder', labelEn: 'Star feed', cost: 900, diceMin: 1, diceMax: 1, desc: 'Dagsformen i top: +1 på BÅDE top og bund — kun i næste løb.', descEn: 'Race-day form at its peak: +1 on BOTH top and bottom — next race only.' },
   ],
+
+  // ---- Jockey-auktionen (v3 etape 2): én jockey pr. stald, hver sæson ----
+  // Basis-terning er 2-5; jockeyen ændrer TOP (max) og BUND (min).
+  // Hyren betales af Staldkassen og gælder KUN sæsonens løb — derefter tilbage i puljen.
+  jockeys: [
+    { id: 'turbo-thea',    name: 'Turbo-Thea',    topMod: 3, bottomMod: 0,  minPrice: 800, emoji: '🔥',
+      profile: { da: 'Vovehalsen — fremadlænet, briller i panden', en: 'The daredevil — leaning forward, goggles up' } },
+    { id: 'vilde-viggo',   name: 'Vilde Viggo',   topMod: 4, bottomMod: -1, minPrice: 800, emoji: '🎰',
+      profile: { da: 'Gambleren — fest eller fiasko', en: 'The gambler — jackpot or bust' } },
+    { id: 'lyn-louise',    name: 'Lyn-Louise',    topMod: 2, bottomMod: 0,  minPrice: 600, emoji: '⚡',
+      profile: { da: 'Sprinteren — kompakt og eksplosiv', en: 'The sprinter — compact and explosive' } },
+    { id: 'stjerne-stella', name: 'Stjerne-Stella', topMod: 1, bottomMod: 1, minPrice: 500, emoji: '🌟',
+      profile: { da: 'Allrounderen — solbriller og selvtillid', en: 'The all-rounder — sunglasses and swagger' } },
+    { id: 'sikre-sigurd',  name: 'Sikre Sigurd',  topMod: 0, bottomMod: 2,  minPrice: 400, emoji: '🛡️',
+      profile: { da: 'Veteranen — aldrig under 4, aldrig panik', en: 'The veteran — never below 4, never panics' } },
+    { id: 'rolige-rasmus', name: 'Rolige Rasmus', topMod: 0, bottomMod: 1,  minPrice: 200, emoji: '🌱',
+      profile: { da: 'Lærlingen — ung, billig, pålidelig', en: 'The apprentice — young, cheap, reliable' } },
+  ],
+  jockeyBidIncrement: 50,       // mindste overbud
 
   // ---- Odds-tavlen (v2.16): væddemål i Paddocken på hvilken hest der vinder løbet ----
   raceBetting: {
@@ -79,10 +113,10 @@ const gameConfig = {
     chancePerRoll: 0.16,        // sandsynlighed for event på hvert slag
     maxPerTeamPerRace: 1,       // højst ét event pr. hold pr. løb
     types: [
-      { id: 'vet',      label: 'Dyrlægetjek',   emoji: '🩺', effect: -2, weight: 2 },
-      { id: 'headwind', label: 'Modvind',       emoji: '💨', effect: -1, weight: 3 },
-      { id: 'tailwind', label: 'Medvind',       emoji: '🌬️', effect: 2,  weight: 3 },
-      { id: 'crowd',    label: 'Publikum løfter taget', emoji: '📣', effect: 1, weight: 3 },
+      { id: 'vet',      label: 'Dyrlægetjek',   labelEn: 'Vet check',   emoji: '🩺', effect: -2, weight: 2 },
+      { id: 'headwind', label: 'Modvind',       labelEn: 'Headwind',    emoji: '💨', effect: -1, weight: 3 },
+      { id: 'tailwind', label: 'Medvind',       labelEn: 'Tailwind',    emoji: '🌬️', effect: 2,  weight: 3 },
+      { id: 'crowd',    label: 'Publikum løfter taget', labelEn: 'The crowd lifts the roof', emoji: '📣', effect: 1, weight: 3 },
     ],
   },
 
@@ -130,12 +164,12 @@ const gameConfig = {
     jockey: [],
     stable: [
       // Stald = sikker værdi med lille afkast; max 1 køb pr. option holder det i skak.
-      { id: 'stable-carrots', label: 'Gulerodslager', cost: 250, valueIncrease: 280, performancePoints: 0 },
-      { id: 'stable-0', label: 'Frisk halm', cost: 500, valueIncrease: 550, performancePoints: 0 },
-      { id: 'stable-1', label: 'Ny boks', cost: 1000, valueIncrease: 1100, performancePoints: 0 },
-      { id: 'stable-smith', label: 'Fast staldsmed', cost: 1500, valueIncrease: 1700, performancePoints: 0 },
-      { id: 'stable-2', label: 'Staldudvidelse', cost: 2000, valueIncrease: 2300, performancePoints: 0 },
-      { id: 'stable-3', label: 'Moderne træningsanlæg', cost: 3500, valueIncrease: 4100, performancePoints: 0 },
+      { id: 'stable-carrots', label: 'Gulerodslager', labelEn: 'Carrot storage', cost: 250, valueIncrease: 280, performancePoints: 0 },
+      { id: 'stable-0', label: 'Frisk halm', labelEn: 'Fresh straw', cost: 500, valueIncrease: 550, performancePoints: 0 },
+      { id: 'stable-1', label: 'Ny boks', labelEn: 'New stall', cost: 1000, valueIncrease: 1100, performancePoints: 0 },
+      { id: 'stable-smith', label: 'Fast staldsmed', labelEn: 'Resident farrier', cost: 1500, valueIncrease: 1700, performancePoints: 0 },
+      { id: 'stable-2', label: 'Staldudvidelse', labelEn: 'Stable extension', cost: 2000, valueIncrease: 2300, performancePoints: 0 },
+      { id: 'stable-3', label: 'Moderne træningsanlæg', labelEn: 'Modern training facility', cost: 3500, valueIncrease: 4100, performancePoints: 0 },
     ],
   },
 
@@ -219,10 +253,10 @@ const gameConfig = {
 
   // ---- Rollekort (teamdynamik: alle skal have en funktion, rotation mellem runder) ----
   roles: [
-    { id: 'staldchef', label: 'Staldchef', desc: 'Fører ordet ved auktionen og har sidste ord i køb og bud.' },
-    { id: 'bookmaker', label: 'Bookmaker', desc: 'Styrer tabletten: pengeopgaver, investeringer og væddemål.' },
-    { id: 'traener', label: 'Træner', desc: 'Leder de fysiske øvelser og fordeler holdet på dem.' },
-    { id: 'staldkarl', label: 'Staldkarl', desc: 'Driver puslespillet og de kreative opgaver fremad.' },
+    { id: 'staldchef', label: 'Staldchef', labelEn: 'Stable Chief', desc: 'Fører ordet ved jockey-auktionen og har sidste ord i køb og bud.', descEn: 'Speaks for the stable at the jockey auction and has the final say on purchases and bids.' },
+    { id: 'bookmaker', label: 'Bookmaker', labelEn: 'Bookmaker', desc: 'Styrer tabletten: sponsoropgaver, investeringer og væddemål.', descEn: 'Runs the tablet: Sponsor Tasks, investments and bets.' },
+    { id: 'traener', label: 'Træner', labelEn: 'Trainer', desc: 'Leder stationerne og fordeler holdet på dem.', descEn: 'Leads the stations and assigns the team across them.' },
+    { id: 'staldkarl', label: 'Staldkarl', labelEn: 'Stable Hand', desc: 'Driver puslespillet og de kreative opgaver fremad.', descEn: 'Drives the puzzle and the creative tasks forward.' },
   ],
 };
 
