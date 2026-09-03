@@ -14,7 +14,9 @@ function T(game, da, en) { return (game.settings && game.settings.lang) === 'en'
 
 function pool(game) {
   // Ved >6 stalde dubleres profiler med varianter (II, III …)
-  const base = cfg.jockeys || [];
+  // Navnet lokaliseres her, så alt nedstrøms (bud, tildeling, feed) følger spillets sprog.
+  const en = (game.settings && game.settings.lang) === 'en';
+  const base = (cfg.jockeys || []).map((j) => ({ ...j, name: (en && j.nameEn) || j.name }));
   const teams = game.teams.length;
   const out = base.slice();
   let v = 2;
