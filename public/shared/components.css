@@ -45,7 +45,7 @@
   padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 700;
   background: var(--cream-2); color: var(--text-dim); border: 1px solid var(--line);
 }
-.chip.gold { background: #fbf1cf; color: #7a5f10; border-color: #e7d38a; }
+.chip.gold { background: #EDE4D3; color: #6B5B44; border-color: #B8A993; }
 .chip.turf { background: #e2ede7; color: var(--turf); border-color: #bcd4c8; }
 .chip.red { background: #f7dede; color: var(--red); border-color: #eabcbc; }
 .chip.warn { background: #fbe3d0; color: #9a4a12; border-color: #efc39a; animation: pulseWarn 1.2s ease-in-out infinite; }
