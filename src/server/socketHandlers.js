@@ -16,6 +16,9 @@ const rt = require('./realtime');
 
 function ack(cb, res) { if (typeof cb === 'function') cb(res || { ok: true }); }
 
+// Lokaliser deltagervendte fejlbeskeder til spillets sprog (host-UI er altid dansk)
+function LX(g, da, en) { return (g && g.settings && g.settings.lang) === 'en' ? en : da; }
+
 const HOST_PASSWORD = process.env.HOST_PASSWORD || 'derby';
 
 // Auto-warm-up: kørende scriptede løb — interval-handle pr. spilkode
@@ -268,7 +271,12 @@ function register(io) {
     }, cb));
 
     // ---------- HOST: løb ----------
-    socket.on('host:startRace', (p, cb) => hostMut((g) => races.startRace(g, (p && p.type) || 'normal', g.currentRound), cb));
+    socket.on('host:startRace', (p, cb) => hostMut((g) => {
+      // Sikring: en glemt (stadig åben) jockey-auktion afgøres automatisk, før løbet starter,
+      // så ingen kører jockey-løst uden at have betalt/fået tildelt.
+      if (g.jockeyAuction && g.jockeyAuction.status === 'open') jockeyAuction.resolveAuction(g);
+      return races.startRace(g, (p && p.type) || 'normal', g.currentRound);
+    }, cb));
     socket.on('host:openRolling', (_, cb) => hostMut((g) => races.setRolling(g, true), cb));
     socket.on('host:closeRolling', (_, cb) => hostMut((g) => races.setRolling(g, false), cb));
     socket.on('host:rollFor', (p, cb) => hostMut((g) => { const t = gs.getTeam(g, p.teamId); return t ? races.rollForTeam(g, t) : { ok: false }; }, cb));
@@ -285,7 +293,7 @@ function register(io) {
       const t = gs.getTeam(g, p.teamId); if (!t) return { ok: false, error: 'Ukendt hold.' };
       const f = p.fields || {};
       ['stableName', 'horseName', 'jockeyName'].forEach((k) => { if (f[k] != null) t[k] = String(f[k]).slice(0, 40); });
-      ['cash', 'horseValue', 'jockeyValue', 'stableValue', 'horseLevel', 'jockeyLevel'].forEach((k) => { if (f[k] != null) t[k] = Number(f[k]); });
+      ['cash', 'horseValue', 'jockeyValue', 'stableValue', 'horseLevel', 'jockeyLevel', 'racePoints'].forEach((k) => { if (f[k] != null) t[k] = Number(f[k]); });
       if (f.ready != null) t.ready = !!f.ready;
       gs.logEvent(g, `Host redigerede ${t.stableName}.`);
       return { ok: true };
@@ -335,7 +343,7 @@ function register(io) {
     socket.on('team:invest', (p, cb) => mut((g) => {
       const t = teamOf(); if (!t) return { ok: false };
       // v2.13: investering kan KUN ske i Paddocken (vinduet før løbet)
-      if (!gm.paddockOpen(g)) return { ok: false, error: 'Paddocken er lukket — I kan investere i vinduet lige før løbet.' };
+      if (!gm.paddockOpen(g)) return { ok: false, error: LX(g, 'Paddocken er lukket — I kan investere i vinduet lige før løbet.', 'The Paddock is closed — you can invest in the window just before the race.') };
       return econ.invest(g, t, p.assetType, p.productId);
     }, cb));
 
@@ -356,13 +364,13 @@ function register(io) {
     // v2.16: Løbsdags-boosts — købes i Paddocken, gælder kun næste løb
     socket.on('team:buyBoost', (p, cb) => mut((g) => {
       const t = teamOf(); if (!t) return { ok: false };
-      if (!gm.paddockOpen(g)) return { ok: false, error: 'Boosts kan kun købes i Paddocken.' };
+      if (!gm.paddockOpen(g)) return { ok: false, error: LX(g, 'Boosts kan kun købes i Paddocken.', 'Boosts can only be bought in the Paddock.') };
       const boost = (cfg.paddockBoosts || []).find((b) => b.id === (p && p.boostId));
-      if (!boost) return { ok: false, error: 'Ukendt boost.' };
+      if (!boost) return { ok: false, error: LX(g, 'Ukendt boost.', 'Unknown boost.') };
       t.raceBoosts = t.raceBoosts || {};
-      if (t.raceBoosts[boost.id]) return { ok: false, error: 'I har allerede købt denne boost til løbet.' };
-      if (!econ.canAfford(t, boost.cost)) return { ok: false, error: 'I har ikke nok i kassen.' };
-      econ.addTransaction(g, t, -boost.cost, 'boost', `Løbsdags-boost: ${boost.label} (kun næste løb)`);
+      if (t.raceBoosts[boost.id]) return { ok: false, error: LX(g, 'I har allerede købt denne boost til løbet.', 'You have already bought this boost for the race.') };
+      if (!econ.canAfford(t, boost.cost)) return { ok: false, error: LX(g, 'I har ikke nok i Staldkassen.', 'Not enough in the Stable Fund.') };
+      econ.addTransaction(g, t, -boost.cost, 'boost', LX(g, `Løbsdags-boost: ${boost.label} (kun næste løb)`, `Race-day boost: ${boost.labelEn || boost.label} (next race only)`));
       t.raceBoosts[boost.id] = true;
       gs.logEvent(g, `${t.stableName} købte ${boost.label} til næste løb.`);
       return { ok: true };
