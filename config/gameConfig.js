@@ -74,17 +74,17 @@ const gameConfig = {
   // Basis-terning er 2-5; jockeyen ændrer TOP (max) og BUND (min).
   // Hyren betales af Staldkassen og gælder KUN sæsonens løb — derefter tilbage i puljen.
   jockeys: [
-    { id: 'turbo-thea',    name: 'Turbo-Thea',    nameEn: 'Turbo-Thea',     topMod: 3, bottomMod: 0,  minPrice: 800, emoji: '🔥',
+    { id: 'turbo-thea',    name: 'Turbo-Thea',    nameEn: 'Turbo Taylor',   topMod: 3, bottomMod: 0,  minPrice: 800, emoji: '🔥',
       profile: { da: 'Vovehalsen — fremadlænet, briller i panden', en: 'The daredevil — leaning forward, goggles up' } },
-    { id: 'vilde-viggo',   name: 'Vilde Viggo',   nameEn: 'Wild Willie',    topMod: 4, bottomMod: -1, minPrice: 800, emoji: '🎰',
+    { id: 'vilde-viggo',   name: 'Vilde Viggo',   nameEn: 'Wild William',   topMod: 4, bottomMod: -1, minPrice: 800, emoji: '🎰',
       profile: { da: 'Gambleren — fest eller fiasko', en: 'The gambler — jackpot or bust' } },
-    { id: 'lyn-louise',    name: 'Lyn-Louise',    nameEn: 'Lightning Lucy', topMod: 2, bottomMod: 0,  minPrice: 600, emoji: '⚡',
+    { id: 'lyn-louise',    name: 'Lyn-Louise',    nameEn: 'Lightning Lara', topMod: 2, bottomMod: 0,  minPrice: 600, emoji: '⚡',
       profile: { da: 'Sprinteren — kompakt og eksplosiv', en: 'The sprinter — compact and explosive' } },
-    { id: 'stjerne-stella', name: 'Stjerne-Stella', nameEn: 'Star Stella',   topMod: 1, bottomMod: 1, minPrice: 500, emoji: '🌟',
+    { id: 'stjerne-stella', name: 'Stjerne-Stella', nameEn: 'Star Scarlett', topMod: 1, bottomMod: 1, minPrice: 500, emoji: '🌟',
       profile: { da: 'Allrounderen — solbriller og selvtillid', en: 'The all-rounder — sunglasses and swagger' } },
-    { id: 'sikre-sigurd',  name: 'Sikre Sigurd',  nameEn: 'Steady Sigurd',  topMod: 0, bottomMod: 2,  minPrice: 400, emoji: '🛡️',
+    { id: 'sikre-sigurd',  name: 'Sikre Sigurd',  nameEn: 'Steady Simon',   topMod: 0, bottomMod: 2,  minPrice: 400, emoji: '🛡️',
       profile: { da: 'Veteranen — aldrig under 4, aldrig panik', en: 'The veteran — never below 4, never panics' } },
-    { id: 'rolige-rasmus', name: 'Rolige Rasmus', nameEn: 'Rookie Rasmus',  topMod: 0, bottomMod: 1,  minPrice: 200, emoji: '🌱',
+    { id: 'rolige-rasmus', name: 'Rolige Rasmus', nameEn: 'Calm Calvin',    topMod: 0, bottomMod: 1,  minPrice: 200, emoji: '🌱',
       profile: { da: 'Lærlingen — ung, billig, pålidelig', en: 'The apprentice — young, cheap, reliable' } },
   ],
   jockeyBidIncrement: 50,       // mindste overbud
