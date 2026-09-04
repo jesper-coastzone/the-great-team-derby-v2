@@ -244,7 +244,12 @@
     row.appendChild(b('Start løb', 'host:startRace', { type }, '.turf'));
     row.appendChild(b('Åbn rolling', 'host:openRolling', {}, '.gold'));
     row.appendChild(b('Luk rolling', 'host:closeRolling', {}));
-    row.appendChild(b('Afslut løb & udbetal', 'host:finishRace', {}, '.burgundy'));
+    const finish = el('button.btn.burgundy', { text: 'Afslut løb & udbetal' });
+    finish.addEventListener('click', () => {
+      if (!confirm('Afslut løbet og udbetal løbspoint + præmier?\n\nDette kan IKKE fortrydes. Tjek slag-status først — har alle stalde brugt deres slag?')) return;
+      TG.emit('host:finishRace', {}).then(check);
+    });
+    row.appendChild(finish);
     wrap.appendChild(row);
     if (race) {
       wrap.appendChild(el('div.mini', { text: `Status: ${race.status} · rolling ${race.rollingOpen ? 'ÅBEN' : 'lukket'} · ${race.rollsPerTeam} slag` }));
@@ -412,8 +417,9 @@
 
   function editTeam(t) {
     const name = prompt('Staldnavn', t.stableName); if (name == null) return;
-    const cash = prompt('Kontanter (SD)', t.cash); if (cash == null) return;
-    TG.emit('host:editTeam', { teamId: t.id, fields: { stableName: name, cash: Number(cash) } }).then(check);
+    const cash = prompt('Staldkassen (DD)', t.cash); if (cash == null) return;
+    const rp = prompt('Løbspoint (ret kun ved fejl — påvirker slutstillingen)', t.racePoints != null ? t.racePoints : 0); if (rp == null) return;
+    TG.emit('host:editTeam', { teamId: t.id, fields: { stableName: name, cash: Number(cash), racePoints: Number(rp) } }).then(check);
   }
 
   function tradesPanel() {
