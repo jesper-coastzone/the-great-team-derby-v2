@@ -86,6 +86,42 @@ const tip13Sets = [
       { q: 'En gruppe heste kaldes en?', qEn: 'A group of horses is called a?', options: ['Flok', 'Sværm', 'Stime'], optionsEn: ['Herd', 'Swarm', 'School'], correct: 0 },
     ],
   },
+  {
+    id: 'C',
+    questions: [
+      { q: 'Hvor mange strenge har en violin?', qEn: 'How many strings does a violin have?', options: ['4', '6', '8'], correct: 0 },
+      { q: 'Hvad hedder hestens hår på halsen?', qEn: "What is the hair on a horse's neck called?", options: ['Manken', 'Pelsen', 'Parykken'], optionsEn: ['The mane', 'The fur', 'The wig'], correct: 0 },
+      { q: 'Hvor mange hjerter har en blæksprutte?', qEn: 'How many hearts does an octopus have?', options: ['1', '2', '3'], correct: 2 },
+      { q: 'Hvor mange farver er der i en regnbue?', qEn: 'How many colours are there in a rainbow?', options: ['5', '7', '9'], correct: 1 },
+      { q: 'Hvad måler man med et termometer?', qEn: 'What do you measure with a thermometer?', options: ['Temperatur', 'Vægt', 'Fart'], optionsEn: ['Temperature', 'Weight', 'Speed'], correct: 0 },
+      { q: 'Hvad er en hestesko typisk lavet af?', qEn: 'What is a horseshoe typically made of?', options: ['Metal', 'Træ', 'Gummi'], optionsEn: ['Metal', 'Wood', 'Rubber'], correct: 0 },
+      { q: 'Hvilken dansk by kaldes "Smilets by"?', qEn: 'Which Danish city is called "the City of Smiles"?', options: ['Aarhus', 'Odense', 'Esbjerg'], correct: 0 },
+      { q: 'Hvor mange spillere er der på et håndboldhold på banen?', qEn: 'Number of players on a handball team on the court?', options: ['5', '7', '9'], correct: 1 },
+      { q: 'Hvad drikker et føl den første tid?', qEn: 'What does a foal drink in its first weeks?', options: ['Mælk', 'Vand', 'Saft'], optionsEn: ['Milk', 'Water', 'Juice'], correct: 0 },
+      { q: 'Hvilket kontinent ligger Egypten på?', qEn: 'Which continent is Egypt on?', options: ['Afrika', 'Asien', 'Europa'], optionsEn: ['Africa', 'Asia', 'Europe'], correct: 0 },
+      { q: 'Hvor mange nuller er der i en million?', qEn: 'How many zeros are there in a million?', options: ['5', '6', '7'], correct: 1 },
+      { q: 'Hvad kaldes hestens gangart mellem skridt og galop?', qEn: "What is the horse's gait between walk and gallop called?", options: ['Trav', 'Lunt', 'Sprint'], optionsEn: ['Trot', 'Amble', 'Sprint'], correct: 0 },
+      { q: 'Hvad hedder verdens højeste bjerg?', qEn: "What is the world's highest mountain?", options: ['Mount Everest', 'K2', 'Mont Blanc'], correct: 0 },
+    ],
+  },
+  {
+    id: 'D',
+    questions: [
+      { q: 'Hvor mange ben har en edderkop?', qEn: 'How many legs does a spider have?', options: ['6', '8', '10'], correct: 1 },
+      { q: 'Hvad kaldes væddeløbsbanens sidste lige stykke?', qEn: 'What is the final straight of a racecourse called?', options: ['Opløbet', 'Slutspurten', 'Målstregen'], optionsEn: ['The home straight', 'The final sprint', 'The finish line'], correct: 0 },
+      { q: 'Hvor mange minutter varer en fodboldkamp (ordinær tid)?', qEn: 'How many minutes does a football match last (regular time)?', options: ['80', '90', '100'], correct: 1 },
+      { q: 'Hvad er hovedstaden i Norge?', qEn: 'What is the capital of Norway?', options: ['Oslo', 'Bergen', 'Stockholm'], correct: 0 },
+      { q: 'Hvor mange dage har februar i et skudår?', qEn: 'How many days does February have in a leap year?', options: ['28', '29', '30'], correct: 1 },
+      { q: 'Hvilken planet kaldes "den røde planet"?', qEn: 'Which planet is called "the red planet"?', options: ['Mars', 'Venus', 'Jupiter'], correct: 0 },
+      { q: 'Hvad får man, når man blander rød og hvid?', qEn: 'What do you get when you mix red and white?', options: ['Lyserød', 'Orange', 'Lilla'], optionsEn: ['Pink', 'Orange', 'Purple'], correct: 0 },
+      { q: 'Hvor mange kontinenter er der?', qEn: 'How many continents are there?', options: ['5', '7', '9'], correct: 1 },
+      { q: 'Hvilket dyr er verdens hurtigste på land?', qEn: 'Which animal is the fastest on land?', options: ['Gepard', 'Hest', 'Struds'], optionsEn: ['Cheetah', 'Horse', 'Ostrich'], correct: 0 },
+      { q: 'Hvor mange timer sover en hest typisk i døgnet?', qEn: 'Roughly how many hours a day does a horse sleep?', options: ['3', '8', '12'], correct: 0 },
+      { q: 'Hvad hedder det danske flag?', qEn: 'What is the Danish flag called?', options: ['Dannebrog', 'Union Jack', 'Trikoloren'], optionsEn: ['Dannebrog', 'The Union Jack', 'The Tricolore'], correct: 0 },
+      { q: 'Hvor mange point giver en sejr i fodbold?', qEn: 'How many points does a win give in football?', options: ['1', '2', '3'], correct: 2 },
+      { q: 'Hvilken hånd rækker man frem, når man hilser i Danmark?', qEn: 'Which hand do you offer when shaking hands in Denmark?', options: ['Højre', 'Venstre', 'Begge'], optionsEn: ['Right', 'Left', 'Both'], correct: 0 },
+    ],
+  },
 ];
 
 // ---------- Tidslinje (Tidslinje-stationen — egen tablet + fysiske kort) ----------
