@@ -132,6 +132,17 @@ function register(io) {
       rt.pushState(game);
     });
 
+    // v3.2: staldvælger — tabletten henter staldene efter spilkoden, så man kan
+    // vælge sin stald (eller overtage et eksisterende team på en ny tablet).
+    socket.on('team:list', (p, cb) => {
+      const game = gs.getGame(p && p.code);
+      if (!game) return ack(cb, { ok: false, error: 'Ukendt spilkode / Unknown game code.' });
+      ack(cb, {
+        ok: true, code: game.code,
+        teams: game.teams.map((t) => ({ id: t.id, teamNumber: t.teamNumber, stableName: t.stableName, color: t.color, joined: !!t.joined, connected: !!t.connected })),
+      });
+    });
+
     // ---------- HOST: præsentation ----------
     socket.on('host:next', (_, cb) => hostMut((g) => gm.next(g), cb));
     socket.on('host:prev', (_, cb) => hostMut((g) => gm.prev(g), cb));
@@ -407,6 +418,15 @@ function register(io) {
       const g = gameOf(); if (!g) return ack(cb, { ok: false, error: 'Intet spil.' });
       if (!g.tasksUnlocked) return ack(cb, { ok: false, error: LX(g, 'Stationerne åbner, når træningen starter.', 'Stations open when the training phase starts.') });
       const r = tasks.resolveStationAttempt(g, p && p.teamId, p && p.exerciseId, !!(p && p.passed));
+      rt.pushState(g);
+      ack(cb, r);
+    });
+
+    // v3.2: puslespillet godkendes på løbslederens tablet (procent → DD)
+    socket.on('station:puzzle', (p, cb) => {
+      const g = gameOf(); if (!g) return ack(cb, { ok: false, error: 'Intet spil.' });
+      if (!g.tasksUnlocked) return ack(cb, { ok: false, error: LX(g, 'Opgaverne åbner, når træningen starter.', 'Tasks open when the training phase starts.') });
+      const r = tasks.hostResolveApproval(g, p && p.teamId, 'puzzle', p ? p.approve !== false : true, { percent: p && p.percent });
       rt.pushState(g);
       ack(cb, r);
     });
