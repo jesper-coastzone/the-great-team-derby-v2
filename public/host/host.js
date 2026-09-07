@@ -326,7 +326,8 @@
     row.appendChild(finish);
     wrap.appendChild(row);
     if (race) {
-      wrap.appendChild(el('div.mini', { text: `Status: ${race.status} · rolling ${race.rollingOpen ? 'ÅBEN' : 'lukket'} · ${race.rollsPerTeam} slag` }));
+      const turnT = race.turnTeamId ? (S.teams.find((t) => t.id === race.turnTeamId) || {}).stableName : null;
+      wrap.appendChild(el('div.mini', { text: `Status: ${race.status} · rolling ${race.rollingOpen ? 'ÅBEN' : 'lukket'} · ${race.rollsPerTeam} slag (efter tur${turnT ? ' — nu: ' + turnT : ''})` }));
 
       // Publikumsfavorit: engangsboost — brug det til drama eller til at hjælpe et hold bagud.
       const favRow = el('div.row.wrap', { style: 'margin-top:6px;align-items:center' });
