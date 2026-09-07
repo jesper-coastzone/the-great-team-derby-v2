@@ -70,7 +70,7 @@ const gameConfig = {
   paddockBoosts: [
     { id: 'boost-carrots', emoji: '🥕', label: 'Friske gulerødder', labelEn: 'Fresh carrots', cost: 4000, diceMax: 1, desc: 'Hesten løber hurtigere: +1 på terningens TOP — kun i næste løb.', descEn: 'The horse runs faster: +1 on the TOP of the dice — next race only.' },
     { id: 'boost-peptalk', emoji: '🗣️', label: 'Pep-talk til jockeyen', labelEn: 'Pep talk for the jockey', cost: 4000, diceMin: 1, desc: 'Jockeyen rider sikkert: +1 på terningens BUND — kun i næste løb.', descEn: 'The jockey rides safely: +1 on the BOTTOM of the dice — next race only.' },
-    { id: 'boost-superfeed', emoji: '⭐', label: 'Stjernefoder', labelEn: 'Star feed', cost: 4000, diceMin: 1, diceMax: 1, desc: 'Dagsformen i top: +1 på BÅDE top og bund — kun i næste løb.', descEn: 'Race-day form at its peak: +1 on BOTH top and bottom — next race only.' },
+    { id: 'boost-superfeed', emoji: '⭐', label: 'Stjernefoder', labelEn: 'Star feed', cost: 6500, diceMin: 1, diceMax: 1, desc: 'Dagsformen i top: +1 på BÅDE top og bund — kun i næste løb.', descEn: 'Race-day form at its peak: +1 on BOTH top and bottom — next race only.' },
   ],
 
   // ---- Jockey-auktionen (v3 etape 2): én jockey pr. stald, hver sæson ----
