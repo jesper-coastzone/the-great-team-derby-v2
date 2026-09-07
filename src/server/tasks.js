@@ -24,6 +24,7 @@ function ensureDuels(game) { if (!game.duels) game.duels = []; return game.duels
 //  TIP EN 13'ER  (auto-rettet, roterende sæt)
 // =========================================================
 function getTip13(game, team) {
+  if (!game.tasksUnlocked) return { ok: false, error: L(game, 'Opgaverne åbner, når træningen starter.', 'Tasks open when the training phase starts.') };
   const st = ensureStatus(team, 'tip13');
   if (onCooldown(team, 'tip13')) return { ok: false, error: L(game, 'Tip en 13\'er er på cooldown.', 'Lucky 13 is on cooldown.') };
   const set = tip13Sets[(st.count || 0) % tip13Sets.length];
@@ -41,6 +42,7 @@ function taskFactor(game, taskId) {
 }
 
 function submitTip13(game, team, answers) {
+  if (!game.tasksUnlocked) return { ok: false, error: L(game, 'Opgaverne åbner, når træningen starter.', 'Tasks open when the training phase starts.') };
   const st = ensureStatus(team, 'tip13');
   if (onCooldown(team, 'tip13')) return { ok: false, error: L(game, 'Tip en 13\'er er på cooldown.', 'Lucky 13 is on cooldown.') };
   const set = tip13Sets.find((s) => s.id === st.currentSetId) || tip13Sets[0];
@@ -62,6 +64,7 @@ function submitTip13(game, team, answers) {
 // i lokalet — holdet skal ud og finde numrene, tilbage og lægge dem i
 // kronologisk rækkefølge. Årstal (facit) forlader aldrig serveren.
 function getTidslinje(game, team) {
+  if (!game.tasksUnlocked) return { ok: false, error: L(game, 'Opgaverne åbner, når træningen starter.', 'Tasks open when the training phase starts.') };
   const st = ensureStatus(team, 'tidslinje');
   const cdLeft = onCooldown(team, 'tidslinje') ? Math.ceil((team.cooldowns.tidslinje - now()) / 1000) : 0;
   const perDraw = cfg.moneyTasks.tidslinje.cardsPerDraw || 5;
@@ -77,6 +80,7 @@ function getTidslinje(game, team) {
 }
 
 function submitTidslinje(game, team, orderedNumbers) {
+  if (!game.tasksUnlocked) return { ok: false, error: L(game, 'Opgaverne åbner, når træningen starter.', 'Tasks open when the training phase starts.') };
   if (onCooldown(team, 'tidslinje')) return { ok: false, error: L(game, 'Tidslinjen er på cooldown.', 'The Timeline is on cooldown.') };
   const st = ensureStatus(team, 'tidslinje');
   const draw = st.currentDraw || [];
@@ -106,6 +110,7 @@ function submitTidslinje(game, team, orderedNumbers) {
 //  DYST  (hold mod hold, estimering, nærmeste vinder)
 // =========================================================
 function challengeDuel(game, fromTeam, toTeamId) {
+  if (!game.tasksUnlocked) return { ok: false, error: L(game, 'Opgaverne åbner, når træningen starter.', 'Tasks open when the training phase starts.') };
   ensureDuels(game);
   if (onCooldown(fromTeam, 'dyst')) return { ok: false, error: L(game, 'Dyst er på cooldown.', 'The Duel is on cooldown.') };
   const toTeam = gs.getTeam(game, toTeamId);
@@ -141,6 +146,7 @@ function respondDuel(game, team, duelId, accept) {
 }
 
 function submitDuel(game, team, duelId, answers) {
+  if (!game.tasksUnlocked) return { ok: false, error: L(game, 'Opgaverne åbner, når træningen starter.', 'Tasks open when the training phase starts.') };
   const duel = (game.duels || []).find((d) => d.id === duelId);
   if (!duel) return { ok: false, error: L(game, 'Dysten findes ikke.', 'The duel does not exist.') };
   if (![duel.fromTeamId, duel.toTeamId].includes(team.id)) return { ok: false, error: L(game, 'I er ikke med i dysten.', 'You are not part of this duel.') };
@@ -205,6 +211,7 @@ function duelsForTeam(game, teamId) {
 //  AUKTIONSØVELSER — officielle forsøg (host godkender)
 // =========================================================
 function requestExerciseAttempt(game, team, exerciseId, meta = {}) {
+  if (!game.tasksUnlocked) return { ok: false, error: L(game, 'Opgaverne åbner, når træningen starter.', 'Tasks open when the training phase starts.') };
   // v3: FRIE STATIONER — alle stalde kan forsøge alle stationer (ingen ejerskab).
   // Involverings-reglen håndhæves fysisk af Løbslederen: hele stalden skal være samlet.
   const ex = gs.exerciseById(game, exerciseId);
@@ -257,6 +264,7 @@ function mpBuildQuestion(levelDef, q, game) {
 // Hent nuværende niveau + friske kontrolspørgsmål (uden facit!)
 // v2: FÆLLES pengeopgave — alle hold har adgang hele tiden (ingen ejerskabskrav).
 function getMindPuzzle(game, team) {
+  if (!game.tasksUnlocked) return { ok: false, error: L(game, 'Opgaverne åbner, når træningen starter.', 'Tasks open when the training phase starts.') };
   const levelDef = mpCurrentLevel(team);
   if (!levelDef) return { ok: true, done: true, totalLevels: mindpuzzle.LEVELS.length };
   const cdLeft = onCooldown(team, 'mindpuzzle') ? Math.ceil((team.cooldowns.mindpuzzle - now()) / 1000) : 0;
@@ -281,6 +289,7 @@ function getMindPuzzle(game, team) {
 
 // Tjek svar. Rigtigt → belønning + næste niveau. Forkert → straf-cooldown.
 function submitMindPuzzle(game, team, answers) {
+  if (!game.tasksUnlocked) return { ok: false, error: L(game, 'Opgaverne åbner, når træningen starter.', 'Tasks open when the training phase starts.') };
   if (onCooldown(team, 'mindpuzzle')) return { ok: false, error: L(game, 'Mind Puzzle er på cooldown.', 'Mind Puzzle is on cooldown.') };
   const levelDef = mpCurrentLevel(team);
   if (!levelDef) return { ok: false, error: L(game, 'Alle niveauer er gennemført!', 'All levels are complete!') };
@@ -316,6 +325,7 @@ function submitMindPuzzle(game, team, answers) {
 //  ALTID-TILGÆNGELIGE (puslespil + kreative) — team beder om godkendelse
 // =========================================================
 function requestTaskApproval(game, team, taskId) {
+  if (!game.tasksUnlocked) return { ok: false, error: L(game, 'Opgaverne åbner, når træningen starter.', 'Tasks open when the training phase starts.') };
   const st = ensureStatus(team, taskId);
   if (st.completed && taskId === 'puzzle') return { ok: false, error: L(game, 'Puslespillet er allerede godkendt.', 'The puzzle is already approved.') };
   st.pending = true;
@@ -368,18 +378,73 @@ function hostResolveApproval(game, teamId, taskId, approve, extra = {}) {
     return { ok: true, approved: true, level, points, payout };
   }
 
-  // altid-tilgængelige
+  // v3.1: Puslespil = DD efter procent samlet (600 pr. 25 % + 600 bonus ved 100 %)
   if (taskId === 'puzzle') {
+    const pct = Math.max(0, Math.min(100, Math.round((extra.percent != null ? Number(extra.percent) : 100) / 25) * 25));
+    if (!pct) return { ok: false, error: 'Angiv procent (25/50/75/100).' };
+    const per25 = cfg.puzzle.rewardPer25 || 600;
+    const payout = per25 * (pct / 25) + (pct === 100 ? (cfg.puzzle.rewardFullBonus || 600) : 0);
     st.completed = true;
-    if (cfg.puzzle.grantsDerbyLicense) team.derbyLicense = true;
-    if (cfg.puzzle.rewardOnComplete) econ.addTransaction(game, team, cfg.puzzle.rewardOnComplete, 'task', L(game, 'Puslespil fuldført', 'Puzzle completed'));
-    gs.logEvent(game, `${team.stableName} fuldførte puslespillet${team.derbyLicense ? ' (Derby-licens)' : ''}.`);
-    return { ok: true, approved: true };
+    econ.addTransaction(game, team, payout, 'task', L(game, `Puslespil: ${pct} % samlet`, `Puzzle: ${pct}% built`));
+    gs.logEvent(game, `${team.stableName}: puslespil ${pct} % → +${payout} ${cfg.currencyAbbr}.`);
+    return { ok: true, approved: true, percent: pct, payout };
   }
-  // kreative — markér fuldført (bonus gives i showcase)
+  // kreative — markér fuldført (kåring før finalen giver løbspoint-bonus)
   st.completed = true;
+  // v3.1: "finaleklar" = pynt hest + staldskilt godkendt (mangler den, koster det slag i finalen)
+  const ts = team.taskStatus || {};
+  if ((ts.horseStyling && ts.horseStyling.completed) && (ts.stableSign && ts.stableSign.completed)) team.derbyLicense = true;
   gs.logEvent(game, `${team.stableName}: ${taskId} markeret fuldført.`);
   return { ok: true, approved: true };
+}
+
+// =========================================================
+//  v3.1: LØBSLEDER-TABLET — stationer godkendes på stedet
+// =========================================================
+function stationOverview(game) {
+  const en = (game.settings && game.settings.lang) === 'en';
+  const hidden = (game.disabled && game.disabled.exercises) || [];
+  const stations = (game.auctionExercisePool || []).filter((e) => e.category === 'money' && !hidden.includes(e.id))
+    .map((e) => ({ id: e.id, name: (en && e.nameEn) || e.name, short: (en && e.shortEn) || e.short }));
+  const teams = game.teams.filter((t) => t.joined).map((t) => ({ id: t.id, stableName: t.stableName, teamNumber: t.teamNumber, color: t.color }));
+  const matrix = {};
+  game.teams.forEach((t) => {
+    matrix[t.id] = {};
+    stations.forEach((s) => {
+      const ex = game.auctionExercisePool.find((e) => e.id === s.id);
+      const st = (t.taskStatus || {})[s.id] || {};
+      const count = st.count || 0;
+      const r = ex.reward || {};
+      const next = Math.max(r.min || 0, (r.start || 0) - count * (r.decreasePerSuccess || 0));
+      const cdLeft = onCooldown(t, s.id) ? Math.ceil((t.cooldowns[s.id] - now()) / 1000) : 0;
+      matrix[t.id][s.id] = { nextReward: next, cooldownLeft: cdLeft, successes: count };
+    });
+  });
+  return { ok: true, stations, teams, matrix, tasksUnlocked: !!game.tasksUnlocked };
+}
+
+function resolveStationAttempt(game, teamId, exerciseId, passed) {
+  if (!game.tasksUnlocked) return { ok: false, error: L(game, 'Opgaverne åbner, når træningen starter.', 'Tasks open when the training phase starts.') };
+  const team = gs.getTeam(game, teamId);
+  if (!team) return { ok: false, error: 'Ukendt stald.' };
+  const ex = (game.auctionExercisePool || []).find((e) => e.id === exerciseId);
+  if (!ex) return { ok: false, error: 'Ukendt station.' };
+  if (onCooldown(team, exerciseId)) {
+    const left = Math.ceil((team.cooldowns[exerciseId] - now()) / 1000);
+    return { ok: false, error: L(game, `${team.stableName} har cooldown (${left}s tilbage).`, `${team.stableName} is on cooldown (${left}s left).`) };
+  }
+  const st = ensureStatus(team, exerciseId);
+  setCooldown(team, exerciseId, ex.cooldownSeconds || 300);
+  if (!passed) {
+    gs.logEvent(game, `${team.stableName}: ${ex.name} — ikke bestået (cooldown startet).`);
+    return { ok: true, passed: false };
+  }
+  const r = ex.reward || {};
+  const payout = Math.max(r.min || 0, (r.start || 0) - (st.count || 0) * (r.decreasePerSuccess || 0));
+  st.count = (st.count || 0) + 1;
+  econ.addTransaction(game, team, payout, 'exercise', L(game, `${ex.name}: bestået`, `${(game.settings.lang === 'en' && ex.nameEn) || ex.name}: passed`));
+  gs.logEvent(game, `${team.stableName}: ${ex.name} bestået (+${payout} ${cfg.currencyAbbr}).`);
+  return { ok: true, passed: true, payout };
 }
 
 // Host giver kreativ bonus (showcase)
@@ -398,5 +463,6 @@ module.exports = {
   getTip13, submitTip13, getTidslinje, submitTidslinje,
   challengeDuel, respondDuel, submitDuel, duelsForTeam,
   requestExerciseAttempt, requestTaskApproval, hostResolveApproval, setCreativeBonus,
+  stationOverview, resolveStationAttempt,
   getMindPuzzle, submitMindPuzzle,
 };
