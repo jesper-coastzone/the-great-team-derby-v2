@@ -1301,7 +1301,7 @@
   function raceView() {
     const me = S.me; const race = S.race;
     const c = el('div.col');
-    c.appendChild(head(S.slide.title, race ? (race.rollingOpen ? TX('Løbet er i gang — slå jeres terning!', 'The race is on — roll your dice!') : TX('Vent på at værten åbner for rolling…', 'Wait for the Race Director to open the rolling…')) : TX('Klargør…', 'Preparing…')));
+    c.appendChild(head(S.slide.title, race ? (race.rollingOpen ? (race.turnTeamId && race.turnTeamId !== me.id ? TX('Løbet er i gang — staldene slår efter tur.', 'The race is on — the stables roll in turns.') : TX('Løbet er i gang — slå jeres terning!', 'The race is on — roll your dice!')) : TX('Vent på at værten åbner for rolling…', 'Wait for the Race Director to open the rolling…')) : TX('Klargør…', 'Preparing…')));
     if (!race) return c;
     if (race.favoriteTeamId === me.id && !race.favoriteUsed) c.appendChild(el('div.chip.gold', { style: 'align-self:center;font-size:15px;padding:8px 14px', text: TX('📣 I er publikumsfavorit — fan-boost på næste slag!', '📣 You are the crowd favourite — fan boost on your next roll!') }));
     // v2.16: vis aktive løbsdags-boosts og væddemål
@@ -1319,8 +1319,13 @@
     card.appendChild(el('div.stat.big', {}, [el('div.k', { text: 'Position' }), el('div.v', { text: me.race.position + ' / ' + race.trackLength })]));
     const dice = el('div.dice', { style: 'margin:10px 0;display:flex;align-items:center;justify-content:center;gap:10px' }); if (me.race.lastRoll) { dice.appendChild(TG.assetImg('terning', { style: 'width:52px;height:52px' })); dice.appendChild(el('span', { text: String(me.race.lastRoll) })); } else { dice.textContent = '—'; } card.appendChild(dice);
     card.appendChild(el('p.muted', { text: `${TX('Slag brugt', 'Rolls used')}: ${used}/${allowed} · ${TX('terning', 'dice')} ${me.dice.min}–${me.dice.max}` }));
-    const canRoll = race.rollingOpen && used < allowed;
-    const b = el('button.btn.gold.xl', { text: canRoll ? TX('SLÅ TERNING', 'ROLL THE DICE') : (used >= allowed ? TX('Alle slag brugt', 'All rolls used') : TX('Vent…', 'Wait…')), disabled: canRoll ? null : 'true', style: 'margin-top:14px' });
+    // v3.3: tur-baserede slag — kun turens stald kan slå
+    const myTurn = !race.turnTeamId || race.turnTeamId === me.id;
+    const turnTeam = race.turnTeamId ? (S.teams.find((t) => t.id === race.turnTeamId) || null) : null;
+    const canRoll = race.rollingOpen && used < allowed && myTurn;
+    if (canRoll && race.turnTeamId === me.id) card.appendChild(el('div.chip.gold', { style: 'font-size:16px;padding:8px 16px', text: TX('🎲 Det er JERES tur!', '🎲 It is YOUR turn!') }));
+    const waitTxt = (!myTurn && turnTeam) ? TX('Vent — ' + turnTeam.stableName + ' er ved terningen…', 'Wait — ' + turnTeam.stableName + ' is rolling…') : TX('Vent…', 'Wait…');
+    const b = el('button.btn.gold.xl', { text: canRoll ? TX('SLÅ TERNING', 'ROLL THE DICE') : (used >= allowed ? TX('Alle slag brugt', 'All rolls used') : waitTxt), disabled: canRoll ? null : 'true', style: 'margin-top:14px' });
     b.addEventListener('click', () => TG.emit('team:roll').then((r) => {
       check(r); if (!r.ok) return;
       if (r.event) toast(`${r.event.emoji || ''} ${r.event.label}! ${r.event.effect > 0 ? '+' : ''}${r.event.effect} ${TX('felter', 'spaces')}`, r.event.effect > 0 ? 'ok' : 'err');
