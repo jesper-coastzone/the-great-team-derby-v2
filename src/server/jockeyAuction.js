@@ -103,12 +103,15 @@ function resolveAuction(game) {
     unassigned.delete(b.teamId);
     freeJockeys.delete(b.jockeyId);
   }
-  // 2) Rest til mindstepris — billigste ledige jockey først, laveste staldkasse vælger først
+  // 2) Rest til FAST tildelingspris (v3.2: 1.000 DD — dyrere end alle mindstepriser,
+  // så det aldrig betaler sig at lade være med at byde). Laveste staldkasse vælger først.
+  const cfg = require('../../config/gameConfig');
+  const fallbackPrice = cfg.jockeyFallbackPrice || 1000;
   const rest = teams.filter((t) => unassigned.has(t.id)).sort((a, b) => a.cash - b.cash);
   for (const t of rest) {
     const cheapest = [...freeJockeys.values()].sort((a, b) => a.minPrice - b.minPrice)[0];
     if (!cheapest) break;
-    assign(game, ja, t.id, cheapest, cheapest.minPrice, true);
+    assign(game, ja, t.id, cheapest, fallbackPrice, true);
     freeJockeys.delete(cheapest.id);
   }
   ja.status = 'resolved';
