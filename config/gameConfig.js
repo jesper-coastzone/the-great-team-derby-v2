@@ -52,22 +52,25 @@ const gameConfig = {
   finalRaceRolls: 5,
   diceBaseMin: 2,               // diceMin = diceBaseMin + jockeyLevel (+ løbsdags-boosts)
   diceBaseMax: 5,               // diceMax = diceBaseMax + horseLevel (+ løbsdags-boosts)
-  normalRacePrizes: { 1: 1200, 2: 900, 3: 700, 4: 500, default: 300 }, // fallback
+  normalRacePrizes: { 1: 2400, 2: 1800, 3: 1400, 4: 1000, default: 600 }, // fallback
   // v2.16: præmierne vokser pr. sæson og ANNONCERES i Paddocken før løbet
+  // v3.2: alle løbspræmier FORDOBLET — løbet skal kunne mærkes i Staldkassen
   normalRacePrizesByRound: {
-    1: { 1: 1500, 2: 1000, 3: 700, 4: 500, default: 300 },
-    2: { 1: 2500, 2: 1700, 3: 1100, 4: 700, default: 400 },
-    3: { 1: 4000, 2: 2700, 3: 1800, 4: 1000, default: 500 },
+    1: { 1: 3000, 2: 2000, 3: 1400, 4: 1000, default: 600 },
+    2: { 1: 5000, 2: 3400, 3: 2200, 4: 1400, default: 800 },
+    3: { 1: 8000, 2: 5400, 3: 3600, 4: 2000, default: 1000 },
   },
-  // Vinderhestens værdi ganges med denne faktor efter hvert rigtigt løb (annonceres på præmietavlen)
-  winnerHorseValueMultiplier: 2,
+  // v3.2: UDGÅET (sat til 1) — staldværdi er ikke længere vinderkriterie, så hesteværdi-fordobling er meningsløs
+  winnerHorseValueMultiplier: 1,
 
   // ---- Løbsdags-boosts (v2.16): købes i Paddocken, gælder KUN næste løb ----
   // Varige hest/jockey-point kommer KUN fra øvelserne — penge køber dagsform.
+  // v3.2: basis 4.000 DD, og prisen stiger boostPriceStep pr. køb stalden laver i samme Paddock (nulstilles hver sæson).
+  boostPriceStep: 1000,
   paddockBoosts: [
-    { id: 'boost-carrots', emoji: '🥕', label: 'Friske gulerødder', labelEn: 'Fresh carrots', cost: 400, diceMax: 1, desc: 'Hesten løber hurtigere: +1 på terningens TOP — kun i næste løb.', descEn: 'The horse runs faster: +1 on the TOP of the dice — next race only.' },
-    { id: 'boost-peptalk', emoji: '🗣️', label: 'Pep-talk til jockeyen', labelEn: 'Pep talk for the jockey', cost: 400, diceMin: 1, desc: 'Jockeyen rider sikkert: +1 på terningens BUND — kun i næste løb.', descEn: 'The jockey rides safely: +1 on the BOTTOM of the dice — next race only.' },
-    { id: 'boost-superfeed', emoji: '⭐', label: 'Stjernefoder', labelEn: 'Star feed', cost: 900, diceMin: 1, diceMax: 1, desc: 'Dagsformen i top: +1 på BÅDE top og bund — kun i næste løb.', descEn: 'Race-day form at its peak: +1 on BOTH top and bottom — next race only.' },
+    { id: 'boost-carrots', emoji: '🥕', label: 'Friske gulerødder', labelEn: 'Fresh carrots', cost: 4000, diceMax: 1, desc: 'Hesten løber hurtigere: +1 på terningens TOP — kun i næste løb.', descEn: 'The horse runs faster: +1 on the TOP of the dice — next race only.' },
+    { id: 'boost-peptalk', emoji: '🗣️', label: 'Pep-talk til jockeyen', labelEn: 'Pep talk for the jockey', cost: 4000, diceMin: 1, desc: 'Jockeyen rider sikkert: +1 på terningens BUND — kun i næste løb.', descEn: 'The jockey rides safely: +1 on the BOTTOM of the dice — next race only.' },
+    { id: 'boost-superfeed', emoji: '⭐', label: 'Stjernefoder', labelEn: 'Star feed', cost: 4000, diceMin: 1, diceMax: 1, desc: 'Dagsformen i top: +1 på BÅDE top og bund — kun i næste løb.', descEn: 'Race-day form at its peak: +1 on BOTH top and bottom — next race only.' },
   ],
 
   // ---- Jockey-auktionen (v3 etape 2): én jockey pr. stald, hver sæson ----
@@ -88,17 +91,20 @@ const gameConfig = {
       profile: { da: 'Lærlingen — ung, billig, pålidelig', en: 'The apprentice — young, cheap, reliable' } },
   ],
   jockeyBidIncrement: 50,       // mindste overbud
+  // v3.2: stalde uden vundet bud tildeles en ledig jockey til denne FASTE pris —
+  // højere end alle mindstepriser, så det aldrig betaler sig at lade være med at byde.
+  jockeyFallbackPrice: 1000,
 
   // ---- Odds-tavlen (v2.16): væddemål i Paddocken på hvilken hest der vinder løbet ----
   raceBetting: {
     enabled: true,
     minStake: 100,
-    maxStake: 1000,
+    maxStake: 3000, // v3.2: hævet 1.000 → 3.000
     minOdds: 1.5,   // favoritten
     maxOdds: 5,     // outsideren
   },
   // Finalen skal kunne flytte stillingen — spænd 5.000 SD (ekspert-review pkt. 3)
-  finalRacePrizes: { 1: 6000, 2: 4200, 3: 3000, 4: 1800, default: 1000 },
+  finalRacePrizes: { 1: 12000, 2: 8400, 3: 6000, 4: 3600, default: 2000 }, // v3.2: fordoblet
 
   // ---- Finale-væddemål: sats på egen sejr med omvendte odds (comeback-mekanik) ----
   finalBetting: {
@@ -162,15 +168,9 @@ const gameConfig = {
     // udelukkende på øvelserne. Penge køber løbsdags-boosts (paddockBoosts) og stald-værdi.
     horse: [],
     jockey: [],
-    stable: [
-      // Stald = sikker værdi med lille afkast; max 1 køb pr. option holder det i skak.
-      { id: 'stable-carrots', label: 'Gulerodslager', labelEn: 'Carrot storage', cost: 250, valueIncrease: 280, performancePoints: 0 },
-      { id: 'stable-0', label: 'Frisk halm', labelEn: 'Fresh straw', cost: 500, valueIncrease: 550, performancePoints: 0 },
-      { id: 'stable-1', label: 'Ny boks', labelEn: 'New stall', cost: 1000, valueIncrease: 1100, performancePoints: 0 },
-      { id: 'stable-smith', label: 'Fast staldsmed', labelEn: 'Resident farrier', cost: 1500, valueIncrease: 1700, performancePoints: 0 },
-      { id: 'stable-2', label: 'Staldudvidelse', labelEn: 'Stable extension', cost: 2000, valueIncrease: 2300, performancePoints: 0 },
-      { id: 'stable-3', label: 'Moderne træningsanlæg', labelEn: 'Modern training facility', cost: 3500, valueIncrease: 4100, performancePoints: 0 },
-    ],
+    // v3.2: stald-investeringer UDGÅET — man vinder på løbspoint, ikke staldværdi,
+    // så "varig værdi" havde intet formål. Penge bruges på jockeyer, dagsform og væddemål.
+    stable: [],
   },
 
   // ---- Paddocken (v2.13): kort investeringsvindue før hvert løb ----
