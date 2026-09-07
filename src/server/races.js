@@ -133,6 +133,18 @@ function placeBet(game, team, targetTeamId, amount) {
   return { ok: true, amount, odds };
 }
 
+// v3.2: fortryd væddemål — kun mens Paddocken stadig er åben. Indsatsen refunderes.
+function cancelBet(game, team) {
+  const gm = require('./gameManager');
+  if (!gm.paddockOpen(game)) return { ok: false, error: L(game, 'Odds-tavlen er kun åben i Paddocken.', 'The odds board is only open in the Paddock.') };
+  const bet = (game.raceBets || {})[team.id];
+  if (!bet || bet.resolved) return { ok: false, error: L(game, 'I har ikke et aktivt væddemål.', 'You have no active bet.') };
+  econ.addTransaction(game, team, bet.amount, 'bet', L(game, `Væddemål fortrudt — ${bet.amount} ${cfg.currencyAbbr} retur`, `Bet withdrawn — ${bet.amount} ${cfg.currencyAbbr} refunded`));
+  delete game.raceBets[team.id];
+  gs.logEvent(game, `${team.stableName} fortrød deres væddemål.`);
+  return { ok: true };
+}
+
 // Præmie-forhåndsvisning til Paddockens præmietavle
 function prizePreview(game) {
   const slide = game.deck[game.activeSlideIndex] || {};
@@ -418,6 +430,6 @@ function finishWarmupTie(game) {
 
 module.exports = {
   startRace, setRolling, setFavorite, placeBet, rollForTeam, hostRollForTeam: rollForTeam,
-  allRolled, finishRace, prizeFor, pointsFor, computePaddockOdds, prizePreview,
+  allRolled, finishRace, prizeFor, pointsFor, computePaddockOdds, prizePreview, cancelBet,
   buildWarmupPlan, applyScriptedRoll, finishWarmupTie,
 };
