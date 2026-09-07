@@ -373,6 +373,8 @@ function register(io) {
     socket.on('team:roll', (_, cb) => mut((g) => { const t = teamOf(); return t ? races.rollForTeam(g, t) : { ok: false }; }, cb));
     // v2.16: Odds-tavlen — væddemål i Paddocken på en hvilken som helst hest
     socket.on('team:bet', (p, cb) => mut((g) => { const t = teamOf(); return t ? races.placeBet(g, t, p && p.targetTeamId, p && p.amount) : { ok: false }; }, cb));
+    // v3.2: fortryd væddemål mens Paddocken er åben — indsatsen retur
+    socket.on('team:betCancel', (_, cb) => mut((g) => { const t = teamOf(); return t ? races.cancelBet(g, t) : { ok: false }; }, cb));
 
     // v2.16: Løbsdags-boosts — købes i Paddocken, gælder kun næste løb
     socket.on('team:buyBoost', (p, cb) => mut((g) => {
@@ -382,8 +384,10 @@ function register(io) {
       if (!boost) return { ok: false, error: LX(g, 'Ukendt boost.', 'Unknown boost.') };
       t.raceBoosts = t.raceBoosts || {};
       if (t.raceBoosts[boost.id]) return { ok: false, error: LX(g, 'I har allerede købt denne boost til løbet.', 'You have already bought this boost for the race.') };
-      if (!econ.canAfford(t, boost.cost)) return { ok: false, error: LX(g, 'I har ikke nok i Staldkassen.', 'Not enough in the Stable Fund.') };
-      econ.addTransaction(g, t, -boost.cost, 'boost', LX(g, `Løbsdags-boost: ${boost.label} (kun næste løb)`, `Race-day boost: ${boost.labelEn || boost.label} (next race only)`));
+      // v3.2: prisen stiger pr. køb i samme Paddock (nulstilles efter løbet)
+      const price = (boost.cost || 4000) + (cfg.boostPriceStep || 1000) * Object.keys(t.raceBoosts).length;
+      if (!econ.canAfford(t, price)) return { ok: false, error: LX(g, 'I har ikke nok i Staldkassen.', 'Not enough in the Stable Fund.') };
+      econ.addTransaction(g, t, -price, 'boost', LX(g, `Løbsdags-boost: ${boost.label} (kun næste løb)`, `Race-day boost: ${boost.labelEn || boost.label} (next race only)`));
       t.raceBoosts[boost.id] = true;
       gs.logEvent(g, `${t.stableName} købte ${boost.label} til næste løb.`);
       return { ok: true };
