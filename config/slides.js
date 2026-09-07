@@ -50,7 +50,7 @@ const TXT = {
     training: 'Træning', paddock: 'Paddocken', race: 'Løb',
     standings: 'Stillingen efter', screenStandings: 'Stillingen — løbspoint',
     finale: 'The Great Team Derby',
-    reveal: 'Vindercirklen', screenReveal: 'Vinderen er…',
+    circle: 'Vindercirklen', screenCircle: 'Vindercirklen', reveal: 'Den samlede vinder', screenReveal: 'Vinderen er…',
     debrief: 'Debrief', screenDebrief: 'Hvad skete der egentlig?',
   },
   en: {
@@ -64,7 +64,7 @@ const TXT = {
     training: 'Training', paddock: 'The Paddock', race: 'Race',
     standings: 'Standings after', screenStandings: 'Standings — Race Points',
     finale: 'The Great Team Derby',
-    reveal: "The Winner's Circle", screenReveal: 'And the winner is…',
+    circle: "The Winner's Circle", screenCircle: "The Winner's Circle", reveal: 'The overall winner', screenReveal: 'And the winner is…',
     debrief: 'Debrief', screenDebrief: 'What actually happened?',
   },
 };
@@ -150,10 +150,13 @@ function buildDeck(settings) {
     }
   }
 
-  // ---- Vindercirklen ----
+  // ---- Vindercirklen (v3.3: ceremoni FØR vinderen afsløres — værn mod at trykke for tidligt) ----
+  push({ kind: 'winners-circle', phase: PHASES.REVEAL, title: T.circle,
+    screenTitle: T.screenCircle, tabletMode: 'bank',
+    hostHint: 'CEREMONI — vinderen er IKKE afsløret endnu. Uddel diplomerne til de øvrige kategorier her (Team Spirit / De Kreative, 3t: De Forandringsparate) og byg spænding. Vinderen + slutstillingen kommer på NÆSTE slide.' });
   push({ kind: 'final-reveal', phase: PHASES.REVEAL, title: T.reveal,
     screenTitle: T.screenReveal, tabletMode: 'final-result',
-    hostHint: 'Afslør slutstillingen i løbspoint. Diplomer: Vinderne (ét pr. medlem) + Team Spirit ELLER De Kreative (evt. begge). 3t: også De Forandringsparate.' });
+    hostHint: 'Afslør den samlede vinder + hele slutstillingen i løbspoint. Ved pointlighed afgør systemet: bedste finaleplacering → seneste løb → Staldkassen. Vinder-diplomer: ét pr. medlem.' });
   push({ kind: 'debrief', phase: PHASES.REVEAL, title: T.debrief,
     screenTitle: T.screenDebrief, tabletMode: 'final-result',
     hostHint: 'Refleksion: Hvordan fordelte I roller? Hvornår ændrede I taktik? Hvad gjorde jer hurtigere som hold?' });
