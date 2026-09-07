@@ -79,7 +79,12 @@ function prev(game) { return goToSlide(game, game.activeSlideIndex - 1); }
 function joinTeam(game, requestedTeamId) {
   if (requestedTeamId) {
     const t = gs.getTeam(game, requestedTeamId);
-    if (t) { t.joined = true; t.connected = true; return { ok: true, team: t }; }
+    if (t) {
+      // v3.2: eksplicit staldvalg — ny tablet kan overtage/genoptage et eksisterende team
+      if (!t.joined) gs.logEvent(game, `${t.stableName} tilsluttede sig.`);
+      else gs.logEvent(game, `${t.stableName} fortsætter på en ny tablet.`);
+      t.joined = true; t.connected = true; return { ok: true, team: t };
+    }
   }
   const free = game.teams.find((t) => !t.joined);
   if (!free) return { ok: false, error: 'Alle stalde er optaget / All stables are taken.' };
