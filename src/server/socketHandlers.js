@@ -88,7 +88,9 @@ function register(io) {
         numTeams: g.teams.length,
         phase: g.currentPhase,
         round: g.currentRound,
-      })).sort((a, b) => b.createdAt - a.createdAt);
+        lang: (g.settings && g.settings.lang) || 'da', // v3.2: til vælg spil-skærmen
+        slideTitle: (g.deck && g.deck[g.activeSlideIndex] && g.deck[g.activeSlideIndex].title) || '',
+      })).sort((a, b) => b.createdAt - a.createdAt).slice(0, 12);
       ack(cb, { ok: true, games });
     });
 
