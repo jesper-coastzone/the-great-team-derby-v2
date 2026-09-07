@@ -35,7 +35,7 @@
     const app = el('div.app');
     app.appendChild(bodyForMode());
     root.appendChild(app);
-    if (S.slide.tabletMode === 'round-dashboard') root.appendChild(navbar());
+    if (S.slide.tabletMode === 'round-dashboard' || S.slide.tabletMode === 'preseason-explore') root.appendChild(navbar());
     ui.renderedMode = S.slide.tabletMode;
     celebrateChanges(S.me);
     incomingTradeToast();
@@ -78,6 +78,7 @@
       case 'preseason-dashboard': return preseasonRoundView();
       case 'warmup-race': return warmupView();
       case 'auction': return auctionView();
+      case 'preseason-explore': return exploreView();
       case 'round-dashboard': return dashboardView();
       case 'paddock': return paddockView();
       case 'bank': return bankView();
@@ -85,6 +86,17 @@
       case 'final-result': return finalResultView();
       default: return centerMsg(TX('Vent på Løbslederen…', 'Waiting for the Race Director…'), '');
     }
+  }
+
+  // v3.1: Pre-season fase B — fanerne kan ses, men intet kan løses (serveren låser)
+  function exploreView() {
+    const w = el('div.col');
+    w.appendChild(el('div.card', { style: 'background:var(--cream-2);border:2px solid var(--gold)' }, [
+      el('b', { text: TX('👀 Kig & spørg', '👀 Explore & ask') }),
+      el('p.muted', { style: 'margin-top:4px', text: TX('Bladr i fanerne og læg jeres taktik — opgaver og stationer åbner først, når træningen starter.', 'Browse the tabs and plan your tactics — tasks and stations open when the training phase starts.') }),
+    ]));
+    w.appendChild(dashboardView());
+    return w;
   }
 
   function centerMsg(title, sub) {
@@ -234,7 +246,7 @@
     c.appendChild(stationer);
     const faste = el('div', { 'data-psfocus': 'faste' });
     faste.appendChild(el('div.eyebrow', { text: TX('De faste opgaver (åbner når sæsonen starter)', 'The standing tasks (open when the season starts)'), style: 'margin-top:14px' }));
-    faste.appendChild(psCard(TX('Puslespil', 'The Puzzle'), TX('Et langt team-puslespil. Fuldfør det før finalen og få jeres Derby-licens — uden den mister I et slag i finaleløbet.', 'A long team puzzle. Finish it before the final to earn your Derby Licence — without it you lose one roll in the final race.')));
+    faste.appendChild(psCard(TX('Puslespil', 'The Puzzle'), TX('Et langt team-puslespil. Jo mere I når før finalen, jo flere Derby Dollars: 600 DD pr. 25 % samlet — og 600 i bonus, hvis I når det hele.', 'A long team puzzle. The more you build before the final, the more Derby Dollars: 600 DD per 25% — plus a 600 bonus if you finish it all.')));
     faste.appendChild(psCard(TX('Pynt jeres hest', 'Style your horse'), TX('Dekorér jeres hobbyhest. Bedømmes i den kreative showcase og giver bonus til staldværdien.', 'Decorate your hobby horse. Judged in the creative showcase and adds a bonus to your stable value.')));
     faste.appendChild(psCard(TX('Design jeres staldskilt', 'Design your stable sign'), TX('Staldens våbenskjold. Bedømmes også i showcasen.', "Your stable's coat of arms. Also judged in the showcase.")));
     c.appendChild(faste);
@@ -270,7 +282,7 @@
     const c = el('div.col');
     if (tab === 'tasks') {
       c.appendChild(psCard('📋 Opgaver', 'Her ligger de opgaver, der altid er åbne — de kræver godkendelse af hosten, når I er færdige.'));
-      c.appendChild(psCard(TX('Puslespil', 'The Puzzle'), TX('Et langt team-puslespil. Fuldfør det før finalen og få jeres Derby-licens — uden den mister I et slag i finaleløbet.', 'A long team puzzle. Finish it before the final to earn your Derby Licence — without it you lose one roll in the final race.')));
+      c.appendChild(psCard(TX('Puslespil', 'The Puzzle'), TX('Et langt team-puslespil. Jo mere I når før finalen, jo flere Derby Dollars: 600 DD pr. 25 % samlet — og 600 i bonus, hvis I når det hele.', 'A long team puzzle. The more you build before the final, the more Derby Dollars: 600 DD per 25% — plus a 600 bonus if you finish it all.')));
       c.appendChild(psCard(TX('Pynt jeres hest', 'Style your horse'), TX('Dekorér jeres hobbyhest. Bedømmes i den kreative showcase og giver bonus til staldværdien.', 'Decorate your hobby horse. Judged in the creative showcase and adds a bonus to your stable value.')));
       c.appendChild(psCard(TX('Design jeres staldskilt', 'Design your stable sign'), TX('Staldens våbenskjold. Bedømmes også i showcasen.', "Your stable's coat of arms. Also judged in the showcase.")));
     } else if (tab === 'exercise') {
@@ -329,7 +341,7 @@
     c.appendChild(moneyContent());
     if (!ui.tip13 && !ui.tidslinje && !ui.mindpuzzle) {
       c.appendChild(el('div.eyebrow', { text: 'Mens I venter på cooldown — læs om de faste opgaver', style: 'margin-top:14px' }));
-      c.appendChild(psCard('Puslespil', 'Et langt team-puslespil, der åbner når sæsonen starter. Fuldfør det før finalen og få jeres Derby-licens — uden den mister I et slag i finaleløbet.'));
+      c.appendChild(psCard('Puslespil', 'Et langt team-puslespil, der åbner når sæsonen starter. 600 DD pr. 25 % samlet før finalen — og 600 i bonus for det hele.'));
       c.appendChild(psCard(TX('Pynt jeres hest', 'Style your horse'), TX('Dekorér jeres hobbyhest. Bedømmes i den kreative showcase og giver bonus til staldværdien.', 'Decorate your hobby horse. Judged in the creative showcase and adds a bonus to your stable value.')));
       c.appendChild(psCard(TX('Design jeres staldskilt', 'Design your stable sign'), TX('Staldens våbenskjold. Bedømmes også i showcasen.', "Your stable's coat of arms. Also judged in the showcase.")));
     }
@@ -399,8 +411,8 @@
     // v3: slank tablet — fire faner (byt/auktionshus/min-øvelse udgik)
     const nav = el('div.navbar');
     const tabs = [
-      ['tasks', '📋', 'Opgaver'], ['stations', '🎯', 'Stationer'],
-      ['paddock', '🏇', 'Paddocken'], ['bank', '🏦', 'Staldkontoret'],
+      ['tasks', '📋', TX('Opgaver', 'Tasks')], ['stations', '🎯', TX('Stationer', 'Stations')],
+      ['paddock', '🏇', TX('Paddocken', 'Paddock')], ['bank', '🏦', TX('Staldkontoret', 'Stable Office')],
     ];
     tabs.forEach(([k, ico, l]) => {
       const b = el('button' + (ui.sub === k ? '.active' : ''), {}, [
@@ -556,11 +568,11 @@
     ]));
     card.appendChild(el('p.muted', { style: 'font-size:12px;margin-top:4px', text: TX('Belønningen falder for hver succes, jeres stald har på stationen — spred jer!', 'The reward decreases with every success your stable has at this station — spread out!') }));
     if (withAction) {
-      const btn = el('button.btn.gold.block.lg', { text: cd ? `Cooldown ${cd}` : TX('Kald Løbsleder — officielt forsøg', 'Call a Race Director — official attempt'), style: 'margin-top:14px', disabled: cd ? 'true' : null });
-      btn.setAttribute('data-cooldown', ex.id);
-      btn.addEventListener('click', () => TG.emit('team:exerciseAttempt', { exerciseId: ex.id }).then((r) => { check(r); if (r.ok) toast(TX('Løbsleder tilkaldt — saml HELE stalden ved stationen!', 'Race Director called — gather the WHOLE stable at the station!'), 'ok'); }));
-      card.appendChild(btn);
-      if (st.pending) card.appendChild(el('div.chip.gold', { style: 'margin-top:8px', text: TX('Afventer Løbslederens vurdering', "Awaiting the Race Director's verdict") }));
+      // v3.1: Løbslederen godkender på SIN tablet — her vises kun status
+      const status = el('div', { class: cd ? 'chip gold' : 'chip turf', style: 'margin-top:14px;font-size:15px;padding:8px 14px', text: cd ? `Cooldown ${cd}` : TX('Klar til officielt forsøg', 'Ready for an official attempt') });
+      status.setAttribute('data-cooldown', ex.id);
+      card.appendChild(status);
+      card.appendChild(el('p.muted', { style: 'font-size:13px;margin-top:8px', text: TX('Saml HELE stalden ved stationen og vink en løbsleder hen — godkendelsen sker på løbslederens tablet.', 'Gather the WHOLE stable at the station and wave a Race Director over — approval happens on their tablet.') }));
     }
     return card;
   }
@@ -570,12 +582,12 @@
     const c = el('div.col');
     c.appendChild(myStableCard());
     c.appendChild(head(TX('Opgaver', 'Tasks'), TX('Sponsoropgaver og faste opgaver — altid tilgængelige, prioritér frit.', 'Sponsor Tasks and standing tasks — always available, prioritise freely.')));
-    c.appendChild(rolesCard());
+    // v3.1: Rollekort fjernet fra tabletten (forvirrede mere end det gavnede)
     // v3: Sponsoropgaverne (pengeopgaver) bor i Opgaver-fanen — Penge-fanen udgik
     c.appendChild(el('div.eyebrow', { text: TX('💰 Sponsoropgaver — staldens pengemaskine', "💰 Sponsor Tasks — your stable's money machine") }));
     c.appendChild(moneyContent());
     c.appendChild(el('div.eyebrow', { text: TX('📌 Faste opgaver', '📌 Standing tasks'), style: 'margin-top:14px' }));
-    const defs = [['puzzle', TX('Puslespil', 'The Puzzle'), TX('Fuldfør for Derby-licens.', 'Finish it for your Derby Licence.')], ['horseStyling', TX('Pynt jeres hest', 'Style your horse'), TX('Bedømmes i showcase.', 'Judged in the showcase.')], ['stableSign', TX('Design jeres staldskilt', 'Design your stable sign'), TX('Bedømmes i showcase.', 'Judged in the showcase.')]];
+    const defs = [['puzzle', TX('Puslespil', 'The Puzzle'), TX('600 DD pr. 25 % samlet + bonus.', '600 DD per 25% built + bonus.')], ['horseStyling', TX('Pynt jeres hest', 'Style your horse'), TX('OBLIGATORISK før finalen. Top 3 i kåringen får løbspoint.', 'MANDATORY before the final. Top 3 in the vote earn Race Points.')], ['stableSign', TX('Design jeres staldskilt', 'Design your stable sign'), TX('OBLIGATORISK før finalen. Top 3 i kåringen får løbspoint.', 'MANDATORY before the final. Top 3 in the vote earn Race Points.')]];
     defs.forEach(([id, name, desc]) => {
       const st = me.taskStatus[id] || {};
       const card = el('div.card');
@@ -620,7 +632,7 @@
     grid.appendChild(cell(TX('Stald', 'Stable'), null, me.stableValue));
     card.appendChild(grid);
     const foot = el('div.row.between', { style: 'margin-top:10px;align-items:baseline' });
-    foot.appendChild(el('span.muted', { style: 'font-size:12px', text: me.derbyLicense ? TX('🎫 Derby-licens i hus', '🎫 Derby Licence secured') : TX('Ingen Derby-licens endnu — byg puslespillet!', 'No Derby Licence yet — build the puzzle!') }));
+    foot.appendChild(el('span.muted', { style: 'font-size:12px', text: me.derbyLicense ? TX('🎫 Finaleklar — hest og skilt godkendt', '🎫 Final-ready — horse and sign approved') : TX('Pynt hesten + lav staldskiltet før finalen — ellers koster det et slag!', 'Style the horse + make the sign before the final — or it costs you a roll!') }));
     foot.appendChild(el('span', { style: 'font-family:var(--font-num);font-weight:800;font-size:18px;color:var(--burgundy)', text: TX('Total ', 'Total ') + sd(me.totalValue) }));
     card.appendChild(foot);
     return card;
@@ -1208,6 +1220,13 @@
     const me = S.me;
     const c = el('div.col');
     c.appendChild(head(TX('Staldkontoret', 'The Stable Office'), TX('Staldkassen, stillingen i løbspoint — og jeres værdier.', 'Your Stable Fund, the Race Points standings — and your values.')));
+    // v3.1: Forlad spillet (ryd tablettens hukommelse) — diskret, med dobbelt-bekræftelse
+    const leave = el('button.btn.sm.ghost', { text: TX('Forlad spillet', 'Leave game'), style: 'position:absolute;top:14px;right:14px;opacity:.6' });
+    leave.addEventListener('click', () => {
+      if (!confirm(TX('Forlad spillet og nulstil tabletten?', 'Leave the game and reset this tablet?'))) return;
+      TG.del('tg_code'); TG.del('tg_teamId'); location.href = '/team';
+    });
+    c.style.position = 'relative'; c.appendChild(leave);
     const g = el('div.card'); const grid = el('div.grid', { style: 'grid-template-columns:1fr 1fr' });
     [[TX('Kontanter', 'Cash'), me.cash], [TX('Hest', 'Horse'), me.horseValue], ['Jockey', me.jockeyValue], [TX('Stald', 'Stable'), me.stableValue]].forEach(([k, v]) => grid.appendChild(el('div.stat', {}, [el('div.k', { text: k }), el('div.v', { text: sd(v) })])));
     g.appendChild(grid);
