@@ -12,9 +12,12 @@
     if (!pw) { if (!S) loginForm(); return; }
     TG.emit('host:login', { password: pw }).then((r) => {
       if (!r.ok) { TG.del('tg_host_pw'); loginForm(); return; }
-      const code = TG.load('tg_host_code');
-      if (code) TG.emit('join', { role: 'host', code }).then((j) => { if (!j.ok && !S) { TG.del('tg_host_code'); createForm(); } });
-      else if (!S) createForm();
+      if (S) { // genforbindelse midt i et spil — gen-join lydløst
+        const code = TG.load('tg_host_code');
+        if (code) TG.emit('join', { role: 'host', code });
+        return;
+      }
+      chooseGame(); // v3.2: frisk sideindlæsning — fortsæt eksisterende spil eller opret nyt
     });
   }
   TG.socket.on('connect', bootstrap);
@@ -35,11 +38,50 @@
     card.appendChild(el('h1', { text: 'The Great Team Derby', style: 'font-size:30px;margin:6px 0 16px' }));
     const inp = el('input', { type: 'password', placeholder: 'Kodeord', style: 'font-size:18px' });
     const btn = el('button.btn.gold.block.lg', { text: 'Log ind', style: 'margin-top:10px' });
-    const go = () => TG.emit('host:login', { password: inp.value }).then((r) => { if (!r.ok) return check(r); TG.save('tg_host_pw', inp.value); const code = TG.load('tg_host_code'); if (code) TG.emit('join', { role: 'host', code }).then((j) => { if (!j.ok) { TG.del('tg_host_code'); createForm(); } }); else createForm(); });
+    const go = () => TG.emit('host:login', { password: inp.value }).then((r) => { if (!r.ok) return check(r); TG.save('tg_host_pw', inp.value); chooseGame(); });
     btn.addEventListener('click', go);
     inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); });
     card.appendChild(el('label.field', {}, [inp])); card.appendChild(btn);
     wrap.appendChild(card); root.appendChild(wrap);
+  }
+
+  // ---------- VÆLG SPIL (v3.2) ----------
+  // Fortsæt et eksisterende spil (fx oprettet dagen før, eller fra en maskine der løb tør for strøm) — eller opret et nyt.
+  function chooseGame() {
+    TG.emit('host:listGames').then((r) => {
+      if (!r.ok) return check(r);
+      const games = r.games || [];
+      if (!games.length) { createForm(); return; }
+      clear(root);
+      const wrap = el('div', { style: 'max-width:640px;margin:6vh auto;padding:20px' });
+      const card = el('div.card');
+      card.appendChild(el('div.eyebrow', { text: 'Host · vælg spil' }));
+      card.appendChild(el('h1', { text: 'Fortsæt et spil — eller opret et nyt', style: 'font-size:26px;margin:6px 0 16px' }));
+      const nyBtn = el('button.btn.gold.block.lg', { text: '➕ Opret nyt spil' });
+      nyBtn.addEventListener('click', () => createForm());
+      card.appendChild(nyBtn);
+      card.appendChild(el('p.muted', { style: 'margin:16px 0 8px;font-size:13px', text: 'Eksisterende spil (nyeste først) — alt er intakt, når du fortsætter:' }));
+      const saved = TG.load('tg_host_code');
+      games.forEach((g) => {
+        const row = el('button', { style: 'display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:#fff;border:2px solid ' + (g.code === saved ? 'var(--gold)' : 'var(--line)') + ';border-radius:12px;padding:10px 14px;margin-bottom:8px;cursor:pointer;font:inherit' });
+        const d = new Date(g.createdAt);
+        const dato = d.toLocaleDateString('da-DK', { day: 'numeric', month: 'short' }) + ' kl. ' + d.toLocaleTimeString('da-DK', { hour: '2-digit', minute: '2-digit' });
+        const info = el('span', { style: 'flex:1;min-width:0' });
+        info.appendChild(el('b', { text: g.eventName + ' · ' + g.code + (g.code === saved ? ' — senest brugt på denne maskine' : ''), style: 'display:block;color:var(--navy)' }));
+        info.appendChild(el('span', { style: 'font-size:12px;color:#5b6b7d', text: 'Oprettet ' + dato + ' · ' + g.teamsJoined + '/' + g.numTeams + ' stalde · ' + (g.lang || 'da').toUpperCase() + (g.slideTitle ? ' · ' + g.slideTitle : '') }));
+        row.appendChild(info);
+        row.appendChild(el('span.chip.gold', { text: 'Fortsæt →' }));
+        row.addEventListener('click', () => {
+          ui.expectCode = g.code; ui.creating = false;
+          TG.emit('join', { role: 'host', code: g.code }).then((j) => {
+            if (!j.ok) return check(j);
+            TG.save('tg_host_code', g.code);
+          });
+        });
+        card.appendChild(row);
+      });
+      wrap.appendChild(card); root.appendChild(wrap);
+    });
   }
 
   // ---------- CREATE ----------
@@ -89,6 +131,11 @@
     if (ui.creating && S) {
       const back = el('button.btn.ghost.block', { text: '← Tilbage til ' + (ui.expectCode || 'aktivt spil'), style: 'margin-top:8px' });
       back.addEventListener('click', () => { ui.creating = false; render(); });
+      card.appendChild(back);
+    } else {
+      // v3.2: kom man fra vælg spil-skærmen, kan man gå tilbage og fortsætte et eksisterende
+      const back = el('button.btn.ghost.block', { text: '← Fortsæt et eksisterende spil i stedet', style: 'margin-top:8px' });
+      back.addEventListener('click', () => chooseGame());
       card.appendChild(back);
     }
     wrap.appendChild(card);
