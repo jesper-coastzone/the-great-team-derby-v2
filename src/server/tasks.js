@@ -413,8 +413,8 @@ function stationOverview(game) {
     matrix[t.id] = {};
     stations.forEach((s) => {
       const ex = game.auctionExercisePool.find((e) => e.id === s.id);
-      const st = (t.taskStatus || {})[s.id] || {};
-      const count = st.count || 0;
+      // v3.2: samme tæller som teamets tablet (gs.nextMoneyReward) — team.stationSuccess
+      const count = (t.stationSuccess || {})[s.id] || 0;
       const r = ex.reward || {};
       const next = Math.max(r.min || 0, (r.start || 0) - count * (r.decreasePerSuccess || 0));
       const cdLeft = onCooldown(t, s.id) ? Math.ceil((t.cooldowns[s.id] - now()) / 1000) : 0;
@@ -440,15 +440,18 @@ function resolveStationAttempt(game, teamId, exerciseId, passed) {
     const left = Math.ceil((team.cooldowns[exerciseId] - now()) / 1000);
     return { ok: false, error: L(game, `${team.stableName} har cooldown (${left}s tilbage).`, `${team.stableName} is on cooldown (${left}s left).`) };
   }
-  const st = ensureStatus(team, exerciseId);
   setCooldown(team, exerciseId, ex.cooldownSeconds || 300);
   if (!passed) {
     gs.logEvent(game, `${team.stableName}: ${ex.name} — ikke bestået (cooldown startet).`);
     return { ok: true, passed: false };
   }
+  // v3.2: brug team.stationSuccess som fælles tæller (samme som teamets tablet-visning)
+  team.stationSuccess = team.stationSuccess || {};
+  const count = team.stationSuccess[exerciseId] || 0;
   const r = ex.reward || {};
-  const payout = Math.max(r.min || 0, (r.start || 0) - (st.count || 0) * (r.decreasePerSuccess || 0));
-  st.count = (st.count || 0) + 1;
+  const payout = Math.max(r.min || 0, (r.start || 0) - count * (r.decreasePerSuccess || 0));
+  team.stationSuccess[exerciseId] = count + 1;
+  ex.successCount = (ex.successCount || 0) + 1;
   econ.addTransaction(game, team, payout, 'exercise', L(game, `${ex.name}: bestået`, `${(game.settings.lang === 'en' && ex.nameEn) || ex.name}: passed`));
   gs.logEvent(game, `${team.stableName}: ${ex.name} bestået (+${payout} ${cfg.currencyAbbr}).`);
   return { ok: true, passed: true, payout };
