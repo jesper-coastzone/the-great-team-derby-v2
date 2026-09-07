@@ -1103,23 +1103,9 @@
   // ---------- INVEST / LØBSDAGSØKONOMI (v2.16) ----------
   // Varige point tjenes KUN på øvelser. Penge køber løbsdags-boosts (ét løb) og stald-værdi.
   function investContent(locked) {
+    // v3.2: stald-investeringer UDGÅET (man vinder på løbspoint, ikke staldværdi) — kun dagsform tilbage
     const wrap = el('div.col');
     wrap.appendChild(boostShop(locked));
-    // Stald: sikker varig værdi
-    const card = el('div.card.cat-top-money');
-    const hd = el('div.row', { style: 'align-items:center;gap:10px' });
-    hd.appendChild(TG.assetImg('hestesko', { style: 'width:30px;height:30px' }));
-    hd.appendChild(el('h3', { text: TX('Stalden (varig værdi)', 'The stable (lasting value)') }));
-    card.appendChild(hd);
-    ((S.config.investmentOptions || {}).stable || []).forEach((p) => {
-      const bought = (S.me.investmentsMade || {})[p.id] >= (S.config.maxPurchasesPerOption || 1);
-      const row = el('div.row.between', { style: 'padding:8px 0;border-bottom:1px dashed var(--line)' });
-      row.appendChild(el('div', {}, [el('b', { text: (S.lang === 'en' && p.labelEn) || p.label }), el('div.muted', { style: 'font-size:13px', text: `+${money(p.valueIncrease)} ${TX('værdi', 'value')}` })]));
-      const b = el('button.btn.sm', { text: bought ? TX('✓ Købt', '✓ Bought') : money(p.cost) + ' DD', disabled: (bought || locked) ? 'true' : null });
-      if (!bought && !locked) b.addEventListener('click', () => TG.emit('team:invest', { assetType: 'stable', productId: p.id }).then((r) => { check(r); if (r.ok) toast(TX('Investeret', 'Invested'), 'ok'); }));
-      row.appendChild(b); card.appendChild(row);
-    });
-    wrap.appendChild(card);
     return wrap;
   }
 
@@ -1127,12 +1113,15 @@
   function boostShop(locked) {
     const card = el('div.card.cat-top-horse');
     card.appendChild(el('h3', { text: TX('🏇 Dagsform — kun næste løb', '🏇 Race-day form — next race only') }));
-    card.appendChild(el('p.muted', { style: 'font-size:13px;margin:4px 0 6px', text: TX('Boosts forbruges i næste løb og forsvinder bagefter.', 'Boosts are used up in the next race and disappear afterwards.') }));
+    card.appendChild(el('p.muted', { style: 'font-size:13px;margin:4px 0 6px', text: TX('Boosts forbruges i næste løb og forsvinder bagefter. Prisen stiger 1.000 DD for hvert køb i denne Paddock.', 'Boosts are used up in the next race and disappear afterwards. The price rises 1,000 DD per purchase in this Paddock.') }));
+    const boughtCount = (S.me.raceBoosts || []).length; // v3.2: eskalerende pris pr. køb (nulstilles hver sæson)
+    const step = S.config.boostPriceStep || 1000;
     (S.config.paddockBoosts || []).forEach((b) => {
       const owned = (S.me.raceBoosts || []).includes(b.id);
+      const price = (b.cost || 4000) + step * boughtCount;
       const row = el('div.row.between', { style: 'padding:8px 0;border-bottom:1px dashed var(--line)' });
       row.appendChild(el('div', {}, [el('b', { text: `${b.emoji} ${(S.lang === 'en' && b.labelEn) || b.label}` }), el('div.muted', { style: 'font-size:13px', text: (S.lang === 'en' && b.descEn) || b.desc })]));
-      const btn = el('button.btn.sm' + (owned ? '' : '.gold'), { text: owned ? TX('✓ Klar til løbet', '✓ Ready for the race') : money(b.cost) + ' DD', disabled: (owned || locked) ? 'true' : null });
+      const btn = el('button.btn.sm' + (owned ? '' : '.gold'), { text: owned ? TX('✓ Klar til løbet', '✓ Ready for the race') : money(price) + ' DD', disabled: (owned || locked) ? 'true' : null });
       if (!owned && !locked) btn.addEventListener('click', () => TG.emit('team:buyBoost', { boostId: b.id }).then((r) => { check(r); if (r.ok) { toast(b.emoji + ' ' + ((S.lang === 'en' && b.labelEn) || b.label) + TX(' købt!', ' bought!'), 'ok'); } }));
       row.appendChild(btn); card.appendChild(row);
     });
@@ -1165,6 +1154,15 @@
       const target = S.teams.find((t) => t.id === S.myBet.targetTeamId) || {};
       card.appendChild(el('div.chip.gold', { style: 'margin-top:6px;font-size:14px', text: `💰 ${TX('I har spillet', 'You have staked')} ${money(S.myBet.amount)} DD ${TX('på', 'on')} ${target.horseName || target.stableName} (odds ${S.myBet.odds})` }));
       card.appendChild(el('p.muted', { style: 'font-size:12px;margin-top:4px', text: TX('Vinder hesten, får I indsats × odds. Ét væddemål pr. løb.', 'If the horse wins, you get stake × odds. One bet per race.') }));
+      // v3.2: fortryd væddemål mens Paddocken er åben — indsatsen retur, og man kan spille igen
+      if (S.phase === 'paddock') {
+        const cancelBtn = el('button.btn.sm.ghost', { text: TX('↩ Fortryd væddemål (indsats retur)', '↩ Withdraw bet (stake refunded)'), style: 'margin-top:8px' });
+        cancelBtn.addEventListener('click', () => {
+          if (!confirm(TX('Fortryd væddemålet og få indsatsen retur?', 'Withdraw the bet and get your stake back?'))) return;
+          TG.emit('team:betCancel').then((r) => { check(r); if (r.ok) toast(TX('Væddemål fortrudt — indsatsen er retur.', 'Bet withdrawn — stake refunded.'), 'ok'); });
+        });
+        card.appendChild(cancelBtn);
+      }
       return card;
     }
     card.appendChild(el('p.muted', { style: 'font-size:13px;margin:4px 0 6px', text: `${TX('Sæt', 'Stake')} ${money(rb.minStake || 100)}–${money(rb.maxStake || 1000)} DD ${TX('på en hest — også jeres egen. Vinder den, får I indsats × odds.', 'on a horse — including your own. If it wins, you get stake × odds.')}` }));
@@ -1242,7 +1240,7 @@
     if (me.jockey) {
       card.appendChild(el('div', { style: 'margin:8px 0;background:var(--navy);color:var(--on-navy);border-radius:12px;padding:10px 14px;font-weight:700', html: `${me.jockey.emoji || '🏇'} ${TX('Jeres jockey', 'Your jockey')}: <b>${me.jockey.name}</b> · ${TX('terning', 'dice')} ${me.dice.min}–${me.dice.max} · ${TX('hyre', 'hire')} ${sd(me.jockey.hire)}` }));
     } else if (ja.status === 'open') {
-      card.appendChild(el('p.muted', { style: 'margin:6px 0', text: TX('Én jockey til hver stald — hyren gælder kun denne sæsons løb. Byd på jeres favorit; står I uden vundet bud, får I en af de resterende til mindstepris.', "One jockey per stable — the hire covers this season's race only. Bid on your favourite; if you win no bid, you get one of the rest at minimum price.") }));
+      card.appendChild(el('p.muted', { style: 'margin:6px 0', text: TX('Én jockey til hver stald — hyren gælder kun denne sæsons løb. Byd på jeres favorit — står I uden vundet bud, tildeles I en af de resterende til FAST 1.000 DD, så det betaler sig at byde selv.', "One jockey per stable — the hire covers this season's race only. Bid on your favourite — if you win no bid, you are assigned one of the rest at a FLAT 1,000 DD, so it pays to bid yourself.") }));
     }
     (ja.jockeys || []).forEach((j) => {
       const winner = j.winner;
@@ -1254,7 +1252,7 @@
       ]));
       row.appendChild(el('div.muted', { style: 'font-size:12px;margin-top:2px', text: j.profile }));
       if (winner) {
-        row.appendChild(el('div.chip' + (mine ? '.gold' : ''), { style: 'margin-top:6px', text: (mine ? TX('✓ Jeres jockey', '✓ Your jockey') : winner.stableName) + (winner.atMinPrice ? TX(' (mindstepris)', ' (minimum price)') : '') }));
+        row.appendChild(el('div.chip' + (mine ? '.gold' : ''), { style: 'margin-top:6px', text: (mine ? TX('✓ Jeres jockey', '✓ Your jockey') : winner.stableName) + (winner.atMinPrice ? TX(' (tildelt)', ' (assigned)') : '') }));
       } else if (ja.status === 'open') {
         const iLead = j.topBid && j.topBid.teamId === me.id;
         if (j.topBid) row.appendChild(el('div.muted', { style: 'font-size:12px;margin-top:3px', text: iLead ? TX('I fører budrunden 🏆', 'You lead the bidding 🏆') : TX('Fører: ', 'Leading: ') + ownerName(j.topBid.teamId) }));
