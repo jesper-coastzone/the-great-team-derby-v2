@@ -380,6 +380,7 @@ function hostResolveApproval(game, teamId, taskId, approve, extra = {}) {
 
   // v3.1: Puslespil = DD efter procent samlet (600 pr. 25 % + 600 bonus ved 100 %)
   if (taskId === 'puzzle') {
+    if (st.completed) return { ok: false, error: L(game, 'Puslespillet er allerede godkendt.', 'The puzzle is already approved.') };
     const pct = Math.max(0, Math.min(100, Math.round((extra.percent != null ? Number(extra.percent) : 100) / 25) * 25));
     if (!pct) return { ok: false, error: 'Angiv procent (25/50/75/100).' };
     const per25 = cfg.puzzle.rewardPer25 || 600;
@@ -420,7 +421,13 @@ function stationOverview(game) {
       matrix[t.id][s.id] = { nextReward: next, cooldownLeft: cdLeft, successes: count };
     });
   });
-  return { ok: true, stations, teams, matrix, tasksUnlocked: !!game.tasksUnlocked };
+  // v3.2: puslespillets status pr. stald — godkendes på løbslederens tablet
+  const puzzle = {};
+  game.teams.forEach((t) => {
+    const st = (t.taskStatus || {}).puzzle || {};
+    puzzle[t.id] = { pending: !!st.pending, completed: !!st.completed };
+  });
+  return { ok: true, stations, teams, matrix, puzzle, tasksUnlocked: !!game.tasksUnlocked };
 }
 
 function resolveStationAttempt(game, teamId, exerciseId, passed) {
