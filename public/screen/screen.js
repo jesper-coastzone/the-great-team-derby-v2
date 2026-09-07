@@ -135,7 +135,16 @@
     c.appendChild(el('img', { src: TG.assetURL('logo'), alt: 'The Great Team Derby', style: 'width:34vw;max-width:100%;margin:1vh 0' }));
     c.appendChild(el('p.lead', { text: TX('Samarbejde, strategi og forandringsparathed. Træn, invester og vind løbspoint — også når planen vælter.', 'Teamwork, strategy and adaptability. Train, invest and win Race Points — even when the plan falls apart.') }));
     row.appendChild(c);
-    row.appendChild(TG.assetImg('hest-og-jockey', { style: 'width:34vw;max-height:58vh' }));
+    // v3.1: staldparade — hver stald med egen farve og eget nummer (før: statisk grafik)
+    const parade = el('div', { style: 'width:34vw;display:grid;grid-template-columns:repeat(2,1fr);gap:1.2vw;align-content:center' });
+    S.teams.forEach((t) => {
+      const box = el('div', { style: `background:#fff;border:2px solid ${t.color.hex};border-radius:1vw;padding:1.2vw;text-align:center;box-shadow:0 4px 14px rgba(2,30,48,.12)` });
+      box.appendChild(el('div', { style: `width:3.4vw;height:3.4vw;line-height:3.4vw;border-radius:50%;background:${t.color.hex};color:#fff;font-weight:800;font-size:1.7vw;margin:0 auto .5vw;font-family:var(--font-num,inherit)`, text: String(t.teamNumber) }));
+      box.appendChild(el('div', { style: `font-size:3.2vw;color:${t.color.hex}`, text: '🏇' }));
+      box.appendChild(el('div', { style: 'font-size:1.1vw;font-weight:700;color:var(--navy);margin-top:.3vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis', text: t.joined ? t.stableName : TX('Stald', 'Stable') + ' ' + t.teamNumber }));
+      parade.appendChild(box);
+    });
+    row.appendChild(parade);
     return row;
   }
   function program() {
@@ -351,7 +360,7 @@
     info.appendChild(el('div.tn', { text: t.joined ? t.stableName : TX('Ledig plads', 'Open slot') }));
     info.appendChild(el('div.sub', { text: t.joined ? (t.horseName || '—') + ' · ' + (t.jockeyName || '—') : TX('Venter på tablet', 'Waiting for tablet') }));
     card.appendChild(info);
-    if (t.ready) card.appendChild(el('span.chip.turf', { text: '✓ Klar' }));
+    if (t.ready) card.appendChild(el('span.chip.turf', { text: TX('✓ Klar', '✓ Ready') }));
     return card;
   }
   function readyCheck() {
