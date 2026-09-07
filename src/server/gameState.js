@@ -383,6 +383,8 @@ function buildStateFor(game, role, teamId) {
       favoriteTeamId: race.favoriteTeamId || null,
       favoriteUsed: !!race.favoriteUsed,
       progress: Object.fromEntries(game.teams.map((t) => [t.id, { used: (race.rolls[t.id] || []).length, allowed: race.allowed[t.id] || race.rollsPerTeam }])),
+      // v3.3: tur-baserede slag — hvem er ved terningen lige nu?
+      turnTeamId: require('./races').turnTeamId(game, race),
       odds: race.odds || {},
       bets: race.bets || {},
     } : null,
@@ -403,17 +405,27 @@ function buildStateFor(game, role, teamId) {
     role,
   };
 
-  // Server-autoritativ stilling — v3: LØBSPOINT er vinderkriteriet (staldværdi = tiebreak/info)
+  // Server-autoritativ stilling — v3: LØBSPOINT er vinderkriteriet.
+  // v3.3-tiebreak ved pointlighed: bedste placering i finalen → bedste placering i seneste
+  // normale løb (sommer, så forår, …) → højeste Staldkasse → staldværdi (info).
+  const fPlace = (t) => { const h = (t.pointsHistory || []).find((x) => x.final); return h ? h.place : 99; };
+  const rPlace = (t, r) => { const h = (t.pointsHistory || []).find((x) => !x.final && x.round === r); return h ? h.place : 99; };
+  const tbRounds = [...new Set(game.teams.flatMap((t) => (t.pointsHistory || []).filter((x) => !x.final).map((x) => x.round)))].sort((a, b) => b - a);
   state.ranking = [...game.teams]
-    .map((t) => ({
+    .sort((a, b) => {
+      const pd = Math.round(b.racePoints || 0) - Math.round(a.racePoints || 0); if (pd) return pd;
+      const fd = fPlace(a) - fPlace(b); if (fd) return fd;
+      for (const r of tbRounds) { const d = rPlace(a, r) - rPlace(b, r); if (d) return d; }
+      return (Math.round(b.cash) - Math.round(a.cash)) || (totalStableValue(b) - totalStableValue(a));
+    })
+    .map((t, i) => ({
       teamId: t.id, stableName: t.stableName, color: t.color,
       racePoints: Math.round(t.racePoints || 0),
       totalValue: totalStableValue(t),
       cash: Math.round(t.cash), horseValue: Math.round(t.horseValue),
       jockeyValue: Math.round(t.jockeyValue), stableValue: Math.round(t.stableValue),
-    }))
-    .sort((a, b) => (b.racePoints - a.racePoints) || (b.totalValue - a.totalValue))
-    .map((r, i) => ({ ...r, place: i + 1 }));
+      place: i + 1,
+    }));
 
   if (role === 'host') {
     state.log = game.log.slice(0, 60);
