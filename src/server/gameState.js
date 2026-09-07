@@ -344,6 +344,8 @@ function buildStateFor(game, role, teamId) {
     eventName: game.settings.eventName,
     programItems: game.settings.programItems,
     status: game.status,
+    tasksUnlocked: !!game.tasksUnlocked,
+    creativePodiumDone: !!game.creativePodiumDone,
     currency: cfg.currencyAbbr,
     currencyName: cfg.currencyName,
     config: {
