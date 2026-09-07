@@ -197,6 +197,8 @@ function sanitizeDuel(duel, forTeamId) {
     winnerTeamId: duel.winnerTeamId, winsA: duel.winsA, winsB: duel.winsB,
     // afsløret facit efter resolution
     reveal: duel.status === 'resolved' ? duel.questions.map((q) => q.answer) : null,
+    // v3.2: begge staldes svar afsløres også — så man kan se, hvem der var tættest på
+    answers: duel.status === 'resolved' ? duel.answers : null,
   };
 }
 
