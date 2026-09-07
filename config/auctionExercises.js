@@ -62,13 +62,13 @@ const auctionExercises = [
     name: 'Jonglér',
     nameEn: 'Juggle',
     shortEn: 'Keep the rhythm — or start over.',
-    descriptionEn: 'Min. 3 participants, each holding a tray. One ball is passed between the trays — every active player must touch the ball before the same person may receive it again. Complete as many valid passes as possible. Official attempt: call a Race Director when you are ready. Success: complete at least 10 passes.',
+    descriptionEn: 'Min. 3 participants, each holding a tray. One ball is passed between the trays — every active player must touch the ball before the same person may receive it again. Complete as many valid passes as possible. Official attempt: call a Race Director when you are ready. Success: every participant hits the ball 5 times.',
     category: 'money',
     short: 'Hold rytmen — eller start forfra.',
     description:
       'Min. 3 deltagere, hver med en bakke. Én bold sendes mellem bakkerne — alle aktive skal have ' +
       'rørt bolden, før samme person må modtage den igen. Få så mange gyldige afleveringer som muligt. ' +
-      'Officielt forsøg: kald på en løbsleder, når I er klar. Succes: gennemfør minimum 10 afleveringer.',
+      'Officielt forsøg: kald på en løbsleder, når I er klar. Succes: alle deltagere slår til bolden 5 gange.',
     gives: 'Derby Dollars — belønningen falder for hver succes.',
     givesEn: 'Derby Dollars — the reward decreases with every success.',
     reward: { start: 2000, decreasePerSuccess: 50, min: 800 },
@@ -79,13 +79,13 @@ const auctionExercises = [
     name: 'Stabl Høballer',
     nameEn: 'Stack the Hay Bales',
     shortEn: 'Shared control — or shared collapse.',
-    descriptionEn: 'Min. 3 participants. Round wooden board with strings — each participant holds exactly one string. Move the board and stack the hay bales into a tower. Official attempt: 3 minutes — the tower is measured when time runs out. Success: minimum 2 hay bales high.',
+    descriptionEn: 'Min. 3 participants. Round wooden board with strings — each participant holds exactly one string. Move the board and stack the hay bales into a tower. Official attempt: 3 minutes — the tower is measured when time runs out. Success: minimum 8 hay bales high.',
     category: 'money',
     short: 'Fælles kontrol — eller fælles kollaps.',
     description:
       'Min. 3 deltagere. Rund træplade med snore — hver deltager holder præcis én snor. ' +
       'Flyt pladen og stabl høballerne i et tårn. Officielt forsøg: 3 minutter — tårnet måles, ' +
-      'når tiden er 0. Succes: minimum 2 høballer i højden.',
+      'når tiden er 0. Succes: minimum 8 høballer i højden.',
     gives: 'Derby Dollars — belønningen falder for hver succes.',
     givesEn: 'Derby Dollars — the reward decreases with every success.',
     reward: { start: 2000, decreasePerSuccess: 50, min: 800 },
@@ -96,14 +96,14 @@ const auctionExercises = [
     name: 'Æblefarm',
     nameEn: 'Apple Farm',
     shortEn: 'The chain is only as strong as the weakest throw.',
-    descriptionEn: "The apples must pass through the stable's feeding chain in 5 steps: sorted, polished, energised, quality-checked and delivered to the horse's feed basket. 15 apples are thrown (not handed!) through all 5 steps in order. If an apple is dropped, it starts over. Official attempt: call a Race Director when you are ready. Success: complete in max. 60 seconds.",
+    descriptionEn: "The apples must pass through the stable's feeding chain in 5 steps: sorted, polished, energised, quality-checked and delivered to the horse's feed basket. 15 apples are thrown (not handed!) through all 5 steps in order. If an apple is dropped, it starts over. Official attempt: call a Race Director when you are ready. Success: complete in max. 20 seconds.",
     category: 'money',
     short: 'Kæden er kun så stærk som det svageste kast.',
     description:
       'Æblerne skal igennem staldens foderkæde med 5 trin: sorteres, poleres, energilades, ' +
       'kvalitetstjekkes og sendes til hestens foderkurv. 15 æbler kastes (ikke rækkes!) gennem alle ' +
       '5 trin i rækkefølge. Tabes et æble, starter det forfra. Officielt forsøg: kald på en løbsleder, ' +
-      'når I er klar. Succes: gennemfør på maks. 60 sekunder.',
+      'når I er klar. Succes: gennemfør på maks. 20 sekunder.',
     gives: 'Derby Dollars — belønningen falder for hver succes.',
     givesEn: 'Derby Dollars — the reward decreases with every success.',
     reward: { start: 2000, decreasePerSuccess: 50, min: 800 },
