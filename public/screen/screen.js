@@ -105,15 +105,16 @@
         ['🎫', TX('Odds-tavlen', 'The odds board'), TX('Sæt ét væddemål pr. stald på den hest, I tror vinder — også jeres egen. Rammer I rigtigt, får I indsats × odds.', 'Place one bet per stable on the horse you think will win — including your own. Guess right and you get stake × odds.')],
       ], TX('Paddocken åbner på næste slide — 3 minutter, så gælder det!', 'The Paddock opens on the next slide — 3 minutes, then it counts!'))
       case 'race-intro': return explainCards(TX('Løbet — sådan virker det', 'The Race — how it works'), TX('Nyt element · følg med her', 'New element · follow along here'), [
-        ['🎲', TX('5 spurter', '5 sprints'), TX('Hver stald slår terningen 5 gange. Jockey og pep-talk løfter BUNDEN, hest og gulerødder løfter TOPPEN.', 'Each stable rolls the dice 5 times. The jockey and pep talk lift the BOTTOM, carrots lift the TOP.')],
+        ['🎲', TX('5 spurter — efter tur', '5 sprints — in turns'), TX('Staldene slår efter tur, runde for runde — Stald 1 starter. Jockey og pep-talk løfter BUNDEN, hest og gulerødder løfter TOPPEN.', 'The stables roll in turns, round by round — Stable 1 starts. The jockey and pep talk lift the BOTTOM, carrots lift the TOP.')],
         ['⚡', TX('Alt kan ske', 'Anything can happen'), TX('Dyrlægetjek, vind og publikum rammer tilfældigt — og heste langt bagud får en opløbsfight-bonus.', 'Vet checks, wind and the crowd strike at random — and horses far behind get a home-stretch bonus.')],
-        ['🏁', TX('Målstregen', 'The finish line'), TX('Længst fremme vinder: dagens 1. præmie + hestens værdi fordobles. Væddemål udbetales lige efter løbet.', "Furthest ahead wins: the day's 1st prize + the horse's value doubles. Bets pay out right after the race.")],
+        ['🏁', TX('Målstregen', 'The finish line'), TX('Længst fremme vinder: dagens 1. præmie og flest løbspoint. Væddemål udbetales lige efter løbet.', "Furthest ahead wins: the day's 1st prize and the most Race Points. Bets pay out right after the race.")],
       ], TX('Gør jer klar — hestene føres til start!', 'Get ready — the horses are being led to the start!'))
       case 'paddock': return paddock();
       case 'race': return raceTrack(S.slide.screenTitle);
       case 'leaderboard': return leaderboard(TX('Stillingen — løbspoint', 'Standings — Race Points'));
       case 'derby-readiness': return readiness();
       case 'final-race': return raceTrack('The Great Team Derby');
+      case 'winners-circle': return winnersCircle();
       case 'final-reveal': return reveal();
       case 'debrief': return debrief();
       default: return el('div', {}, [el('h1', { text: S.slide.screenTitle })]);
@@ -638,7 +639,8 @@
 
   function laneLabel(t) {
     const fav = S.race && S.race.favoriteTeamId === t.id ? ' 📣' : '';
-    return t.stableName + fav;
+    const turn = S.race && S.race.rollingOpen && S.race.turnTeamId === t.id ? ' 🎲' : '';
+    return t.stableName + fav + turn;
   }
 
   function pctFor(pos, trackLength) {
@@ -653,7 +655,7 @@
     if (chip) {
       chip.className = 'chip' + (race.rollingOpen ? ' turf' : '');
       chip.id = 'raceChip';
-      chip.textContent = race.rollingOpen ? TX('Løbet er i gang!', 'The race is on!') : (race.status === 'finished' ? TX('Afsluttet', 'Finished') : TX('Afventer start', 'Awaiting start'));
+      chip.textContent = race.rollingOpen ? (race.turnTeamId ? '🎲 ' + teamName(race.turnTeamId) + TX(' er ved terningen', ' is rolling') : TX('Løbet er i gang!', 'The race is on!')) : (race.status === 'finished' ? TX('Afsluttet', 'Finished') : TX('Afventer start', 'Awaiting start'));
     }
     S.teams.forEach((t) => {
       const lane = document.querySelector(`[data-lane="${t.id}"]`); if (!lane) return;
@@ -760,6 +762,21 @@
     return c;
   }
 
+  // ---- Vindercirklen (v3.3): ceremoni-slide FØR vinderen afsløres — røber ingen placeringer ----
+  function winnersCircle() {
+    const c = el('div', { style: 'display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center' });
+    c.appendChild(el('div.eyebrow', { text: 'The Great Team Derby' }));
+    c.appendChild(el('h1', { text: TX('Vindercirklen', "The Winner's Circle"), style: 'font-size:5vw' }));
+    const pk = el('div', { style: 'width:14vw;height:14vw;margin:1.5vh auto' });
+    pk.appendChild(TG.assetImg('pokal', { style: 'width:100%;height:100%' }));
+    c.appendChild(pk);
+    c.appendChild(el('p.lead', { style: 'font-size:2vw;max-width:60vw', text: TX('Diplomerne uddeles — og om lidt afsløres den samlede vinder af The Great Team Derby…', 'The awards are handed out — and in a moment the overall winner of The Great Team Derby is revealed…') }));
+    const parade = el('div', { style: 'display:flex;gap:1vw;justify-content:center;margin-top:2.5vh;flex-wrap:wrap;max-width:80vw' });
+    S.teams.forEach((t) => parade.appendChild(el('div.chip', { style: `border:2px solid ${t.color.hex};font-size:1.3vw;padding:.5vw 1.1vw`, text: '🏇 ' + t.stableName })));
+    c.appendChild(parade);
+    return c;
+  }
+
   // ---- final reveal (v2: guld-spotlight + konfetti) ----
   function reveal() {
     const winner = (S.ranking || [])[0];
@@ -773,9 +790,13 @@
     c.appendChild(el('div.eyebrow', { text: TX('Vinderen af The Great Team Derby', 'The winner of The Great Team Derby') }));
     c.appendChild(el('h1', { text: winner.stableName, style: 'font-size:6vw' }));
     c.appendChild(el('div.big-num', { text: (winner.racePoints || 0) + TX(' løbspoint', ' Race Points'), style: 'margin:1vh 0;font-size:6vw' }));
-    const bd = el('div.row', { style: 'justify-content:center;gap:1.4vw;margin-top:1vh' });
-    [[TX('Staldværdi', 'Stable value'), winner.totalValue], [TX('Staldkassen', 'Stable Fund'), winner.cash], [TX('Hest', 'Horse'), winner.horseValue], [TX('Stald', 'Stable'), winner.stableValue]].forEach(([k, v]) => bd.appendChild(el('div.chip', { style: 'font-size:1.4vw;padding:.6vw 1.2vw', text: `${k}: ${money(v)}` })));
-    c.appendChild(bd);
+    // v3.3: hele slutstillingen i løbspoint (tiebreak: finale → seneste løb → Staldkassen)
+    const lb = el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fit,minmax(20vw,1fr));gap:.4vw 1.6vw;margin:1.5vh auto 0;width:min(76vw,100%);text-align:left' });
+    (S.ranking || []).forEach((r) => lb.appendChild(el('div.row.between', { style: 'font-size:1.45vw;padding:.35vh .9vw;background:#fff;border-radius:.5vw;border:1px solid var(--line)' }, [
+      el('span', {}, [el('b', { text: r.place + '.' }), el('span', { style: `display:inline-block;width:.9vw;height:.9vw;border-radius:50%;background:${r.color ? r.color.hex : '#999'};margin:0 .5vw` }), el('span', { text: r.stableName })]),
+      el('b.num', { text: (r.racePoints || 0) + ' p' }),
+    ])));
+    c.appendChild(lb);
     if (window.__confettiReveal !== S.code) { window.__confettiReveal = S.code; setTimeout(confetti, 400); }
     return c;
   }
