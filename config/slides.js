@@ -104,7 +104,12 @@ function buildDeck(settings) {
   // ---- Planlægning (m. host-styret fremhævning; ingen prøverunde) ----
   push({ kind: 'preseason-tasks', phase: PHASES.PRESEASON, title: T.planning,
     screenTitle: T.screenPlanning, tabletMode: 'pre-season',
-    hostHint: 'Planlægningsfasen: gennemgå pengeopgaver og stationer med fremhæv-knapperne — holdene følger med på print, der spejler tabletten, og lægger taktik.' });
+    hostHint: 'FASE A — præsentation: gennemgå opgaver og stationer med fremhæv-knapperne. Tabletterne spejler kun gennemgangen; intet kan løses endnu.' });
+  push({ kind: 'preseason-explore', phase: PHASES.PRESEASON,
+    title: lang === 'en' ? 'Pre-season · explore & ask' : 'Pre-season · kig & spørg',
+    screenTitle: lang === 'en' ? 'Explore the tablet — ask away!' : 'Kig tabletten igennem — spørg løs!',
+    tabletMode: 'preseason-explore',
+    hostHint: 'FASE B — udforsk: holdene kan nu bladre i alle faner og stille spørgsmål, men INTET kan løses — opgaverne låses først op, når du går videre til Træning.' });
 
   // ---- Sæsoner ----
   for (let r = 1; r <= seasons; r++) {
