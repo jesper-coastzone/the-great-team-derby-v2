@@ -398,6 +398,34 @@ function register(io) {
     // ---------- TEAM: Tidslinjen v2 (på holdets egen tablet — numre fra puljen på 40) ----------
     socket.on('team:tidslinjeGet', (_, cb) => { const g = gameOf(); const t = teamOf(); if (taskOff(g, 'tidslinje')) return ack(cb, OFF); ack(cb, g && t ? tasks.getTidslinje(g, t) : { ok: false }); });
     socket.on('team:tidslinjeSubmit', (p, cb) => { const g = gameOf(); const t = teamOf(); if (taskOff(g, 'tidslinje')) return ack(cb, OFF); const r = g && t ? tasks.submitTidslinje(g, t, (p && (p.orderedNumbers || p.orderedIds)) || []) : { ok: false }; if (g) rt.pushState(g); ack(cb, r); });
+    // ---------- v3.1: LØBSLEDER-TABLET (role: station — kræver kun spilkode) ----------
+    socket.on('station:overview', (_, cb) => {
+      const g = gameOf(); if (!g) return ack(cb, { ok: false, error: 'Intet spil.' });
+      ack(cb, tasks.stationOverview(g));
+    });
+    socket.on('station:resolve', (p, cb) => {
+      const g = gameOf(); if (!g) return ack(cb, { ok: false, error: 'Intet spil.' });
+      if (!g.tasksUnlocked) return ack(cb, { ok: false, error: LX(g, 'Stationerne åbner, når træningen starter.', 'Stations open when the training phase starts.') });
+      const r = tasks.resolveStationAttempt(g, p && p.teamId, p && p.exerciseId, !!(p && p.passed));
+      rt.pushState(g);
+      ack(cb, r);
+    });
+
+    // ---------- v3.1: Kreativ kåring — top 3 får løbspoint-bonus (5/3/2) ----------
+    socket.on('host:creativePodium', (p, cb) => hostMut((g) => {
+      if (g.creativePodiumDone) return { ok: false, error: 'Kåringen er allerede uddelt.' };
+      const pts = cfg.creativePodiumPoints || [5, 3, 2];
+      const ids = (p && p.teamIds) || [];
+      if (ids.length < 1) return { ok: false, error: 'Vælg mindst en stald.' };
+      if (new Set(ids.filter(Boolean)).size !== ids.filter(Boolean).length) return { ok: false, error: 'Samme stald kan ikke stå på flere podiepladser.' };
+      ids.forEach((id, i) => {
+        const t = id ? gs.getTeam(g, id) : null;
+        if (t && pts[i]) { t.racePoints = (t.racePoints || 0) + pts[i]; gs.logEvent(g, `🎨 Kreativ kåring: ${i + 1}. plads ${t.stableName} (+${pts[i]} løbspoint).`); }
+      });
+      g.creativePodiumDone = true;
+      return { ok: true };
+    }, cb));
+
     // (Station-events beholdes for bagudkompatibilitet — bruger samme motor)
     socket.on('station:tidslinjeGet', (p, cb) => {
       const g = gameOf(); if (!g) return ack(cb, { ok: false, error: 'Intet spil.' });
