@@ -235,11 +235,15 @@ const gameConfig = {
 
   // ---- Puslespil / Derby-licens ----
   puzzle: {
-    grantsDerbyLicense: true,
-    rewardOnComplete: 500,       // bonus ved fuldført puslespil (kan sættes til 0)
-    // Handicap hvis man kører finalen UDEN licens (færre rolls). 0 = intet handicap.
+    grantsDerbyLicense: false,   // v3.1: puslespillet giver DD, ikke licens
+    rewardOnComplete: 0,         // udbetaling sker via procent-godkendelse (se rewardPer25)
+    rewardPer25: 600,            // 600 DD pr. 25 % samlet
+    rewardFullBonus: 600,        // +600 DD bonus ved 100 %
+    // v3.1: "licensen" = pynt hest + staldskilt godkendt. Mangler den, koster det slag i finalen.
     noLicenseFinalRollPenalty: 1,
   },
+  // v3.1: kreativ kåring før finalen — top 3 får løbspoint-bonus
+  creativePodiumPoints: [5, 3, 2],
 
   // ---- Kreative opgaver (host scorer manuelt) ----
   creative: {
