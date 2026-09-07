@@ -36,10 +36,12 @@
 
   // ---------- render ----------
   function render() {
-    // Skriv færdig i fred: re-render ikke setup-formularen, mens et felt har fokus
-    if (S && S.me && S.slide && S.slide.tabletMode === 'stable-setup' && ui.renderedMode === 'stable-setup') {
+    if (S && S.me) duelAlerts(); // v3.2: popup ved indkommende duel-udfordring
+    // v3.2: Skriv færdig i fred — re-render ALDRIG mens et inputfelt har fokus
+    // (ellers lukker tablettens tastatur, fx midt i Dysten eller setup-formularen)
+    if (S && S.me && S.slide && ui.renderedMode === S.slide.tabletMode) {
       const ae = document.activeElement;
-      if (ae && ae.tagName === 'INPUT' && root.contains(ae)) return;
+      if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA') && root.contains(ae)) return;
     }
     clear(root);
     if (!S || !S.me) { root.appendChild(joinView()); ui.renderedMode = null; return; }
@@ -1381,6 +1383,25 @@
   function ownerName(id) { const t = S.teams.find((x) => x.id === id); return t ? t.stableName : '—'; }
   function cooldownLeft(key) { const exp = (S.me.cooldowns || {})[key]; if (!exp) return null; const s = Math.round((exp - Date.now()) / 1000); return s > 0 ? mmss(s) : null; }
   function mmss(s) { return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); }
+  // v3.2: duel-popup — "Stald X har udfordret jer!" + hop til spørgsmålene når dysten starter
+  const seenDuel = {};
+  function duelAlerts() {
+    const me = S.me;
+    (S.duels || []).forEach((d) => {
+      if (d.status === 'pending' && d.toTeamId === me.id && !seenDuel[d.id]) {
+        seenDuel[d.id] = true;
+        const ok = confirm(TX('⚔️ ' + d.fromStable + ' har udfordret jer til Dysten!\n\nBedst af 3 estimerings-spørgsmål — vinderen får 500 DD.\n\nTager I imod?', '⚔️ ' + d.fromStable + ' has challenged you to The Duel!\n\nBest of 3 estimation questions — the winner gets 500 DD.\n\nDo you accept?'));
+        TG.emit('team:duelRespond', { duelId: d.id, accept: ok }).then((r) => { if (!r.ok) check(r); });
+      }
+      if (d.status === 'active' && !d.submitted[me.id] && !seenDuel['act_' + d.id]) {
+        seenDuel['act_' + d.id] = true;
+        toast(TX('⚔️ Dysten er i gang — svar på spørgsmålene!', '⚔️ The Duel is on — answer the questions!'), 'ok');
+        if (ui.sub !== 'tasks') { ui.sub = 'tasks'; render(); }
+        setTimeout(() => { const n = document.querySelector('[data-mtask="dyst"]'); if (n) n.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 150);
+      }
+    });
+  }
+
   let lastIncoming = 0;
   function incomingTradeToast() {
     const me = S.me; const pending = (S.trades || []).filter((t) => t.status === 'pending' && t.toTeamId === me.id);
@@ -1394,8 +1415,9 @@
     document.querySelectorAll('[data-cooldown]').forEach((n) => {
       const k = n.getAttribute('data-cooldown');
       const left = cooldownLeft(k);
-      if (left) n.textContent = 'Cooldown ' + left;
-      else expired = true;
+      // v3.2: re-render kun når en cooldown FAKTISK udløber (før: hvert sekund → tastaturet lukkede)
+      if (left) { n.textContent = 'Cooldown ' + left; n.__hadCd = true; }
+      else if (n.__hadCd) { n.__hadCd = false; expired = true; }
     });
     // Paddock-nedtælling (og andre countdowns): live-opdatering + re-render ved udløb
     document.querySelectorAll('[data-countdown]').forEach((n) => {
