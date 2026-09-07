@@ -31,6 +31,8 @@ function goToSlide(game, index) {
 }
 
 function enterPhase(game, slide) {
+  // v3.1: opgaver og stationer låses op første gang træningen rammes — og forbliver åbne
+  if (slide.phase === PHASES.ROUND) game.tasksUnlocked = true;
   switch (slide.phase) {
     case PHASES.AUCTION: {
       const round = slide.meta.round;
