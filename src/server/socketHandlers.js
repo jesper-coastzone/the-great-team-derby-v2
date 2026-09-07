@@ -292,7 +292,7 @@ function register(io) {
     }, cb));
     socket.on('host:openRolling', (_, cb) => hostMut((g) => races.setRolling(g, true), cb));
     socket.on('host:closeRolling', (_, cb) => hostMut((g) => races.setRolling(g, false), cb));
-    socket.on('host:rollFor', (p, cb) => hostMut((g) => { const t = gs.getTeam(g, p.teamId); return t ? races.rollForTeam(g, t) : { ok: false }; }, cb));
+    socket.on('host:rollFor', (p, cb) => hostMut((g) => { const t = gs.getTeam(g, p.teamId); return t ? races.rollForTeam(g, t, { ignoreTurn: true }) : { ok: false }; }, cb));
     socket.on('host:finishRace', (_, cb) => hostMut((g) => races.finishRace(g), cb));
     socket.on('host:setFavorite', (p, cb) => hostMut((g) => races.setFavorite(g, p && p.teamId), cb));
 
