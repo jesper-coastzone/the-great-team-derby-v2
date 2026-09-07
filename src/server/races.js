@@ -178,12 +178,31 @@ function boostMods(team) {
   return { min, max };
 }
 
-function rollForTeam(game, team) {
+// v3.3: tur-baserede slag — runde for runde i staldnummer-rækkefølge (Stald 1 starter).
+// Turen er den stald der har brugt færrest slag (og stadig har slag tilbage); ved lighed laveste staldnummer.
+function turnTeamId(game, race) {
+  if (!race || race.status === 'finished') return null;
+  const cand = game.teams.filter((t) => (race.rolls[t.id] || []).length < (race.allowed[t.id] || race.rollsPerTeam));
+  if (!cand.length) return null;
+  const minUsed = Math.min(...cand.map((t) => race.rolls[t.id].length));
+  const next = cand.find((t) => race.rolls[t.id].length === minUsed);
+  return next ? next.id : null;
+}
+
+function rollForTeam(game, team, opts) {
   const race = gs.currentRace(game);
   if (!race) return { ok: false, error: L(game, 'Intet aktivt løb.', 'No active race.') };
   if (!race.rollingOpen) return { ok: false, error: L(game, 'Der er ikke åbnet for terningerne endnu.', 'Rolling is not open yet.') };
   const used = race.rolls[team.id].length;
   if (used >= race.allowed[team.id]) return { ok: false, error: L(game, 'I har brugt alle jeres slag.', 'You have used all your rolls.') };
+  // v3.3: kun turens stald må slå (host kan slå udenom med ignoreTurn)
+  if (!(opts && opts.ignoreTurn)) {
+    const turn = turnTeamId(game, race);
+    if (turn && turn !== team.id) {
+      const tt = gs.getTeam(game, turn);
+      return { ok: false, error: L(game, `Det er ${tt ? tt.stableName : 'en anden stald'}s tur — I slår om lidt.`, `It is ${tt ? tt.stableName : 'another stable'}'s turn — you roll shortly.`) };
+    }
+  }
 
   // Løbsdags-boosts (v2.16): købt i Paddocken, gælder kun dette løb
   const bm = boostMods(team);
@@ -430,6 +449,6 @@ function finishWarmupTie(game) {
 
 module.exports = {
   startRace, setRolling, setFavorite, placeBet, rollForTeam, hostRollForTeam: rollForTeam,
-  allRolled, finishRace, prizeFor, pointsFor, computePaddockOdds, prizePreview, cancelBet,
+  allRolled, finishRace, prizeFor, pointsFor, computePaddockOdds, prizePreview, cancelBet, turnTeamId,
   buildWarmupPlan, applyScriptedRoll, finishWarmupTie,
 };
