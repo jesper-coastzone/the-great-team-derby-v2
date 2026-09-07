@@ -560,7 +560,7 @@
   function stationsView() {
     const me = S.me;
     const c = el('div.col');
-    c.appendChild(head(TX('Stationer', 'Stations'), TX('Frie for alle stalde — øv frit, og kald en Løbsleder til det officielle forsøg.', 'Free for all stables — practise freely, and call a Race Director for the official attempt.')));
+    c.appendChild(head(TX('Stationer', 'Stations'), TX('Frie for alle stalde — øv frit, og vink løbslederen hen til det officielle forsøg.', 'Free for all stables — practise freely, and wave the Race Director over for the official attempt.')));
     c.appendChild(el('div', { style: 'background:var(--navy);color:var(--on-navy);border-radius:12px;padding:10px 14px;font-weight:700;font-size:14px', html: TX('⚑ Involverings-reglen: HELE stalden skal være samlet ved stationen under det officielle forsøg — ellers intet resultat.', '⚑ The involvement rule: the WHOLE stable must be gathered at the station during the official attempt — otherwise no result.') }));
     if (ui.stationDetail) {
       const ex = (S.auction.exercises || []).find((e) => e.id === ui.stationDetail);
