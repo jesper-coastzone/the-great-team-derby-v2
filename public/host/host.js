@@ -52,7 +52,11 @@
     const f = {};
     const txt = (lbl, key, val, type) => { const i = el('input', { type: type || 'text', value: val }); f[key] = i; return el('label.field', {}, [el('span.lbl', { text: lbl }), i]); };
     card.appendChild(txt('Event / kundenavn', 'eventName', 'The Great Team Derby'));
-    const prog = el('textarea', { rows: '5' }); prog.value = 'Velkomst\nIntroduktion\nPre-season\nAuktion\nRunde\nLøb\nThe Great Team Derby\nAfrunding'; f.program = prog;
+    const PROG = {
+      da: 'Velkomst\nIntroduktion\nSkab jeres stald\nPre-season\nSæson 1: Træning · Paddock · Løb\nSæson 2: Træning · Paddock · Løb\nSæson 3: Træning · Paddock · FINALEN\nVindercirklen & diplomer',
+      en: "Welcome\nIntroduction\nCreate your stable\nPre-season\nSeason 1: Training · Paddock · Race\nSeason 2: Training · Paddock · Race\nSeason 3: Training · Paddock · THE FINAL\nWinner's Circle & diplomas",
+    };
+    const prog = el('textarea', { rows: '8' }); prog.value = PROG.da; f.program = prog;
     card.appendChild(el('label.field', {}, [el('span.lbl', { text: 'Program (én linje pr. punkt)' }), prog]));
     const row = el('div.grid', { style: 'grid-template-columns:1fr 1fr' });
     row.appendChild(txt('Antal hold', 'numTeams', '6', 'number'));
@@ -60,6 +64,8 @@
     const fmtSel = el('select'); [['2t', '2 timer (3 sæsoner)'], ['3t', '3 timer (4 sæsoner + forandringskort)']].forEach(([v, l]) => { const o = el('option', { text: l }); o.value = v; fmtSel.appendChild(o); }); f.format = fmtSel;
     row.appendChild(el('label.field', {}, [el('span.lbl', { text: 'Format' }), fmtSel]));
     const langSel = el('select'); [['da', 'Dansk'], ['en', 'English']].forEach(([v, l]) => { const o = el('option', { text: l }); o.value = v; langSel.appendChild(o); }); f.lang = langSel;
+    // Skift standardprogram med sproget (kun hvis feltet ikke er redigeret manuelt)
+    langSel.addEventListener('change', () => { if (prog.value === PROG.da || prog.value === PROG.en) prog.value = PROG[langSel.value]; });
     row.appendChild(el('label.field', {}, [el('span.lbl', { text: 'Sprog (deltagere)' }), langSel]));
     row.appendChild(txt('Rundelængde (min)', 'roundMin', '20', 'number'));
     row.appendChild(txt('Antal bots (0-3)', 'numBots', '0', 'number'));
@@ -139,6 +145,27 @@
     const kind = S.slide.kind; const phase = S.phase;
     const btn = (label, ev, payload, cls) => { const b = el('button.btn' + (cls || ''), { text: label }); b.addEventListener('click', () => TG.emit(ev, payload).then(check)); return b; };
 
+    if (phase === 'leaderboard' && !S.creativePodiumDone) {
+      // v3.1: kreativ kåring — top 3 får 5/3/2 løbspoint. Brug den på stillings-sliden FØR finalen.
+      const pod = el('div.card', { style: 'border:2px solid var(--gold);padding:10px;margin-bottom:10px' });
+      pod.appendChild(el('b', { text: '🎨 Kreativ kåring — top 3 (5/3/2 løbspoint)' }));
+      pod.appendChild(el('p.mini', { text: 'Pynt hest + staldskilt. Uddel FØR finalen — kan kun gøres én gang.' }));
+      const sels = [1, 2, 3].map((i) => {
+        const sel = el('select', { style: 'margin:4px 6px 4px 0' });
+        sel.appendChild(el('option', { value: '', text: i + '. plads — vælg stald' }));
+        (S.teams || []).filter((t) => t.joined).forEach((t) => sel.appendChild(el('option', { value: t.id, text: t.teamNumber + ' · ' + t.stableName })));
+        pod.appendChild(sel); return sel;
+      });
+      const go = el('button.btn.sm.gold', { text: 'Uddel kåringen' });
+      go.addEventListener('click', () => {
+        const ids = sels.map((x) => x.value).filter(Boolean);
+        if (!ids.length) return toast('Vælg mindst 1. pladsen', 'err');
+        if (!confirm('Uddel kreativ-bonus (5/3/2 løbspoint)? Kan kun gøres én gang.')) return;
+        TG.emit('host:creativePodium', { teamIds: sels.map((x) => x.value) }).then(check);
+      });
+      pod.appendChild(go);
+      box.appendChild(pod);
+    }
     if (phase === 'warmup') {
       // Automatisk warm-up: scriptet løb der ender uafgjort — ingen præmier
       box.appendChild(btn('▶ Afspil warm-up løb (automatisk)', 'host:autoWarmup', {}, '.gold'));
@@ -384,6 +411,13 @@
         const sel = el('select', { style: 'margin:6px 0' });
         ['pass', 'bronze', 'silver', 'gold'].forEach((l) => sel.appendChild(el('option', { value: l, text: l })));
         const ap = el('button.btn.sm.turf', { text: 'Godkend resultat' }); ap.addEventListener('click', () => TG.emit('host:approve', { teamId: p.teamId, taskId: p.taskId, approve: true, extra: { level: sel.value } }).then(check));
+        const rj = el('button.btn.sm.ghost', { text: 'Afvis' }); rj.addEventListener('click', () => TG.emit('host:approve', { teamId: p.teamId, taskId: p.taskId, approve: false }));
+        box.appendChild(el('div.row', {}, [sel, ap, rj]));
+      } else if (p.taskId === 'puzzle') {
+        // v3.1: vurdér hvor stor en andel af puslespillet der er samlet
+        const sel = el('select', { style: 'margin:6px 0' });
+        [['25', '25 % → 600 DD'], ['50', '50 % → 1.200 DD'], ['75', '75 % → 1.800 DD'], ['100', '100 % → 3.000 DD (inkl. bonus)']].forEach(([v, l]) => { const o = el('option', { value: v, text: l }); if (v === '100') o.selected = true; sel.appendChild(o); });
+        const ap = el('button.btn.sm.turf', { text: 'Godkend %' }); ap.addEventListener('click', () => TG.emit('host:approve', { teamId: p.teamId, taskId: p.taskId, approve: true, extra: { percent: Number(sel.value) } }).then(check));
         const rj = el('button.btn.sm.ghost', { text: 'Afvis' }); rj.addEventListener('click', () => TG.emit('host:approve', { teamId: p.teamId, taskId: p.taskId, approve: false }));
         box.appendChild(el('div.row', {}, [sel, ap, rj]));
       } else {
