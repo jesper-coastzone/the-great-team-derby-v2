@@ -73,8 +73,18 @@
         b.addEventListener('click', () => { ui.station = s.id; render(); });
         root.appendChild(b);
       });
+      // v3.2: puslespillet godkendes også her (procent → DD)
+      const waiting = OV.teams.filter((t) => ((OV.puzzle || {})[t.id] || {}).pending).length;
+      const pb = el('button.st-btn', { style: 'border-color:var(--gold);background:var(--cream-2)' }, [
+        el('b', { text: '🧩 Puslespil — godkend procent' }),
+        el('span', { text: waiting ? '🔔 ' + waiting + ' stald(e) har bedt om godkendelse' : '600 DD pr. 25 % samlet + 600 bonus ved 100 %' }),
+      ]);
+      pb.addEventListener('click', () => { ui.station = '__puzzle'; render(); });
+      root.appendChild(pb);
       return;
     }
+
+    if (ui.station === '__puzzle') { renderPuzzle(); return; }
 
     // team-liste for valgt station
     root.appendChild(el('p', { style: 'font-size:13px;color:#5b6b7d;margin:0 0 10px', text: 'Husk involveringsreglen: HELE stalden skal være samlet. Bestået udbetaler automatisk — dumpet starter kun cooldown.' }));
@@ -103,7 +113,42 @@
     });
   }
 
-  function stName(id) { const s = (OV && OV.stations || []).find((x) => x.id === id); return s ? s.name : id; }
+  // v3.2: puslespil-godkendelse — vurdér procent samlet, beløbet udbetales automatisk
+  function renderPuzzle() {
+    root.appendChild(el('p', { style: 'font-size:13px;color:#5b6b7d;margin:0 0 10px', text: 'Vurdér hvor stor en del af puslespillet stalden har samlet. 600 DD pr. 25 % + 600 i bonus ved 100 %. Kan kun godkendes én gang pr. stald.' }));
+    OV.teams.forEach((t) => {
+      const p = (OV.puzzle || {})[t.id] || {};
+      const row = el('div.team-row');
+      row.appendChild(el('div.team-dot', { style: 'background:' + ((t.color && t.color.hex) || '#032F4A'), text: String(t.teamNumber) }));
+      const info = el('div.team-info');
+      info.appendChild(el('b', { text: t.stableName }));
+      info.appendChild(el('span', { html: p.completed ? '<span style="color:#2A4B3B;font-weight:700">✔ Godkendt og udbetalt</span>' : p.pending ? '<span class="cd">🔔 Har bedt om godkendelse</span>' : 'Ikke godkendt endnu' }));
+      row.appendChild(info);
+      if (!p.completed) {
+        const act = el('div.actions');
+        const sel = el('select', { style: 'font:inherit;padding:10px;border-radius:10px;border:1px solid var(--line)' });
+        [25, 50, 75, 100].forEach((pc) => {
+          const pay = 600 * (pc / 25) + (pc === 100 ? 600 : 0);
+          const o = document.createElement('option');
+          o.value = String(pc); o.textContent = pc + ' % → ' + pay + ' DD';
+          if (pc === 100) o.selected = true;
+          sel.appendChild(o);
+        });
+        const ok = el('button.btn.sm.turf', { text: 'Godkend' });
+        ok.addEventListener('click', () => {
+          const pc = Number(sel.value);
+          const pay = 600 * (pc / 25) + (pc === 100 ? 600 : 0);
+          if (!confirm(t.stableName + ' — puslespil ' + pc + ' % samlet? (+' + pay + ' DD)')) return;
+          TG.emit('station:puzzle', { teamId: t.id, percent: pc, approve: true }).then((r) => { if (!r.ok) toast(r.error, 'err'); else toast('+' + r.payout + ' DD til ' + t.stableName, 'ok'); refresh(); });
+        });
+        act.appendChild(sel); act.appendChild(ok);
+        row.appendChild(act);
+      }
+      root.appendChild(row);
+    });
+  }
+
+  function stName(id) { if (id === '__puzzle') return '🧩 Puslespil'; const s = (OV && OV.stations || []).find((x) => x.id === id); return s ? s.name : id; }
 
   if (!savedCode) joinView();
 })();
