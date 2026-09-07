@@ -171,8 +171,13 @@
     return card;
   }
   function introDerby() {
+    const me = S.me;
     const card = el('div.card', { style: 'text-align:center' });
-    card.appendChild(TG.assetImg('hest-og-jockey', { style: 'width:62%;max-width:340px;margin:0 auto;display:block' }));
+    // v3.2: staldens EGEN hest i staldfarven med nummer (før: statisk blå hest på alle tablets)
+    const par = el('div', { style: 'display:flex;flex-direction:column;align-items:center;gap:8px;margin:0 auto 4px' });
+    par.appendChild(el('div', { style: `width:46px;height:46px;border-radius:50%;background:${me.color.hex};color:#fff;display:grid;place-items:center;font-weight:800;font-size:21px`, text: String(me.teamNumber) }));
+    par.appendChild(TG.tintedAsset('hest-silhuet', me.color.hex, { style: 'width:52%;max-width:280px' }));
+    card.appendChild(par);
     card.appendChild(el('img', { src: TG.assetURL('logo'), alt: 'The Great Team Derby', style: 'width:76%;max-width:360px;margin:8px auto;display:block' }));
     card.appendChild(el('p.muted', { style: 'font-size:16px', text: TX('Samarbejde, strategi og forandringsparathed. Træn, invester og vind løbspoint — også når planen vælter.', 'Teamwork, strategy and adaptability. Train, invest and win Race Points — even when the plan falls apart.') }));
     return card;
