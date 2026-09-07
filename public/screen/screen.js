@@ -481,7 +481,7 @@
     }
     if (boards.children.length) c.appendChild(boards);
     c.appendChild(jockeyBoard());
-    c.appendChild(stableOverview());
+    // v3.2: stald-oversigten i bunden fjernet — den var klemt og overflødig ved mange hold
     return c;
   }
 
