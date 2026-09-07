@@ -1021,6 +1021,21 @@
     } else if (d.status === 'resolved') {
       const win = d.winnerTeamId === me.id ? TX('I vandt! 🏆', 'You won! 🏆') : d.winnerTeamId ? TX('I tabte.', 'You lost.') : TX('Uafgjort.', 'Draw.');
       box.appendChild(el('p', { style: 'margin-top:6px', html: `<b>${win}</b> (${d.winsA}-${d.winsB})` }));
+      // v3.2: facit + begge staldes svar pr. spørgsmål — nærmest vinder punktet
+      if (d.reveal && d.answers) {
+        const otherId = d.fromTeamId === me.id ? d.toTeamId : d.fromTeamId;
+        const mine = d.answers[me.id] || [], theirs = d.answers[otherId] || [];
+        const fmt = (n) => (n == null ? '—' : Number(n).toLocaleString('da-DK'));
+        d.questions.forEach((q, i) => {
+          const facit = d.reveal[i];
+          const dm = Math.abs(Number(mine[i]) - facit), dt = Math.abs(Number(theirs[i]) - facit);
+          const pt = dm < dt ? TX('✓ Jeres point', '✓ Your point') : dt < dm ? TX('Deres point', 'Their point') : TX('Delt', 'Split');
+          const row = el('div', { style: 'background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-top:6px;font-size:13px' });
+          row.appendChild(el('div', { style: 'font-weight:700;color:var(--navy)', text: (i + 1) + '. ' + q.q }));
+          row.appendChild(el('div', { style: 'color:#5b6b7d;margin-top:2px', html: TX('Facit', 'Answer') + ': <b style="color:var(--turf)">' + fmt(facit) + (q.unit ? ' ' + q.unit : '') + '</b> · ' + TX('Jer', 'You') + ': ' + fmt(mine[i]) + ' · ' + TX('Dem', 'Them') + ': ' + fmt(theirs[i]) + ' · <b style="color:' + (dm < dt ? 'var(--turf)' : dt < dm ? 'var(--burgundy)' : '#5b6b7d') + '">' + pt + '</b>' }));
+          box.appendChild(row);
+        });
+      }
     }
     return box;
   }
