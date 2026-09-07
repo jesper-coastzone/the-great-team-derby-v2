@@ -10,12 +10,25 @@
   const urlCode = new URLSearchParams(location.search).get('code');
   const savedCode = urlCode || TG.load('tg_code');
   const savedTeam = TG.load('tg_teamId');
-  if (savedCode) doJoin(savedCode, savedTeam);
+  const joinState = { code: null, teams: null }; // v3.2: staldvælger efter spilkoden
+  if (savedCode && savedTeam) doJoin(savedCode, savedTeam);
+  else if (savedCode) fetchTeams(savedCode);
 
   function doJoin(code, teamId) {
     TG.join('team', { code: code.toUpperCase(), teamId }).then((res) => {
       if (!res.ok) { toast(res.error || 'Kunne ikke tilslutte / Could not join.', 'err'); TG.del('tg_code'); TG.del('tg_teamId'); S = null; render(); return; }
+      joinState.teams = null;
       TG.save('tg_code', res.code); if (res.teamId) TG.save('tg_teamId', res.teamId);
+    });
+  }
+
+  // v3.2: hent staldene til vælgeren — en ny tablet kan overtage et eksisterende team (strøm-backup)
+  function fetchTeams(code) {
+    TG.emit('team:list', { code: code.toUpperCase() }).then((r) => {
+      if (!r.ok) { toast(r.error || 'Ukendt spilkode / Unknown game code.', 'err'); TG.del('tg_code'); return; }
+      joinState.code = r.code; joinState.teams = r.teams;
+      TG.save('tg_code', r.code);
+      render();
     });
   }
   TG.onState((st) => { S = st; render(); });
@@ -46,11 +59,34 @@
     const card = el('div.card', { style: 'max-width:420px;width:100%' });
     card.appendChild(el('div.eyebrow', { text: 'Stald-tablet' }));
     card.appendChild(el('img', { src: TG.assetURL('logo'), alt: 'The Great Team Derby', style: 'width:82%;max-width:330px;margin:10px auto 16px;display:block' }));
-    const inp = el('input', { type: 'text', placeholder: 'Spilkode · Game code', maxlength: '6', style: 'text-transform:uppercase;text-align:center;font-size:26px;letter-spacing:4px' });
-    const btn = el('button.btn.xl', { text: 'Tilslut · Join' });
-    btn.addEventListener('click', () => { if (inp.value.trim().length >= 4) doJoin(inp.value.trim()); else toast('Indtast en gyldig kode / Enter a valid code.', 'err'); });
-    card.appendChild(el('label.field', {}, [inp]));
-    card.appendChild(btn);
+    if (joinState.teams) {
+      // v3.2: trin 2 — vælg stald (også en optaget: så fortsætter holdet på denne tablet)
+      card.appendChild(el('h2', { text: 'Vælg jeres stald · Choose your stable', style: 'font-size:18px;margin:0 0 12px' }));
+      joinState.teams.forEach((t) => {
+        const busy = t.joined;
+        const b = el('button', { style: 'display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:#fff;border:2px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px;cursor:pointer;font:inherit' });
+        b.appendChild(el('span', { style: `width:34px;height:34px;border-radius:50%;flex:none;display:grid;place-items:center;color:#fff;font-weight:800;background:${(t.color && t.color.hex) || '#032F4A'}`, text: String(t.teamNumber) }));
+        const info = el('span', { style: 'flex:1;min-width:0' });
+        info.appendChild(el('b', { text: t.stableName, style: 'display:block;color:var(--navy)' }));
+        info.appendChild(el('span', { style: 'font-size:12px;color:#5b6b7d', text: busy ? 'I spil — fortsæt her · In play — resume here' : 'Ledig · Free' }));
+        b.appendChild(info);
+        b.addEventListener('click', () => {
+          if (busy && !confirm(`${t.stableName} er allerede i spil. Fortsæt holdet på DENNE tablet?\n\n${t.stableName} is already in play. Resume it on THIS tablet?`)) return;
+          doJoin(joinState.code, t.id);
+        });
+        card.appendChild(b);
+      });
+      const back = el('button.btn.sm.ghost.block', { text: '← Anden spilkode · Other game code', style: 'margin-top:4px' });
+      back.addEventListener('click', () => { joinState.teams = null; joinState.code = null; TG.del('tg_code'); render(); });
+      card.appendChild(back);
+    } else {
+      const inp = el('input', { type: 'text', placeholder: 'Spilkode · Game code', maxlength: '6', style: 'text-transform:uppercase;text-align:center;font-size:26px;letter-spacing:4px' });
+      const btn = el('button.btn.xl', { text: 'Tilslut · Join' });
+      btn.addEventListener('click', () => { if (inp.value.trim().length >= 4) fetchTeams(inp.value.trim()); else toast('Indtast en gyldig kode / Enter a valid code.', 'err'); });
+      inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') btn.click(); });
+      card.appendChild(el('label.field', {}, [inp]));
+      card.appendChild(btn);
+    }
     wrap.appendChild(card);
     return wrap;
   }
