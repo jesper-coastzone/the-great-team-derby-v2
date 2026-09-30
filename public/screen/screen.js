@@ -602,6 +602,14 @@
     c.id = 'raceStage';
     c.setAttribute('data-race-id', race.id);
     c.appendChild(el('div.row.between', {}, [el('h2', { text: title }), el('span.chip#raceChip', { text: '' })]));
+    // v3.4: fysisk spilleplade — banen tegnes ikke; kommentator-feed + slag-status ER skærmen
+    if (S.physicalBoard) {
+      c.appendChild(el('div#physGrid', { style: 'display:grid;grid-template-columns:repeat(auto-fit,minmax(15vw,1fr));gap:.8vw;margin:1vh 0' }));
+      c.appendChild(el('div.feedbar#raceFeed', { style: 'flex:1;font-size:1.7vw;line-height:1.55' }));
+      c.appendChild(el('div#racePodium', { style: 'min-height:5vh' }));
+      c.appendChild(el('div.race-banner#raceBanner'));
+      return c;
+    }
     const marks = [5, 10, 15, 20]; // 25 = målstregen
     const trackWrap = el('div.track-wrap');
     const dist = el('div.dist-row');
@@ -657,6 +665,20 @@
       chip.id = 'raceChip';
       chip.textContent = race.rollingOpen ? (race.turnTeamId ? '🎲 ' + teamName(race.turnTeamId) + TX(' er ved terningen', ' is rolling') : TX('Løbet er i gang!', 'The race is on!')) : (race.status === 'finished' ? TX('Afsluttet', 'Finished') : TX('Afventer start', 'Awaiting start'));
     }
+    // v3.4: fysisk spilleplade — status-kort pr. stald (slag, felt, seneste) i stedet for banen
+    const pg = document.getElementById('physGrid');
+    if (pg) {
+      pg.innerHTML = '';
+      S.teams.forEach((t) => {
+        const prog = (race.progress || {})[t.id] || { used: 0, allowed: race.rollsPerTeam };
+        const pos = race.positions[t.id] || 0;
+        const last = t.race && t.race.lastRoll ? '+' + t.race.lastRoll : '—';
+        const box = el('div', { style: `background:#fff;border:2px solid ${teamColor(t.id)};border-radius:.8vw;padding:.7vw 1vw` });
+        box.appendChild(el('div', { style: 'font-weight:800;font-size:1.25vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis', text: laneLabel(t) }));
+        box.appendChild(el('div', { style: 'font-size:1.05vw;color:var(--text-dim)', text: TX('Slag ', 'Rolls ') + prog.used + '/' + prog.allowed + ' · ' + TX('felt ', 'space ') + pos + ' · ' + TX('seneste ', 'last ') + last }));
+        pg.appendChild(box);
+      });
+    }
     S.teams.forEach((t) => {
       const lane = document.querySelector(`[data-lane="${t.id}"]`); if (!lane) return;
       const pos = race.positions[t.id] || 0;
@@ -695,9 +717,22 @@
     if (podium) {
       podium.innerHTML = '';
       if (race.results && race.results.length) {
-        const row = el('div.row', { style: 'gap:1.4vw;margin-top:1vh;justify-content:center' });
-        race.results.slice(0, 3).forEach((r) => row.appendChild(el('div.chip.gold', { style: 'font-size:1.4vw;padding:.6vw 1.2vw', text: `${r.place}. ${r.stableName}${r.deadHeat ? TX(' (dødt løb)', ' (dead heat)') : ''} · +${money(r.prize)} DD` })));
+        // v3.4: gør mere ud af resultatet — podium m. point, Bookmakerens udbetalinger og (finale) Den Gyldne Staldkasse
+        const row = el('div.row', { style: 'gap:1.4vw;margin-top:1vh;justify-content:center;flex-wrap:wrap' });
+        race.results.slice(0, 3).forEach((r) => row.appendChild(el('div.chip.gold', { style: 'font-size:1.4vw;padding:.6vw 1.2vw', text: `${['🥇', '🥈', '🥉'][r.place - 1] || r.place + '.'} ${r.stableName}${r.deadHeat ? TX(' (dødt løb)', ' (dead heat)') : ''} · +${money(r.prize)} DD · +${r.points || 0} ${TX('point', 'pts')}` })));
         podium.appendChild(row);
+        if ((race.settledBets || []).length) {
+          const br = el('div.row', { style: 'gap:.9vw;margin-top:.8vh;justify-content:center;flex-wrap:wrap' });
+          br.appendChild(el('span', { style: 'font-size:1.2vw;font-weight:800', text: TX('🎫 Bookmakeren betaler ud:', '🎫 The bookmaker pays out:') }));
+          race.settledBets.forEach((b) => br.appendChild(el('span.chip', { style: `font-size:1.1vw;padding:.4vw .9vw;${b.won ? 'border-color:#1d7a3c;color:#1d7a3c;font-weight:700' : 'opacity:.75'}`, text: `${b.stableName}: ${money(b.amount)} ${TX('på', 'on')} ${b.horseName} ${b.won ? '→ +' + money(b.payout) : TX('→ tabt', '→ lost')}` })));
+          podium.appendChild(br);
+        }
+        if (race.cashBonus && race.cashBonus.length) {
+          const cr = el('div.row', { style: 'gap:.9vw;margin-top:.8vh;justify-content:center;flex-wrap:wrap' });
+          cr.appendChild(el('span', { style: 'font-size:1.2vw;font-weight:800', text: TX('💰 Den Gyldne Staldkasse — Staldkasserne giver løbspoint:', '💰 The Golden Stable Fund — the Stable Funds earn Race Points:') }));
+          race.cashBonus.forEach((cb) => cr.appendChild(el('span.chip', { style: 'font-size:1.1vw;padding:.4vw .9vw', text: `${cb.place}. ${cb.stableName} (${money(cb.cash)}) → +${cb.points} p` })));
+          podium.appendChild(cr);
+        }
         if (window.__confettiRace !== race.id) { window.__confettiRace = race.id; confetti(); }
       }
     }
