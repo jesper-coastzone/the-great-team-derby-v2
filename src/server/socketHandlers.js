@@ -326,7 +326,7 @@ function register(io) {
       const race = gs.currentRace(g); if (!race) return { ok: false, error: 'Intet løb.' };
       races.setRolling(g, true);
       let guard = 200;
-      while (!races.allRolled(g) && guard-- > 0) g.teams.forEach((t) => { if (race.rolls[t.id].length < race.allowed[t.id]) races.rollForTeam(g, t); });
+      while (!races.allRolled(g) && guard-- > 0) g.teams.forEach((t) => { if (race.rolls[t.id].length < race.allowed[t.id]) races.rollForTeam(g, t, { ignoreTurn: true }); });
       races.finishRace(g);
       return { ok: true };
     }, cb));
