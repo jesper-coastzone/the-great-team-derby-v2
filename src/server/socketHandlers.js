@@ -452,6 +452,8 @@ function register(io) {
         if (pts[i]) t.racePoints = (t.racePoints || 0) + pts[i];
         if (cash[i]) econ.addTransaction(g, t, cash[i], 'task', LX(g, `Kreativ kåring: ${i + 1}. plads`, `Creative awards: place ${i + 1}`));
         gs.logEvent(g, `🎨 Kreativ kåring: ${i + 1}. plads ${t.stableName} (+${pts[i] || 0} løbspoint, +${cash[i] || 0} ${cfg.currencyAbbr}).`);
+        g.creativePodium = g.creativePodium || [];
+        g.creativePodium.push({ place: i + 1, teamId: t.id, stableName: t.stableName, points: pts[i] || 0, cash: cash[i] || 0 });
       });
       g.creativePodiumDone = true;
       return { ok: true };
