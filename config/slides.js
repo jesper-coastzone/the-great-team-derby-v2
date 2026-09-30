@@ -120,6 +120,14 @@ function buildDeck(settings) {
       screenTitle: `${T.training} · ${season}`, tabletMode: 'round-dashboard', meta: { round: r },
       hostHint: 'Start rundetimer. Godkend opgaver undervejs. HUSK: hele stalden samlet ved officielle stationsforsøg. Investering åbner først i Paddocken.' });
 
+    if (isFinal) {
+      // v3.5: Den Kreative Kåring — eget punkt MELLEM sidste træning og finalens Paddock,
+      // så DD-gevinsten kan bruges i Paddocken lige efter.
+      push({ kind: 'creative-podium', phase: 'creative-podium', title: lang === 'en' ? 'The Creative Awards' : 'Den Kreative Kåring',
+        screenTitle: lang === 'en' ? '🎨 The Creative Awards' : '🎨 Den Kreative Kåring', tabletMode: 'bank', meta: { round: r },
+        hostHint: 'Lad staldene fremvise pyntet hest + staldskilt. Kår top 3 i panelet herunder (5/3/2 løbspoint + 3.000/2.000/1.200 DD) — pengene kan bruges i Paddocken om lidt.' });
+    }
+
     if (r === 1) {
       push({ kind: 'paddock-intro', phase: PHASES.PADDOCK_INTRO, title: lang === 'en' ? 'The Paddock explained' : 'Paddocken forklaret',
         screenTitle: lang === 'en' ? 'The Paddock — how it works' : 'Paddocken — sådan virker den', tabletMode: 'welcome',
