@@ -350,6 +350,7 @@ function buildStateFor(game, role, teamId) {
     status: game.status,
     tasksUnlocked: !!game.tasksUnlocked,
     creativePodiumDone: !!game.creativePodiumDone,
+    creativePodium: game.creativePodium || null,
     currency: cfg.currencyAbbr,
     currencyName: cfg.currencyName,
     config: {
