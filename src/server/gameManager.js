@@ -135,6 +135,14 @@ function tick(game) {
     auction.closeAuction(game);
     changed = true;
   }
+  // v3.5: jockey-auktionen lukker automatisk FØR Paddocken, så tildelingerne kan ses inden væddemålene
+  const jaCloseMs = (cfg.jockeyAuctionCloseBeforeSeconds || 0) * 1000;
+  if (jaCloseMs && game.timers.paddock && game.jockeyAuction && game.jockeyAuction.status === 'open'
+      && now() >= game.timers.paddock.endsAt - jaCloseMs) {
+    require('./jockeyAuction').resolveAuction(game);
+    gs.logEvent(game, '🏇 Jockey-auktionen lukkede automatisk — se tildelingerne og sæt jeres væddemål, før Paddocken lukker!');
+    changed = true;
+  }
   return changed;
 }
 
