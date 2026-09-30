@@ -21,7 +21,7 @@ const auctionExercises = [
       '(poser i hullet tæller også som på pladen).',
     gives: 'Derby Dollars — belønningen falder for hver succes.',
     givesEn: 'Derby Dollars — the reward decreases with every success.',
-    reward: { start: 2000, decreasePerSuccess: 50, min: 800 },
+    reward: { start: 2000, decreasePercent: 10, min: 800 }, // v3.4: -10 % pr. succes
     cooldownSeconds: 300,
   },
   {
@@ -37,7 +37,7 @@ const auctionExercises = [
       'Succes: mindst 20 cm højt og godkendt af en løbsleder.',
     gives: 'Derby Dollars — aftagende belønning.',
     givesEn: 'Derby Dollars — the reward decreases with every success.',
-    reward: { start: 2000, decreasePerSuccess: 50, min: 800 },
+    reward: { start: 2000, decreasePercent: 10, min: 800 }, // v3.4: -10 % pr. succes
     cooldownSeconds: 300,
   },
   {
@@ -54,7 +54,7 @@ const auctionExercises = [
       'løbsleder, når I er klar. Succes: hele banen gennemføres i et officielt forsøg.',
     gives: 'Derby Dollars — belønningen falder for hver succes.',
     givesEn: 'Derby Dollars — the reward decreases with every success.',
-    reward: { start: 2000, decreasePerSuccess: 50, min: 800 },
+    reward: { start: 2000, decreasePercent: 10, min: 800 }, // v3.4: -10 % pr. succes
     cooldownSeconds: 300,
   },
   {
@@ -71,7 +71,7 @@ const auctionExercises = [
       'Officielt forsøg: kald på en løbsleder, når I er klar. Succes: alle deltagere slår til bolden 5 gange.',
     gives: 'Derby Dollars — belønningen falder for hver succes.',
     givesEn: 'Derby Dollars — the reward decreases with every success.',
-    reward: { start: 2000, decreasePerSuccess: 50, min: 800 },
+    reward: { start: 2000, decreasePercent: 10, min: 800 }, // v3.4: -10 % pr. succes
     cooldownSeconds: 300,
   },
   {
@@ -88,7 +88,7 @@ const auctionExercises = [
       'når tiden er 0. Succes: minimum 8 høballer i højden.',
     gives: 'Derby Dollars — belønningen falder for hver succes.',
     givesEn: 'Derby Dollars — the reward decreases with every success.',
-    reward: { start: 2000, decreasePerSuccess: 50, min: 800 },
+    reward: { start: 2000, decreasePercent: 10, min: 800 }, // v3.4: -10 % pr. succes
     cooldownSeconds: 300,
   },
   {
@@ -106,7 +106,7 @@ const auctionExercises = [
       'når I er klar. Succes: gennemfør på maks. 20 sekunder.',
     gives: 'Derby Dollars — belønningen falder for hver succes.',
     givesEn: 'Derby Dollars — the reward decreases with every success.',
-    reward: { start: 2000, decreasePerSuccess: 50, min: 800 },
+    reward: { start: 2000, decreasePercent: 10, min: 800 }, // v3.4: -10 % pr. succes
     cooldownSeconds: 300,
   },
 ];
