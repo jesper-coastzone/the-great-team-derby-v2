@@ -196,11 +196,14 @@
     const kind = S.slide.kind; const phase = S.phase;
     const btn = (label, ev, payload, cls) => { const b = el('button.btn' + (cls || ''), { text: label }); b.addEventListener('click', () => TG.emit(ev, payload).then(check)); return b; };
 
-    if (phase === 'leaderboard' && !S.creativePodiumDone) {
-      // v3.1: kreativ kåring — top 3 får 5/3/2 løbspoint. Brug den på stillings-sliden FØR finalen.
+    // v3.5: kåringen skal falde FØR finaleløbet, så DD'erne kan bruges i sidste Paddock —
+    // panelet vises derfor også på finalens Paddock-slides med en advarsel, hvis den mangler.
+    const finalPaddock = (phase === 'paddock' || phase === 'paddock-intro') && S.currentRound === S.totalRounds;
+    if ((phase === 'leaderboard' || finalPaddock) && !S.creativePodiumDone) {
       const pod = el('div.card', { style: 'border:2px solid var(--gold);padding:10px;margin-bottom:10px' });
-      pod.appendChild(el('b', { text: '🎨 Kreativ kåring — top 3 (5/3/2 løbspoint)' }));
-      pod.appendChild(el('p.mini', { text: 'Pynt hest + staldskilt. Uddel FØR finalen — kan kun gøres én gang.' }));
+      if (finalPaddock) pod.appendChild(el('div', { style: 'background:#8a1f1f;color:#fff;font-weight:800;padding:6px 10px;border-radius:8px;margin-bottom:8px', text: '⚠️ Kåringen er IKKE uddelt endnu — gør det NU, så staldene kan bruge pengene i denne Paddock!' }));
+      pod.appendChild(el('b', { text: '🎨 Kreativ kåring — top 3 (5/3/2 løbspoint + 3.000/2.000/1.200 DD)' }));
+      pod.appendChild(el('p.mini', { text: 'Pynt hest + staldskilt. Uddel FØR finalens Paddock, så pengene kan bruges — kan kun gøres én gang.' }));
       const sels = [1, 2, 3].map((i) => {
         const sel = el('select', { style: 'margin:4px 6px 4px 0' });
         sel.appendChild(el('option', { value: '', text: i + '. plads — vælg stald' }));
@@ -211,7 +214,7 @@
       go.addEventListener('click', () => {
         const ids = sels.map((x) => x.value).filter(Boolean);
         if (!ids.length) return toast('Vælg mindst 1. pladsen', 'err');
-        if (!confirm('Uddel kreativ-bonus (5/3/2 løbspoint)? Kan kun gøres én gang.')) return;
+        if (!confirm('Uddel kåringen (5/3/2 løbspoint + 3.000/2.000/1.200 DD)? Kan kun gøres én gang.')) return;
         TG.emit('host:creativePodium', { teamIds: sels.map((x) => x.value) }).then(check);
       });
       pod.appendChild(go);
