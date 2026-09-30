@@ -114,6 +114,7 @@
       case 'leaderboard': return leaderboard(TX('Stillingen — løbspoint', 'Standings — Race Points'));
       case 'derby-readiness': return readiness();
       case 'final-race': return raceTrack('The Great Team Derby');
+      case 'creative-podium': return creativePodiumSlide();
       case 'winners-circle': return winnersCircle();
       case 'final-reveal': return reveal();
       case 'debrief': return debrief();
@@ -805,6 +806,27 @@
       grid.appendChild(card);
     });
     c.appendChild(grid);
+    return c;
+  }
+
+  // ---- Den Kreative Kåring (v3.5): eget punkt mellem sidste træning og finalens Paddock ----
+  function creativePodiumSlide() {
+    const c = el('div', { style: 'display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center' });
+    c.appendChild(el('div.eyebrow', { text: 'The Great Team Derby' }));
+    c.appendChild(el('h1', { text: TX('🎨 Den Kreative Kåring', '🎨 The Creative Awards'), style: 'font-size:5vw' }));
+    const cp = S.creativePodium;
+    if (!cp || !cp.length) {
+      c.appendChild(el('p.lead', { style: 'font-size:2.1vw;max-width:64vw;margin-top:1vh', text: TX('Fremvis jeres pyntede hest og staldskilt! Kursuslederen kårer de 3 mest kreative stalde — præmien er løbspoint OG Derby Dollars, som kan bruges i Paddocken om lidt.', 'Show off your decorated horse and stable sign! The Race Director crowns the 3 most creative stables — the prize is Race Points AND Derby Dollars to spend in the Paddock next.') }));
+      const parade = el('div', { style: 'display:flex;gap:1vw;justify-content:center;margin-top:2.5vh;flex-wrap:wrap;max-width:80vw' });
+      S.teams.forEach((t) => parade.appendChild(el('div.chip', { style: `border:2px solid ${t.color.hex};font-size:1.3vw;padding:.5vw 1.1vw`, text: '🎨 ' + t.stableName })));
+      c.appendChild(parade);
+    } else {
+      const row = el('div.row', { style: 'gap:1.4vw;margin-top:2vh;justify-content:center;flex-wrap:wrap' });
+      cp.forEach((p) => row.appendChild(el('div.chip.gold', { style: 'font-size:1.8vw;padding:.8vw 1.5vw;font-weight:800', text: `${['🥇', '🥈', '🥉'][p.place - 1] || p.place + '.'} ${p.stableName} · +${p.points} ${TX('point', 'pts')} · +${money(p.cash)} DD` })));
+      c.appendChild(row);
+      c.appendChild(el('p.lead', { style: 'font-size:1.9vw;margin-top:2vh', text: TX('Tillykke! Pengene står i Staldkassen — brug dem klogt i Paddocken!', 'Congratulations! The money is in your Stable Fund — spend it wisely in the Paddock!') }));
+      if (window.__confettiCreative !== S.code) { window.__confettiCreative = S.code; setTimeout(confetti, 300); }
+    }
     return c;
   }
 
