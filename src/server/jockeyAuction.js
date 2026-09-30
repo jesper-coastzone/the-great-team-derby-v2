@@ -159,7 +159,10 @@ function publicAuction(game, teamId) {
       winner: winner ? { teamId: winner.teamId, stableName: winner.stableName, amount: winner.amount, atMinPrice: winner.atMinPrice } : null,
     };
   });
-  return { status: ja.status, round: ja.round, jockeys, increment: cfg.jockeyBidIncrement || 50 };
+  // v3.5: auktionens egen deadline (lukker før Paddocken), så klienterne kan vise to nedtællinger
+  const closesAt = (ja.status === 'open' && game.timers && game.timers.paddock)
+    ? game.timers.paddock.endsAt - (cfg.jockeyAuctionCloseBeforeSeconds || 0) * 1000 : null;
+  return { status: ja.status, round: ja.round, jockeys, increment: cfg.jockeyBidIncrement || 50, closesAt };
 }
 
 module.exports = { openAuction, placeBid, retractBid, resolveAuction, releaseJockeys, publicAuction, pool };
