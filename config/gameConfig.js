@@ -96,6 +96,9 @@ const gameConfig = {
   // v3.2: stalde uden vundet bud tildeles en ledig jockey til denne FASTE pris —
   // højere end alle mindstepriser, så det aldrig betaler sig at lade være med at byde.
   jockeyFallbackPrice: 1000,
+  // v3.5: auktionen lukker og afgøres automatisk X sek. FØR Paddocken lukker — så alle kan
+  // se jockey-tildelingerne, inden de sætter deres væddemål (to nedtællinger i Paddocken).
+  jockeyAuctionCloseBeforeSeconds: 60,
 
   // ---- Odds-tavlen (v2.16): væddemål i Paddocken på hvilken hest der vinder løbet ----
   raceBetting: {
