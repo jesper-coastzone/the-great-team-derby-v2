@@ -196,10 +196,10 @@
     const kind = S.slide.kind; const phase = S.phase;
     const btn = (label, ev, payload, cls) => { const b = el('button.btn' + (cls || ''), { text: label }); b.addEventListener('click', () => TG.emit(ev, payload).then(check)); return b; };
 
-    // v3.5: kåringen skal falde FØR finaleløbet, så DD'erne kan bruges i sidste Paddock —
-    // panelet vises derfor også på finalens Paddock-slides med en advarsel, hvis den mangler.
+    // v3.5: kåringen har sin egen slide MELLEM sidste træning og finalens Paddock.
+    // Panelet vises dér — og som rød advarsel i finalens Paddock, hvis den blev glemt.
     const finalPaddock = (phase === 'paddock' || phase === 'paddock-intro') && S.currentRound === S.totalRounds;
-    if ((phase === 'leaderboard' || finalPaddock) && !S.creativePodiumDone) {
+    if ((phase === 'creative-podium' || finalPaddock) && !S.creativePodiumDone) {
       const pod = el('div.card', { style: 'border:2px solid var(--gold);padding:10px;margin-bottom:10px' });
       if (finalPaddock) pod.appendChild(el('div', { style: 'background:#8a1f1f;color:#fff;font-weight:800;padding:6px 10px;border-radius:8px;margin-bottom:8px', text: '⚠️ Kåringen er IKKE uddelt endnu — gør det NU, så staldene kan bruge pengene i denne Paddock!' }));
       pod.appendChild(el('b', { text: '🎨 Kreativ kåring — top 3 (5/3/2 løbspoint + 3.000/2.000/1.200 DD)' }));
