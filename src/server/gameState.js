@@ -109,6 +109,7 @@ function createGame(settings = {}) {
     roundLengthSeconds: settings.roundLengthSeconds || cfg.defaults.roundLengthSeconds,
     auctionLengthSeconds: settings.auctionLengthSeconds || cfg.defaults.auctionLengthSeconds,
     includeWarmup: settings.includeWarmup === true, // v3: warm-up er UDGÅET (default fra)
+    physicalBoard: settings.physicalBoard === true, // v3.4: fysisk spilleplade — banen vises ikke på storskærmen
     warmupReward: settings.warmupReward != null ? settings.warmupReward : cfg.warmupReward,
   };
 
@@ -289,7 +290,9 @@ function nextMoneyReward(e, team) {
   const r = e.reward;
   // v3: frie stationer — belønningen falder pr. STALDENS egne succeser, ikke globalt
   const count = team ? ((team.stationSuccess || {})[e.id] || 0) : e.successCount;
-  return Math.max(r.min, r.start - r.decreasePerSuccess * count);
+  // v3.4: -10 % pr. succes (afrundet til nærmeste 10) — falder hurtigere, så man skifter station
+  if (r.decreasePercent) return Math.max(r.min, Math.round((r.start * Math.pow(1 - r.decreasePercent / 100, count)) / 10) * 10);
+  return Math.max(r.min, r.start - (r.decreasePerSuccess || 0) * count);
 }
 
 function auctionView(game, role, teamId) {
@@ -340,6 +343,7 @@ function buildStateFor(game, role, teamId) {
   const state = {
     code: game.code,
     lang: game.settings.lang || 'da',
+    physicalBoard: !!(game.settings && game.settings.physicalBoard),
     format: game.settings.format || '2t',
     eventName: game.settings.eventName,
     programItems: game.settings.programItems,
@@ -385,6 +389,10 @@ function buildStateFor(game, role, teamId) {
       progress: Object.fromEntries(game.teams.map((t) => [t.id, { used: (race.rolls[t.id] || []).length, allowed: race.allowed[t.id] || race.rollsPerTeam }])),
       // v3.3: tur-baserede slag — hvem er ved terningen lige nu?
       turnTeamId: require('./races').turnTeamId(game, race),
+      // v3.4: ro mellem slagene — hvornår må næste slag falde?
+      nextRollAt: race.lastRollAt ? race.lastRollAt + (cfg.rollDelaySeconds || 0) * 1000 : 0,
+      settledBets: race.settledBets || [],
+      cashBonus: race.cashBonus || null,
       odds: race.odds || {},
       bets: race.bets || {},
     } : null,
@@ -409,8 +417,8 @@ function buildStateFor(game, role, teamId) {
   // v3.3-tiebreak ved pointlighed: bedste placering i finalen → bedste placering i seneste
   // normale løb (sommer, så forår, …) → højeste Staldkasse → staldværdi (info).
   const fPlace = (t) => { const h = (t.pointsHistory || []).find((x) => x.final); return h ? h.place : 99; };
-  const rPlace = (t, r) => { const h = (t.pointsHistory || []).find((x) => !x.final && x.round === r); return h ? h.place : 99; };
-  const tbRounds = [...new Set(game.teams.flatMap((t) => (t.pointsHistory || []).filter((x) => !x.final).map((x) => x.round)))].sort((a, b) => b - a);
+  const rPlace = (t, r) => { const h = (t.pointsHistory || []).find((x) => !x.final && !x.bonus && x.round === r); return h ? h.place : 99; }; // v3.4: cash-bonussen holdes ude af tiebreak
+  const tbRounds = [...new Set(game.teams.flatMap((t) => (t.pointsHistory || []).filter((x) => !x.final && !x.bonus).map((x) => x.round)))].sort((a, b) => b - a);
   state.ranking = [...game.teams]
     .sort((a, b) => {
       const pd = Math.round(b.racePoints || 0) - Math.round(a.racePoints || 0); if (pd) return pd;
