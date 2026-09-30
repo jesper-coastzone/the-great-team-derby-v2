@@ -246,6 +246,8 @@ const gameConfig = {
   },
   // v3.1: kreativ kåring før finalen — top 3 får løbspoint-bonus
   creativePodiumPoints: [5, 3, 2],
+  // v3.5: kåringen giver OGSÅ Derby Dollars — uddel før finalens Paddock, så pengene kan bruges der
+  creativePodiumCash: [3000, 2000, 1200],
 
   // ---- Kreative opgaver (host scorer manuelt) ----
   creative: {
