@@ -455,6 +455,17 @@
     c.appendChild(el('p.lead', { style: 'margin:.2vh 0 .8vh', text: open
       ? TX('Paddocken er åben! Hyr en jockey, køb dagsform og sæt jeres væddemål — vinduet lukker, når tiden er gået.', 'The Paddock is open! Hire a jockey, buy race-day form and place your bets — the window closes when time runs out.')
       : TX('Paddocken er lukket — hestene føres til start!', 'The Paddock is closed — the horses are being led to the start!') }));
+    // v3.5: auktionens egen deadline — jockeyerne fordeles FØR væddemålene lukker
+    const jja = S.jockeyAuction || {};
+    if (open && jja.status === 'open' && jja.closesAt) {
+      const arow = el('div.chip.gold', { style: 'font-size:1.7vw;padding:.5vw 1.3vw;margin:.2vh 0 .6vh;font-weight:800' });
+      arow.appendChild(el('span', { text: TX('🏇 Jockey-auktionen lukker om ', '🏇 The jockey auction closes in ') }));
+      arow.appendChild(el('span', { 'data-endsat': String(jja.closesAt), text: TG.countdown(jja.closesAt) }));
+      arow.appendChild(el('span', { text: TX(' — derefter er der tid til væddemål', ' — then it is betting time') }));
+      c.appendChild(arow);
+    } else if (open && jja.status === 'resolved') {
+      c.appendChild(el('div.chip.turf', { style: 'font-size:1.7vw;padding:.5vw 1.3vw;margin:.2vh 0 .6vh;font-weight:800', text: TX('✅ Jockeyerne er fundet — sæt jeres væddemål, før Paddocken lukker!', '✅ The jockeys are set — place your bets before the Paddock closes!') }));
+    }
     // v2.16: Præmietavle + odds-tavle side om side
     const boards = el('div', { style: 'display:grid;grid-template-columns:1fr 1.4fr;gap:1vw;margin:.6vh 0' });
     const pv = S.nextRacePrizes;
