@@ -202,6 +202,12 @@ function rollForTeam(game, team, opts) {
       const tt = gs.getTeam(game, turn);
       return { ok: false, error: L(game, `Det er ${tt ? tt.stableName : 'en anden stald'}s tur — I slår om lidt.`, `It is ${tt ? tt.stableName : 'another stable'}'s turn — you roll shortly.`) };
     }
+    // v3.4: ro mellem slagene — hesten skal nå at rykke (og speakeren at tale), før næste slag falder
+    const delayMs = (cfg.rollDelaySeconds || 0) * 1000;
+    if (delayMs && race.lastRollAt && Date.now() - race.lastRollAt < delayMs) {
+      const left = Math.ceil((race.lastRollAt + delayMs - Date.now()) / 1000);
+      return { ok: false, wait: left, error: L(game, `⏱ Vent ${left} sek. — næste slag er klar om lidt.`, `⏱ Wait ${left}s — the next roll is ready in a moment.`) };
+    }
   }
 
   // Løbsdags-boosts (v2.16): købt i Paddocken, gælder kun dette løb
@@ -237,6 +243,7 @@ function rollForTeam(game, team, opts) {
   const eventEffect = event ? event.effect : 0;
   const total = Math.max(0, base + catchup + fanBoost + eventEffect);
   race.rolls[team.id].push(total);
+  race.lastRollAt = Date.now(); // v3.4: starter pausen før næste stalds slag
   race.positions[team.id] += total; // intet loft — dødt løb skal være sjældent og ægte
 
   const rr = race.rolls[team.id];
@@ -373,12 +380,42 @@ function finishRace(game) {
       }
     }
   }
+  // v3.4: gem de afgjorte væddemål på løbet, så storskærmen kan vise Bookmakerens udbetalinger
+  race.settledBets = Object.entries(game.raceBets || {}).map(([bettorId, bet]) => {
+    const bettor = gs.getTeam(game, bettorId);
+    const target = gs.getTeam(game, bet.targetTeamId);
+    return {
+      teamId: bettorId, stableName: bettor ? bettor.stableName : '?',
+      horseName: target ? (target.horseName || target.stableName) : '?',
+      amount: bet.amount, odds: bet.odds, payout: bet.payout || 0, won: (bet.payout || 0) > 0,
+    };
+  });
   game.raceBets = {};
   game.paddockOdds = null;
   // Løbsdags-boosts er brugt — ryd dem
   game.teams.forEach((t) => { t.raceBoosts = {}; });
   // v3 etape 2: jockeyen var kun hyret til sæsonens løb — tilbage i puljen
   if (isRealRace) require('./jockeyAuction').releaseJockeys(game);
+
+  // v3.4: Den Gyldne Staldkasse — efter FINALEN rangeres staldkasserne som et ekstra løb,
+  // så Derby Dollars betyder noget helt til slut. Point som et normalt løb (10/7/5/3/2/1).
+  if (isRealRace && race.type === 'final') {
+    const byCash = [...game.teams].sort((a, b) => b.cash - a.cash);
+    race.cashBonus = [];
+    let prevCash = null, prevPlace = 0;
+    byCash.forEach((t, idx) => {
+      const c = Math.round(t.cash);
+      const place = c === prevCash ? prevPlace : idx + 1;
+      prevCash = c; prevPlace = place;
+      const pts = pointsFor(place, 'normal') || 0;
+      t.racePoints = Math.round((t.racePoints || 0) + pts);
+      t.pointsHistory = t.pointsHistory || [];
+      t.pointsHistory.push({ round: race.round, place, points: pts, final: false, bonus: 'cash' });
+      race.cashBonus.push({ teamId: t.id, stableName: t.stableName, cash: c, place, points: pts });
+      if (pts) pushFeed(race, { kind: 'points', teamId: t.id, stableName: t.stableName, text: L(game, `💰 Den Gyldne Staldkasse: ${t.stableName} (${c} ${cfg.currencyAbbr}) → +${pts} løbspoint`, `💰 The Golden Stable Fund: ${t.stableName} (${c} ${cfg.currencyAbbr}) → +${pts} Race Points`) });
+    });
+    gs.logEvent(game, 'Den Gyldne Staldkasse er gjort op — Staldkasserne gav løbspoint.');
+  }
 
   gs.logEvent(game, `Løb afsluttet. Vinder på banen: ${results[0].stableName}.`);
   return { ok: true, results };
