@@ -418,7 +418,7 @@ function stationOverview(game) {
       // v3.2: samme tæller som teamets tablet (gs.nextMoneyReward) — team.stationSuccess
       const count = (t.stationSuccess || {})[s.id] || 0;
       const r = ex.reward || {};
-      const next = Math.max(r.min || 0, (r.start || 0) - count * (r.decreasePerSuccess || 0));
+      const next = r.decreasePercent ? Math.max(r.min || 0, Math.round(((r.start || 0) * Math.pow(1 - r.decreasePercent / 100, count)) / 10) * 10) : Math.max(r.min || 0, (r.start || 0) - count * (r.decreasePerSuccess || 0)); // v3.4: -10 % pr. succes
       const cdLeft = onCooldown(t, s.id) ? Math.ceil((t.cooldowns[s.id] - now()) / 1000) : 0;
       matrix[t.id][s.id] = { nextReward: next, cooldownLeft: cdLeft, successes: count };
     });
@@ -451,7 +451,7 @@ function resolveStationAttempt(game, teamId, exerciseId, passed) {
   team.stationSuccess = team.stationSuccess || {};
   const count = team.stationSuccess[exerciseId] || 0;
   const r = ex.reward || {};
-  const payout = Math.max(r.min || 0, (r.start || 0) - count * (r.decreasePerSuccess || 0));
+  const payout = r.decreasePercent ? Math.max(r.min || 0, Math.round(((r.start || 0) * Math.pow(1 - r.decreasePercent / 100, count)) / 10) * 10) : Math.max(r.min || 0, (r.start || 0) - count * (r.decreasePerSuccess || 0)); // v3.4: -10 % pr. succes
   team.stationSuccess[exerciseId] = count + 1;
   ex.successCount = (ex.successCount || 0) + 1;
   econ.addTransaction(game, team, payout, 'exercise', L(game, `${ex.name}: bestået`, `${(game.settings.lang === 'en' && ex.nameEn) || ex.name}: passed`));
