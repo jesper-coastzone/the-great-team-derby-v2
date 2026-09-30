@@ -1319,13 +1319,18 @@
     card.appendChild(el('div.stat.big', {}, [el('div.k', { text: 'Position' }), el('div.v', { text: me.race.position + ' / ' + race.trackLength })]));
     const dice = el('div.dice', { style: 'margin:10px 0;display:flex;align-items:center;justify-content:center;gap:10px' }); if (me.race.lastRoll) { dice.appendChild(TG.assetImg('terning', { style: 'width:52px;height:52px' })); dice.appendChild(el('span', { text: String(me.race.lastRoll) })); } else { dice.textContent = '—'; } card.appendChild(dice);
     card.appendChild(el('p.muted', { text: `${TX('Slag brugt', 'Rolls used')}: ${used}/${allowed} · ${TX('terning', 'dice')} ${me.dice.min}–${me.dice.max}` }));
-    // v3.3: tur-baserede slag — kun turens stald kan slå
+    // v3.3: tur-baserede slag — kun turens stald kan slå. v3.4: + ro mellem slagene (nedtælling på knappen)
     const myTurn = !race.turnTeamId || race.turnTeamId === me.id;
     const turnTeam = race.turnTeamId ? (S.teams.find((t) => t.id === race.turnTeamId) || null) : null;
-    const canRoll = race.rollingOpen && used < allowed && myTurn;
-    if (canRoll && race.turnTeamId === me.id) card.appendChild(el('div.chip.gold', { style: 'font-size:16px;padding:8px 16px', text: TX('🎲 Det er JERES tur!', '🎲 It is YOUR turn!') }));
+    const delayActive = race.nextRollAt && Date.now() < race.nextRollAt;
+    const canRoll = race.rollingOpen && used < allowed && myTurn && !delayActive;
+    if (race.rollingOpen && used < allowed && myTurn && race.turnTeamId === me.id) card.appendChild(el('div.chip.gold', { style: 'font-size:16px;padding:8px 16px', text: TX('🎲 Det er JERES tur!', '🎲 It is YOUR turn!') }));
     const waitTxt = (!myTurn && turnTeam) ? TX('Vent — ' + turnTeam.stableName + ' er ved terningen…', 'Wait — ' + turnTeam.stableName + ' is rolling…') : TX('Vent…', 'Wait…');
-    const b = el('button.btn.gold.xl', { text: canRoll ? TX('SLÅ TERNING', 'ROLL THE DICE') : (used >= allowed ? TX('Alle slag brugt', 'All rolls used') : waitTxt), disabled: canRoll ? null : 'true', style: 'margin-top:14px' });
+    const b = el('button.btn.gold.xl', { disabled: canRoll ? null : 'true', style: 'margin-top:14px' });
+    if (canRoll) b.textContent = TX('SLÅ TERNING', 'ROLL THE DICE');
+    else if (used >= allowed) b.textContent = TX('Alle slag brugt', 'All rolls used');
+    else if (myTurn && delayActive && race.rollingOpen) { b.appendChild(el('span', { text: TX('⏱ Klar om ', '⏱ Ready in ') })); b.appendChild(el('span', { 'data-countdown': String(race.nextRollAt) })); }
+    else b.textContent = waitTxt;
     b.addEventListener('click', () => TG.emit('team:roll').then((r) => {
       check(r); if (!r.ok) return;
       if (r.event) toast(`${r.event.emoji || ''} ${r.event.label}! ${r.event.effect > 0 ? '+' : ''}${r.event.effect} ${TX('felter', 'spaces')}`, r.event.effect > 0 ? 'ok' : 'err');
