@@ -52,6 +52,8 @@ const gameConfig = {
   finalRaceRolls: 5,
   diceBaseMin: 2,               // diceMin = diceBaseMin + jockeyLevel (+ løbsdags-boosts)
   diceBaseMax: 5,               // diceMax = diceBaseMax + horseLevel (+ løbsdags-boosts)
+  // v3.4: ro mellem slagene i løbet — næste stald kan først slå, når der er gået X sekunder
+  rollDelaySeconds: 6,
   normalRacePrizes: { 1: 2400, 2: 1800, 3: 1400, 4: 1000, default: 600 }, // fallback
   // v2.16: præmierne vokser pr. sæson og ANNONCERES i Paddocken før løbet
   // v3.2: alle løbspræmier FORDOBLET — løbet skal kunne mærkes i Staldkassen
