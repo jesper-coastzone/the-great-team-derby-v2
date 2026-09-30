@@ -1212,6 +1212,16 @@
       v.setAttribute('data-countdown', String(t.endsAt));
       timer.appendChild(v);
       timer.appendChild(el('div.muted', { style: 'font-size:13px', text: `${TX('I har', 'You have')} ${money(S.me.cash)} DD ${TX('i kassen', 'in the fund')}` }));
+      // v3.5: auktionen har sin egen, tidligere deadline — se jockeyerne, FØR I sætter væddemål
+      const ja = S.jockeyAuction || {};
+      if (ja.status === 'open' && ja.closesAt) {
+        const ar = el('div', { style: 'margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);font-weight:800' });
+        ar.appendChild(el('span', { text: TX('🏇 Jockey-auktionen lukker om ', '🏇 The jockey auction closes in ') }));
+        ar.appendChild(el('span', { 'data-countdown': String(ja.closesAt), style: 'font-family:var(--font-num)' }));
+        timer.appendChild(ar);
+      } else if (ja.status === 'resolved') {
+        timer.appendChild(el('div', { style: 'margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);font-weight:800;color:#1d7a3c', text: TX('✅ Auktionen er afgjort — tjek jockey-tildelingerne og sæt jeres væddemål!', '✅ The auction is settled — check the jockey assignments and place your bets!') }));
+      }
       c.appendChild(timer);
       c.appendChild(jockeyAuctionCard());
       c.appendChild(prizeBoard());
