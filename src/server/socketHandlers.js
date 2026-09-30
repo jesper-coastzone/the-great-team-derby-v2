@@ -437,16 +437,21 @@ function register(io) {
       ack(cb, r);
     });
 
-    // ---------- v3.1: Kreativ kåring — top 3 får løbspoint-bonus (5/3/2) ----------
+    // ---------- v3.1: Kreativ kåring — top 3 får løbspoint (5/3/2). v3.5: + Derby Dollars,
+    // så gevinsten kan bruges i finalens Paddock (eller gemmes til Den Gyldne Staldkasse) ----------
     socket.on('host:creativePodium', (p, cb) => hostMut((g) => {
       if (g.creativePodiumDone) return { ok: false, error: 'Kåringen er allerede uddelt.' };
       const pts = cfg.creativePodiumPoints || [5, 3, 2];
+      const cash = cfg.creativePodiumCash || [0, 0, 0];
       const ids = (p && p.teamIds) || [];
       if (ids.length < 1) return { ok: false, error: 'Vælg mindst en stald.' };
       if (new Set(ids.filter(Boolean)).size !== ids.filter(Boolean).length) return { ok: false, error: 'Samme stald kan ikke stå på flere podiepladser.' };
       ids.forEach((id, i) => {
         const t = id ? gs.getTeam(g, id) : null;
-        if (t && pts[i]) { t.racePoints = (t.racePoints || 0) + pts[i]; gs.logEvent(g, `🎨 Kreativ kåring: ${i + 1}. plads ${t.stableName} (+${pts[i]} løbspoint).`); }
+        if (!t) return;
+        if (pts[i]) t.racePoints = (t.racePoints || 0) + pts[i];
+        if (cash[i]) econ.addTransaction(g, t, cash[i], 'task', LX(g, `Kreativ kåring: ${i + 1}. plads`, `Creative awards: place ${i + 1}`));
+        gs.logEvent(g, `🎨 Kreativ kåring: ${i + 1}. plads ${t.stableName} (+${pts[i] || 0} løbspoint, +${cash[i] || 0} ${cfg.currencyAbbr}).`);
       });
       g.creativePodiumDone = true;
       return { ok: true };
