@@ -12,6 +12,7 @@ function addTransaction(game, team, amount, type, reason, relatedEntityId = null
   team.cash = Math.round(team.cash + amount);
   const tx = { id: uid('tx'), teamId: team.id, amount, type, reason, timestamp: now(), relatedEntityId };
   game.transactions.unshift(tx);
+  if (game.transactions.length > 1500) game.transactions.length = 1500; // v3.6: RAM-værn — ubegrænset vækst gav memory-genstarter på Render
   team.recentTransactions.unshift({ amount, reason, timestamp: now() });
   if (team.recentTransactions.length > 20) team.recentTransactions.pop();
   return tx;
