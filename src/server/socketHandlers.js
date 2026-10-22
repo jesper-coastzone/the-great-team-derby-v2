@@ -34,7 +34,7 @@ function botTick(game) {
   for (const bot of game.teams) {
     if (!bot.isBot) continue;
     // (a) Indtjening: kun under en runde med aktiv rundetimer — aftagende pr. runde
-    if (game.currentPhase === 'round' && game.timers && game.timers.round && nowMs >= (bot.botNextEarnAt || 0)) {
+    if (game.currentPhase === 'round' && game.timers && game.timers.round && nowMs < game.timers.round.endsAt && nowMs >= (bot.botNextEarnAt || 0)) { // v3.6: stop ved udløbet timer — glemte bot-spil tjente i døgndrift og åd RAM
       const table = bc.earnPerMinuteByRound || [0];
       const perMin = table[Math.min(Math.max(game.currentRound || 1, 1) - 1, table.length - 1)] || 0;
       const interval = bc.earnIntervalSeconds || 40;
@@ -494,11 +494,17 @@ function register(io) {
   });
 
   // Periodisk tick: udløb af handler + auto-luk auktion + bot-adfærd.
+  let lastPrune = 0;
   setInterval(() => {
     for (const game of gs.store.values()) {
       const changed = gm.tick(game);
       const botChanged = botTick(game);
       if (changed || botChanged) rt.pushState(game);
+    }
+    // v3.6: ryd op i gamle spil én gang i timen — de lå ellers i RAM for evigt
+    if (Date.now() - lastPrune > 60 * 60 * 1000) {
+      lastPrune = Date.now();
+      gs.pruneOldGames(14);
     }
   }, 1000);
 }
