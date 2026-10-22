@@ -223,6 +223,22 @@ function importGame(json) {
   store.set(game.code, game);
   return game;
 }
+// v3.6: spil ældre end maxAgeDays slettes fra RAM og disk — ellers vokser hukommelsen
+// til Renders loft (memory-genstarter okt. 2026). Kaldes ved boot og én gang i timen.
+function pruneOldGames(maxAgeDays = 14) {
+  const cutoff = now() - maxAgeDays * 24 * 60 * 60 * 1000;
+  let removed = 0;
+  for (const [code, g] of store) {
+    if ((g.createdAt || 0) < cutoff) {
+      store.delete(code);
+      try { fs.unlinkSync(path.join(DATA_DIR, `savegame-${code}.json`)); } catch (e) { /* væk er væk */ }
+      removed += 1;
+    }
+  }
+  if (removed) console.log(`[prune] Fjernede ${removed} spil ældre end ${maxAgeDays} dage.`);
+  return removed;
+}
+
 function loadGamesFromDisk() {
   try {
     if (!fs.existsSync(DATA_DIR)) return;
@@ -515,6 +531,6 @@ function collectPendingApprovals(game) {
 module.exports = {
   STABLE_COLORS, store, createGame, makeTeam, getGame, getTeam, resetGame,
   logEvent, totalStableValue, diceRange, exerciseById, currentRace,
-  saveGame, exportGame, importGame, loadGamesFromDisk,
+  saveGame, exportGame, importGame, loadGamesFromDisk, pruneOldGames,
   buildStateFor, publicTeam, activeSlide, nextMoneyReward,
 };
