@@ -7,6 +7,20 @@
   const root = document.getElementById('root');
   let OV = null;              // seneste station:overview
   let ui = { station: null }; // valgt station
+  // v3.8: stopur (lokalt pr. tablet) + live runde-nedtælling
+  const sw = { running: false, startedAt: 0, elapsed: 0 };
+  function swElapsed() { return sw.elapsed + (sw.running ? Date.now() - sw.startedAt : 0); }
+  function fmtSw(ms) { const t = Math.floor(ms / 1000); return Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0'); }
+  setInterval(() => {
+    const se = document.getElementById('swTime');
+    if (se) { se.textContent = fmtSw(swElapsed()); se.style.color = sw.running && swElapsed() >= 90000 ? '#6F191E' : ''; }
+    const rc = document.getElementById('roundCd');
+    if (rc && OV && OV.roundTimer && OV.roundTimer.endsAt) {
+      const left = Math.max(0, Math.ceil((OV.roundTimer.endsAt - Date.now()) / 1000));
+      rc.textContent = '⏱ ' + fmtCd(left);
+      rc.style.background = left <= 60 ? 'var(--burgundy, #6F191E)' : '';
+    }
+  }, 250);
   let joined = false;
 
   const savedCode = TG.load('tg_rd_code');
@@ -57,6 +71,11 @@
     clear(root);
     const head = el('div.rd-head');
     head.appendChild(el('div', {}, [el('div.eyebrow', { text: 'Løbsleder · stationer' }), el('h1', { text: ui.station ? stName(ui.station) : 'Vælg station' })]));
+    // v3.8: samlet runde-nedtælling — altid synlig, også udenfor ved stationerne
+    if (OV.roundTimer && OV.roundTimer.endsAt) {
+      const left = Math.max(0, Math.ceil((OV.roundTimer.endsAt - Date.now()) / 1000));
+      head.appendChild(el('span#roundCd', { style: 'background:var(--navy,#032F4A);color:#fff;font-weight:800;font-size:22px;border-radius:999px;padding:8px 18px;font-variant-numeric:tabular-nums', text: '⏱ ' + fmtCd(left) }));
+    }
     const leave = el('button.btn.sm.ghost', { text: ui.station ? '← Stationer' : 'Forlad' });
     leave.addEventListener('click', () => {
       if (ui.station) { ui.station = null; render(); return; }
@@ -86,6 +105,16 @@
 
     if (ui.station === '__puzzle') { renderPuzzle(); return; }
 
+    // v3.8: stopur til officielle forsøg (90 sek. på Jockey Guiding/Stabl Høballer, 20 sek. på Æblefarm)
+    const swCard = el('div.card', { style: 'display:flex;align-items:center;gap:14px;margin-bottom:12px;padding:12px 16px' });
+    swCard.appendChild(el('span#swTime', { style: 'font-size:42px;font-weight:800;font-variant-numeric:tabular-nums;min-width:110px', text: fmtSw(swElapsed()) }));
+    const swStart = el('button.btn.sm.turf', { text: sw.running ? 'Stop ⏸' : (swElapsed() ? 'Fortsæt ▶' : 'Start stopur ▶' ) });
+    swStart.addEventListener('click', () => { if (sw.running) { sw.elapsed = swElapsed(); sw.running = false; } else { sw.startedAt = Date.now(); sw.running = true; } render(); });
+    const swReset = el('button.btn.sm.ghost', { text: 'Nulstil' });
+    swReset.addEventListener('click', () => { sw.running = false; sw.elapsed = 0; render(); });
+    swCard.appendChild(swStart); swCard.appendChild(swReset);
+    swCard.appendChild(el('span', { style: 'font-size:12px;color:#5b6b7d', text: 'Bliver rød ved 90 sek.' }));
+    root.appendChild(swCard);
     // team-liste for valgt station
     root.appendChild(el('p', { style: 'font-size:13px;color:#5b6b7d;margin:0 0 10px', text: 'Husk involveringsreglen: HELE stalden skal være samlet. Bestået udbetaler automatisk — dumpet starter kun cooldown.' }));
     OV.teams.forEach((t) => {
