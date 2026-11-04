@@ -204,7 +204,7 @@
     const off = (S.disabled && S.disabled.moneyTasks) || [];
     const items = [
       { k: 'tip13', emoji: '🎯', name: TX("Tip en 13'er", 'Lucky 13'), desc: TX('13 hurtige spørgsmål på tabletten', '13 quick questions on the tablet'), reward: TX('100 DD pr. rigtigt svar', '100 DD per correct answer') },
-      { k: 'tidslinje', emoji: '🕰️', name: TX('Tidslinjen', 'The Timeline'), desc: TX('Træk 5 numre — find kortene i lokalet og læg dem i kronologisk rækkefølge', 'Draw 5 numbers — find the cards in the room and put them in chronological order'), reward: TX('300 DD pr. tidslinje', '300 DD per timeline') },
+      { k: 'tidslinje', emoji: '🕰️', name: TX('Tidslinjen', 'The Timeline'), desc: TX('Træk 5 numre — find kortene i lokalet og læg dem i kronologisk rækkefølge', 'Draw 5 numbers — find the cards in the room and put them in chronological order'), reward: TX('150 DD pr. rigtig placering + 250 bonus', '150 DD per correct position + 250 bonus') },
       { k: 'mindpuzzle', emoji: '🧩', name: 'Mind Puzzle', desc: TX('Byg banen på spillepladen efter opgavekortet — sværere for hvert niveau', 'Build the course on the game board from the task card — harder every level'), reward: TX('300 DD pr. niveau', '300 DD per level') },
       { k: 'dyst', emoji: '⚔️', name: TX('Dysten', 'The Duel'), desc: TX('Udfordr en anden stald til estimerings-duel — bedst af 3', 'Challenge another stable to an estimation duel — best of 3'), reward: TX('500 DD til vinderen', '500 DD to the winner') },
       { k: 'stationer', emoji: '🎯', name: TX('Stationerne', 'The Stations'), desc: TX('Seks frie stationer i lokalet — HELE stalden skal være samlet ved det officielle forsøg', 'Six free stations in the room — the WHOLE stable must be gathered for the official attempt'), reward: TX('Op til 2.000 DD pr. succes', 'Up to 2,000 DD per success') },
@@ -627,18 +627,23 @@
     const dist = el('div.dist-row');
     marks.forEach((m) => dist.appendChild(el('span', { style: `left:${pctFor(m, race.trackLength)}%`, text: String(m) })));
     trackWrap.appendChild(dist);
-    const track = el('div.track');
+    const track = el('div.track', { style: S.teams.length > 7 ? 'gap:.35vh' : null });
+    // v3.8: banehøjden skalerer med antal stalde, så ALLE baner altid er på skærmen
+    // (fast 6.2vh-højde skubbede de nederste baner ud af billedet ved 8+ stalde).
+    const nTeams = S.teams.length;
+    const laneH = Math.min(6.2, Math.max(2.8, 54 / nTeams));
+    const horseH = Math.min(4, laneH * 0.68);
     S.teams.forEach((t) => {
-      const lane = el('div.lane', { 'data-lane': t.id });
+      const lane = el('div.lane', { 'data-lane': t.id, style: `height:${laneH.toFixed(2)}vh` });
       marks.forEach((m) => lane.appendChild(el('div.marker', { style: `left:${pctFor(m, race.trackLength)}%` })));
-      lane.appendChild(el('div.tag', { text: laneLabel(t) }));
+      lane.appendChild(el('div.tag', { text: laneLabel(t), style: nTeams > 7 ? 'font-size:1.4vh' : null }));
       const dots = el('div.dots');
       const prog = (race.progress || {})[t.id] || { used: 0, allowed: race.rollsPerTeam };
       for (let i = 0; i < prog.allowed; i++) dots.appendChild(el('i'));
       lane.appendChild(dots);
       lane.appendChild(el('div.finish'));
       lane.appendChild(el('div.roll-bubble'));
-      const horse = el('div.horse');
+      const horse = el('div.horse', { style: `width:${horseH.toFixed(2)}vh;height:${horseH.toFixed(2)}vh` });
       const sil = TG.tintedAsset('hest-markoer-silhuet', t.color.hex, { style: 'width:100%;height:100%' });
       sil.classList.add('silhouette');
       horse.appendChild(sil);
