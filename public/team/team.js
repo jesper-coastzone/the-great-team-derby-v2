@@ -43,6 +43,10 @@
       const ae = document.activeElement;
       if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA') && root.contains(ae)) return;
     }
+    // v3.8: bevar scroll-position ved gentegning af SAMME skærm (fx Tidslinjens pile
+    // og serverens state-pushes) — ellers hopper siden til toppen ved hvert tryk.
+    const keepScroll = S && S.me && S.slide && ui.renderedMode === S.slide.tabletMode;
+    const scrollYBefore = keepScroll ? window.scrollY : 0;
     clear(root);
     if (!S || !S.me) { root.appendChild(joinView()); ui.renderedMode = null; return; }
     root.appendChild(topbar());
@@ -52,6 +56,7 @@
     root.appendChild(app);
     if (S.slide.tabletMode === 'round-dashboard' || S.slide.tabletMode === 'preseason-explore') root.appendChild(navbar());
     ui.renderedMode = S.slide.tabletMode;
+    if (keepScroll && scrollYBefore) window.scrollTo(0, scrollYBefore);
     celebrateChanges(S.me);
     incomingTradeToast();
   }
@@ -358,7 +363,7 @@
     } else if (tab === 'money') {
       c.appendChild(psCard('💰 Pengeopgaver', 'Hurtige Derby Dollars med cooldown — fordel jer, så I altid har noget i gang.'));
       c.appendChild(psCard('Tip en 13\'er', '13 spørgsmål på tabletten — 100 DD pr. rigtigt svar.'));
-      c.appendChild(psCard('🕰️ Tidslinjen', 'Tabletten trækker 5 numre — find de ophængte kort i lokalet, og læg numrene i kronologisk rækkefølge. 300 DD pr. korrekt tidslinje.'));
+      c.appendChild(psCard('🕰️ Tidslinjen', 'Tabletten trækker 5 numre — find de ophængte kort, og læg numrene i kronologisk rækkefølge. 150 DD pr. rigtig placering + 250 bonus for alt rigtigt.'));
       c.appendChild(psCard('🧩 Mind Puzzle', 'Byg banen på spillepladen efter opgavekortet — tabletten godkender selv. 300 DD pr. niveau, og banerne bliver sværere og sværere.'));
       c.appendChild(psCard('⚔️ Dysten', 'Udfordr en anden stald til en estimerings-duel (bedst af 3). Vinderen får 500 DD.'));
     } else if (tab === 'trade') {
@@ -904,7 +909,7 @@
     if (ui.tip13) { c.appendChild(tip13Card()); return c; }
     if (ui.tidslinje) { c.appendChild(tidslinjeCard()); return c; }
     if (!off.includes('tip13')) c.appendChild(taskLauncher(TX("Tip en 13'er", 'Lucky 13'), TX('13 spørgsmål — 100 DD pr. rigtige.', '13 questions — 100 DD per correct answer.'), 'tip13', () => TG.emit('team:tip13Get').then((r) => { if (!r.ok) return check(r); ui.tip13 = { data: r, answers: {}, result: null }; render(); })));
-    if (!off.includes('tidslinje')) c.appendChild(taskLauncher(TX('🕰️ Tidslinjen', '🕰️ The Timeline'), TX('I trækker 5 numre — find kortene i lokalet og læg dem i kronologisk rækkefølge. 300 DD.', 'You draw 5 numbers — find the cards in the room and put them in chronological order. 300 DD.'), 'tidslinje', () => TG.emit('team:tidslinjeGet').then((r) => { if (!r.ok) return check(r); if (r.cooldownLeft) return toast(TX('Tidslinjen er på cooldown.', 'The Timeline is on cooldown.'), 'err'); ui.tidslinje = { cards: r.cards, order: r.cards.slice(), reward: r.nextReward, result: null }; render(); })));
+    if (!off.includes('tidslinje')) c.appendChild(taskLauncher(TX('🕰️ Tidslinjen', '🕰️ The Timeline'), TX('I trækker 5 numre — find kortene, og læg dem i kronologisk rækkefølge. 150 DD pr. rigtig placering + 250 bonus for alt rigtigt.', 'You draw 5 numbers — find the cards and put them in chronological order. 150 DD per correct position + 250 bonus for a perfect order.'), 'tidslinje', () => TG.emit('team:tidslinjeGet').then((r) => { if (!r.ok) return check(r); if (r.cooldownLeft) return toast(TX('Tidslinjen er på cooldown.', 'The Timeline is on cooldown.'), 'err'); ui.tidslinje = { cards: r.cards, order: r.cards.slice(), reward: r.nextReward, result: null }; render(); })));
     if (!off.includes('mindpuzzle')) { const mp = mindpuzzleCard(); mp.setAttribute('data-mtask', 'mindpuzzle'); c.appendChild(mp); }
     if (!off.includes('dyst')) { const dy = dystCard(); dy.setAttribute('data-mtask', 'dyst'); c.appendChild(dy); }
     if (!c.children.length) c.appendChild(el('div.card', {}, [el('p.muted', { text: TX('Ingen pengeopgaver er åbne lige nu — spørg Løbslederen.', 'No sponsor tasks are open right now — ask the Race Director.') })]));
@@ -954,9 +959,11 @@
         ]));
         (T.result.correctLabels || []).forEach((l, i) => card.appendChild(el('div.muted', { style: 'font-size:13px;padding:2px 0', text: `${i + 1}. ${TX('Kort', 'Card')} ${T.result.correctCards[i]} — ${l}` })));
       } else {
+        const cc = T.result.correctCount || 0, tot = T.result.total || 5;
         card.appendChild(el('div.center', { style: 'padding:14px' }, [
-          el('div', { style: 'font-size:38px', text: '❌' }),
-          el('h2', { text: TX('Ikke helt rigtigt', 'Not quite right') }),
+          el('div', { style: 'font-size:38px', text: cc ? '🟡' : '❌' }),
+          el('h2', { text: TX(`${cc} af ${tot} på rigtig plads`, `${cc} of ${tot} in the right spot`) }),
+          T.result.reward ? el('p', { style: 'margin-top:6px', html: '+ <b>' + sd(T.result.reward) + '</b>' }) : el('span'),
           el('p.muted', { style: 'margin-top:6px', text: TX('I får et nyt træk, når cooldown er udløbet.', 'You get a new draw when the cooldown expires.') }),
         ]));
       }
@@ -1327,7 +1334,8 @@
     const used = (me.race.rolls || []).length; const allowed = me.race.allowed || race.rollsPerTeam;
     const card = el('div.card.center');
     card.appendChild(el('div.stat.big', {}, [el('div.k', { text: 'Position' }), el('div.v', { text: me.race.position + ' / ' + race.trackLength })]));
-    const dice = el('div.dice', { style: 'margin:10px 0;display:flex;align-items:center;justify-content:center;gap:10px' }); if (me.race.lastRoll) { dice.appendChild(TG.assetImg('terning', { style: 'width:52px;height:52px' })); dice.appendChild(el('span', { text: String(me.race.lastRoll) })); } else { dice.textContent = '—'; } card.appendChild(dice);
+    // v3.8: STOR terning — seneste slag skal kunne ses på afstand af hele stalden
+    const dice = el('div.dice', { style: 'margin:12px 0;display:flex;align-items:center;justify-content:center;gap:18px' }); if (me.race.lastRoll) { dice.appendChild(TG.assetImg('terning', { style: 'width:110px;height:110px' })); dice.appendChild(el('span', { style: 'font-size:84px;font-weight:800;line-height:1;font-family:var(--font-num,inherit)', text: String(me.race.lastRoll) })); } else { dice.textContent = '—'; } card.appendChild(dice);
     card.appendChild(el('p.muted', { text: `${TX('Slag brugt', 'Rolls used')}: ${used}/${allowed} · ${TX('terning', 'dice')} ${me.dice.min}–${me.dice.max}` }));
     // v3.3: tur-baserede slag — kun turens stald kan slå. v3.4: + ro mellem slagene (nedtælling på knappen)
     const myTurn = !race.turnTeamId || race.turnTeamId === me.id;
