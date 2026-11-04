@@ -215,7 +215,10 @@ const gameConfig = {
     // Tidslinje: fælles pengeopgave for ALLE hold — løses ved Tidslinje-stationen
     // (egen tablet + fysiske kort). Cooldown og sæt-rotation er pr. hold.
     tidslinje: {
-      rewardOnSuccess: 300,
+      // v3.8 (evaluering 28/10): mere værd + "tættest på" belønnes — betaling pr.
+      // kort på rigtig plads, og bonus når ALLE sidder. 5 rigtige = 5×150+250 = 1.000 DD.
+      rewardPerCorrectCard: 150,
+      bonusAllCorrect: 250,
       rewardOnFail: 0,
       cooldownSeconds: 300,
       cardsPerDraw: 5,           // antal tilfældige numre pr. træk (fra puljen på 40)
