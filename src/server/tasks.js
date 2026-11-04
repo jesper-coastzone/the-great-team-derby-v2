@@ -75,7 +75,8 @@ function getTidslinje(game, team) {
   return {
     ok: true,
     cards: st.currentDraw.slice().sort((a, b) => a - b),
-    nextReward: Math.round(cfg.moneyTasks.tidslinje.rewardOnSuccess * taskFactor(game, 'tidslinje')), cooldownLeft: cdLeft,
+    nextReward: Math.round(((cfg.moneyTasks.tidslinje.rewardPerCorrectCard || 0) * perDraw + (cfg.moneyTasks.tidslinje.bonusAllCorrect || 0)) * taskFactor(game, 'tidslinje')), cooldownLeft: cdLeft,
+    rewardPerCorrectCard: Math.round((cfg.moneyTasks.tidslinje.rewardPerCorrectCard || 0) * taskFactor(game, 'tidslinje')),
   };
 }
 
@@ -91,14 +92,18 @@ function submitTidslinje(game, team, orderedNumbers) {
   }
   const byN = new Map(timelineEvents.map((e) => [e.n, e]));
   const correctOrder = draw.slice().sort((a, b) => byN.get(a).year - byN.get(b).year);
-  const success = JSON.stringify(submitted) === JSON.stringify(correctOrder);
+  // v3.8: "tættest på" belønnes — tæl kort på rigtig plads og betal pr. kort + bonus for alt rigtigt
+  const correctCount = submitted.reduce((acc, n, i) => acc + (n === correctOrder[i] ? 1 : 0), 0);
+  const success = correctCount === correctOrder.length;
   st.count = (st.count || 0) + 1;
   st.currentDraw = null; // nyt tilfældigt træk næste gang — uanset udfald
   setCooldown(team, 'tidslinje', cfg.moneyTasks.tidslinje.cooldownSeconds);
-  const reward = success ? Math.round(cfg.moneyTasks.tidslinje.rewardOnSuccess * taskFactor(game, 'tidslinje')) : cfg.moneyTasks.tidslinje.rewardOnFail;
-  if (reward) econ.addTransaction(game, team, reward, 'task', L(game, `Tidslinjen ${success ? 'korrekt' : 'forkert'}`, `The Timeline ${success ? 'correct' : 'incorrect'}`));
-  gs.logEvent(game, `${team.stableName} forsøgte Tidslinjen (${success ? `korrekt, +${reward} ${cfg.currencyAbbr}` : 'forkert'}).`);
-  const res = { ok: true, success, reward: success ? reward : 0 };
+  const tcfg = cfg.moneyTasks.tidslinje;
+  let reward = Math.round(((tcfg.rewardPerCorrectCard || 0) * correctCount + (success ? tcfg.bonusAllCorrect || 0 : 0)) * taskFactor(game, 'tidslinje'));
+  if (!reward && !success) reward = tcfg.rewardOnFail || 0;
+  if (reward) econ.addTransaction(game, team, reward, 'task', L(game, `Tidslinjen: ${correctCount}/${correctOrder.length} rigtige`, `The Timeline: ${correctCount}/${correctOrder.length} correct`));
+  gs.logEvent(game, `${team.stableName} forsøgte Tidslinjen (${correctCount}/${correctOrder.length} rigtige${reward ? `, +${reward} ${cfg.currencyAbbr}` : ''}).`);
+  const res = { ok: true, success, reward, correctCount, total: correctOrder.length };
   if (success) {
     res.correctCards = correctOrder;
     res.correctLabels = correctOrder.map((n) => (isEn(game) && byN.get(n).labelEn) || byN.get(n).label);
@@ -429,7 +434,9 @@ function stationOverview(game) {
     const st = (t.taskStatus || {}).puzzle || {};
     puzzle[t.id] = { pending: !!st.pending, completed: !!st.completed };
   });
-  return { ok: true, stations, teams, matrix, puzzle, tasksUnlocked: !!game.tasksUnlocked };
+  // v3.8: runde-nedtælling med til løbslederens tablet, så den kan følges udenfor
+  const roundTimer = game.timers && game.timers.round ? { endsAt: game.timers.round.endsAt } : null;
+  return { ok: true, stations, teams, matrix, puzzle, tasksUnlocked: !!game.tasksUnlocked, roundTimer, currentRound: game.currentRound || 0, phase: game.currentPhase || null };
 }
 
 function resolveStationAttempt(game, teamId, exerciseId, passed) {
