@@ -267,6 +267,45 @@ const tip13Sets = [
       { q: 'Hvad kaldes et klassisk væddeløb for 3-årige heste, fx i Epsom?', qEn: 'What is a classic race for 3-year-old horses, e.g. at Epsom, called?', options: ['Et derby', 'Et grandprix', 'En cup'], optionsEn: ['A derby', 'A grand prix', 'A cup'], correct: 0 },
     ],
   },
+  // ---- v3.9: JULESÆT (theme: 'jul') — kun med i The Great Christmas Derby-spil ----
+  {
+    id: 'JUL1',
+    theme: 'jul',
+    questions: [
+      { q: 'Hvornår fejrer danskerne juleaften?', qEn: 'When do Danes celebrate Christmas Eve?', options: ['24. december', '25. december', '31. december'], optionsEn: ['24 December', '25 December', '31 December'], correct: 0 },
+      { q: 'Hvad hedder rensdyret med den røde tud?', qEn: 'What is the reindeer with the red nose called?', options: ['Rudolf', 'Valdemar', 'Konrad'], optionsEn: ['Rudolph', 'Walter', 'Conrad'], correct: 0 },
+      { q: 'Hvad gemmer man i risalamanden til jul?', qEn: 'What is hidden in the Danish rice dessert at Christmas?', options: ['En mønt', 'En mandel', 'En rosin'], optionsEn: ['A coin', 'An almond', 'A raisin'], correct: 1 },
+      { q: 'Hvilket land siges julemanden (Santa) ofte at bo i?', qEn: 'Which country is Santa often said to live in?', options: ['Finland', 'Canada', 'Norge'], optionsEn: ['Finland', 'Canada', 'Norway'], correct: 0 },
+      { q: 'Hvad hedder den varme juledrik med krydderier og rosiner?', qEn: 'What is the warm spiced Christmas drink with raisins called?', options: ['Gløgg', 'Toddy', 'Punch'], optionsEn: ['Gløgg (mulled wine)', 'Toddy', 'Punch'], correct: 0 },
+      { q: 'Hvor mange låger har en klassisk julekalender?', qEn: 'How many doors does a classic advent calendar have?', options: ['12', '24', '31'], correct: 1 },
+      { q: 'Hvilken plante kysser man under til jul?', qEn: 'Which plant do people kiss under at Christmas?', options: ['Mistelten', 'Gran', 'Kristtjørn'], optionsEn: ['Mistletoe', 'Spruce', 'Holly'], correct: 0 },
+      { q: 'Hvad trækker julemandens kane?', qEn: "What pulls Santa's sleigh?", options: ['Heste', 'Rensdyr', 'Elge'], optionsEn: ['Horses', 'Reindeer', 'Moose'], correct: 1 },
+      { q: 'Hvor mange søndage er der i advent?', qEn: 'How many Sundays are there in Advent?', options: ['3', '4', '5'], correct: 1 },
+      { q: 'Hvad danser danskerne typisk om juleaften?', qEn: 'What do Danes typically dance around on Christmas Eve?', options: ['Juletræet', 'Bordet', 'Sofaen'], optionsEn: ['The Christmas tree', 'The table', 'The sofa'], correct: 0 },
+      { q: 'Hvilken by kalder sig julemandens hjemby i Grønland?', qEn: "Which town in Greenland calls itself Santa's hometown?", options: ['Nuuk', 'Ilulissat', 'Uummannaq'], optionsEn: ['Nuuk', 'Ilulissat', 'Uummannaq'], correct: 2 },
+      { q: 'Hvad hedder småkagen formet som en lille brun krydret kage, klassisk til jul?', qEn: 'Which small spiced brown biscuit is a Danish Christmas classic?', options: ['Brunkage', 'Vaniljekrans', 'Havregrynskugle'], optionsEn: ['Brunkage (ginger biscuit)', 'Vanilla wreath', 'Oat ball'], correct: 0 },
+      { q: 'Hvilken dato er juledag?', qEn: 'Which date is Christmas Day?', options: ['24. december', '25. december', '26. december'], optionsEn: ['24 December', '25 December', '26 December'], correct: 1 },
+    ],
+  },
+  {
+    id: 'JUL2',
+    theme: 'jul',
+    questions: [
+      { q: 'Hvad bager man æbleskiver på?', qEn: 'What are æbleskiver baked in?', options: ['En pande med huller', 'En bageplade', 'En vaffelmaskine'], optionsEn: ['A pan with holes', 'A baking tray', 'A waffle iron'], correct: 0 },
+      { q: 'Hvor mange rensdyr trækker julemandens kane med Rudolf?', qEn: "How many reindeer pull Santa's sleigh including Rudolph?", options: ['8', '9', '12'], correct: 1 },
+      { q: 'Hvad hedder nissen i den danske tradition, der bor på loftet?', qEn: 'Where does the Danish house elf (nisse) traditionally live?', options: ['På loftet', 'I kælderen', 'I stalden'], optionsEn: ['In the attic', 'In the basement', 'In the stable'], correct: 0 },
+      { q: 'Hvad spiser nissen helst?', qEn: 'What does the Danish nisse prefer to eat?', options: ['Risengrød', 'Flæskesteg', 'Æbleskiver'], optionsEn: ['Rice porridge', 'Roast pork', 'Æbleskiver'], correct: 0 },
+      { q: 'Hvilket krydderi giver brunkager og gløgg julesmag?', qEn: 'Which spice gives Christmas biscuits and gløgg their flavour?', options: ['Kanel', 'Karry', 'Basilikum'], optionsEn: ['Cinnamon', 'Curry', 'Basil'], correct: 0 },
+      { q: 'Hvad sætter man traditionelt i toppen af juletræet?', qEn: 'What traditionally goes on top of the Christmas tree?', options: ['En stjerne', 'En kugle', 'En sløjfe'], optionsEn: ['A star', 'A bauble', 'A bow'], correct: 0 },
+      { q: 'Hvilken sang synges ofte som den sidste om juletræet?', qEn: 'Which Danish carol is often sung last around the tree?', options: ['Nu er det jul igen', 'Et barn er født', 'Dejlig er jorden'], optionsEn: ['Nu er det jul igen', 'Et barn er født', 'Dejlig er jorden'], correct: 0 },
+      { q: 'Hvad kaldes dagen FØR juleaften i Danmark?', qEn: 'What is the day BEFORE Christmas Eve called in Denmark?', options: ['Lillejuleaften', 'Førjul', 'Adventsdag'], optionsEn: ['Little Christmas Eve', 'Pre-Christmas', 'Advent day'], correct: 0 },
+      { q: 'Hvilket land kommer juletræs-traditionen oprindeligt fra?', qEn: 'Which country did the Christmas tree tradition originally come from?', options: ['Danmark', 'Tyskland', 'England'], optionsEn: ['Denmark', 'Germany', 'England'], correct: 1 },
+      { q: 'Hvad hedder balletten med nøddeknækkeren og musekongen?', qEn: 'What is the ballet with the nutcracker and the Mouse King called?', options: ['Nøddeknækkeren', 'Svanesøen', 'Giselle'], optionsEn: ['The Nutcracker', 'Swan Lake', 'Giselle'], correct: 0 },
+      { q: 'Snemanden i den kendte julesang har en hvad på hovedet?', qEn: 'Frosty the Snowman wears what on his head?', options: ['En hat', 'En kasket', 'En krone'], optionsEn: ['A hat', 'A cap', 'A crown'], correct: 0 },
+      { q: 'Hvornår er det Sankta Lucia-dag?', qEn: 'When is St. Lucy\'s Day (Lucia)?', options: ['1. december', '13. december', '21. december'], optionsEn: ['1 December', '13 December', '21 December'], correct: 1 },
+      { q: 'Hvad hedder hesten, der traditionelt trækker kanen i "Jingle Bells"?', qEn: 'In "Jingle Bells", what pulls the one-horse open sleigh?', options: ['Én hest', 'To rensdyr', 'Fire hunde'], optionsEn: ['One horse', 'Two reindeer', 'Four dogs'], correct: 0 },
+    ],
+  },
 ];
 
 // ---------- Tidslinje (Tidslinje-stationen — egen tablet + fysiske kort) ----------
