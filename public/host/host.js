@@ -112,6 +112,9 @@
     // v3.4: digital eller fysisk spilleplade — fysisk = banen vises IKKE på storskærmen (kun kommentator)
     const boardSel = el('select'); [['digital', 'Digital (banen på storskærmen)'], ['fysisk', 'Fysisk plade (kun kommentator på skærmen)']].forEach(([v, l]) => { const o = el('option', { text: l }); o.value = v; boardSel.appendChild(o); }); f.board = boardSel;
     row.appendChild(el('label.field', {}, [el('span.lbl', { text: 'Spilleplade' }), boardSel]));
+    // v3.9: juletema — The Great Christmas Derby (kun kosmetik; klassisk er default)
+    const themeSel = el('select'); [['classic', 'Klassisk'], ['jul', '🎄 Jul (The Great Christmas Derby)']].forEach(([v, l]) => { const o = el('option', { text: l }); o.value = v; themeSel.appendChild(o); }); f.theme = themeSel;
+    row.appendChild(el('label.field', {}, [el('span.lbl', { text: 'Tema' }), themeSel]));
     row.appendChild(txt('Rundelængde (min)', 'roundMin', '20', 'number'));
     row.appendChild(txt('Antal bots (0-3)', 'numBots', '0', 'number'));
     card.appendChild(row);
@@ -124,6 +127,7 @@
         roundLengthSeconds: Number(f.roundMin.value) * 60,
         numBots: Number(f.numBots.value) || 0,
         physicalBoard: f.board.value === 'fysisk',
+        theme: f.theme.value,
       };
       TG.emit('host:createGame', settings).then((r) => {
         if (r.ok) { TG.save('tg_host_code', r.code); ui.expectCode = r.code; ui.creating = false; toast('Spil oprettet: ' + r.code, 'ok'); }
