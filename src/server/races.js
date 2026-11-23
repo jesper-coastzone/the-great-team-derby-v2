@@ -238,6 +238,9 @@ function rollForTeam(game, team, opts) {
   if (re.enabled && race.eventCount[team.id] < (re.maxPerTeamPerRace || 1) * stormFactor && Math.random() < (re.chancePerRoll || 0) * stormFactor) {
     event = pickRandomEvent();
     if (event) race.eventCount[team.id] += 1;
+    // v3.9: juletema — samme events og effekter, jule-navne/emojis
+    const th = game.settings && game.settings.theme === 'jul' && cfg.themes && cfg.themes.jul && cfg.themes.jul.raceEvents;
+    if (event && th && th[event.id]) event = { ...event, ...th[event.id] };
   }
 
   const eventEffect = event ? event.effect : 0;
