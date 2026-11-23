@@ -92,6 +92,25 @@ const gameConfig = {
     { id: 'rolige-rasmus', name: 'Rolige Rasmus', nameEn: 'Calm Calvin',    topMod: 0, bottomMod: 1,  minPrice: 200, emoji: '🌱',
       profile: { da: 'Lærlingen — ung, billig, pålidelig', en: 'The apprentice — young, cheap, reliable' } },
   ],
+  // ---- Juletema: "The Great Christmas Derby" (v3.9) ----
+  // KUN kosmetik — navne, emojis og stemning. Priser, effekter og flow er identiske.
+  // Vælges ved spiloprettelsen (settings.theme: 'classic' | 'jul'); classic er default.
+  themes: {
+    jul: {
+      boosts: {
+        'boost-carrots': { emoji: '🥮', label: 'Friske æbleskiver', labelEn: 'Fresh æbleskiver', desc: 'Hesten løber hurtigere på æbleskiver: +1 på terningens TOP — kun i næste løb.', descEn: 'The horse runs faster on æbleskiver: +1 on the TOP of the dice — next race only.' },
+        'boost-peptalk': { emoji: '☕', label: 'Gløgg & pep-talk', labelEn: 'Mulled wine & pep talk', desc: 'Jockeyen rider lunt og sikkert: +1 på terningens BUND — kun i næste løb.', descEn: 'The jockey rides warm and safe: +1 on the BOTTOM of the dice — next race only.' },
+        'boost-superfeed': { emoji: '🌟', label: 'Julestjernefoder', labelEn: 'Christmas star feed', desc: 'Juleformen i top: +1 på BÅDE top og bund — kun i næste løb.', descEn: 'Christmas form at its peak: +1 on BOTH top and bottom — next race only.' },
+      },
+      raceEvents: {
+        vet: { label: 'Nissedrilleri', labelEn: 'Elf mischief', emoji: '🧝' },
+        headwind: { label: 'Snestorm', labelEn: 'Snowstorm', emoji: '🌨️' },
+        tailwind: { label: 'Perfekt kaneføre', labelEn: 'Perfect sleigh tracks', emoji: '🛷' },
+        crowd: { label: 'Julestemning på tribunen', labelEn: 'Christmas spirit in the stands', emoji: '🔔' },
+      },
+    },
+  },
+
   jockeyBidIncrement: 50,       // mindste overbud
   // v3.2: stalde uden vundet bud tildeles en ledig jockey til denne FASTE pris —
   // højere end alle mindstepriser, så det aldrig betaler sig at lade være med at byde.
