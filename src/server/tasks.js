@@ -27,7 +27,9 @@ function getTip13(game, team) {
   if (!game.tasksUnlocked) return { ok: false, error: L(game, 'Opgaverne åbner, når træningen starter.', 'Tasks open when the training phase starts.') };
   const st = ensureStatus(team, 'tip13');
   if (onCooldown(team, 'tip13')) return { ok: false, error: L(game, 'Tip en 13\'er er på cooldown.', 'Lucky 13 is on cooldown.') };
-  const set = tip13Sets[(st.count || 0) % tip13Sets.length];
+  // v3.9: tema-sæt — julesæt er KUN med i jule-spil; klassiske spil er uændrede
+  const eligible = tip13Sets.filter((s) => !s.theme || s.theme === (game.settings && game.settings.theme));
+  const set = eligible[(st.count || 0) % eligible.length];
   st.currentSetId = set.id;
   return {
     ok: true,
