@@ -98,12 +98,30 @@
     return wrap;
   }
 
+  // v3.9: juletema — kort bjældeklang (WebAudio, ingen lydfiler) ved terningslag
+  function jingle() {
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+      window.__tgAC = window.__tgAC || new AC();
+      const ac = window.__tgAC;
+      [0, 0.11, 0.22, 0.33].forEach((t, i) => {
+        const o = ac.createOscillator(), g = ac.createGain();
+        o.type = 'triangle'; o.frequency.value = [1568, 2093, 1568, 2637][i];
+        g.gain.setValueAtTime(0.0001, ac.currentTime + t);
+        g.gain.exponentialRampToValueAtTime(0.16, ac.currentTime + t + 0.015);
+        g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + t + 0.3);
+        o.connect(g); g.connect(ac.destination);
+        o.start(ac.currentTime + t); o.stop(ac.currentTime + t + 0.35);
+      });
+    } catch (e) { /* lyd er pynt */ }
+  }
+
   function topbar() {
     const me = S.me;
     const bar = el('div.topbar');
     const b = el('div.badge', { style: `background:${me.color.hex}` , text: String(me.teamNumber) });
     bar.appendChild(b);
-    bar.appendChild(el('div', {}, [el('div.name', { text: me.stableName }), el('div', { style: 'font-size:11px;opacity:.75', text: S.slide.title })]));
+    bar.appendChild(el('div', {}, [el('div.name', { text: (S.theme === 'jul' ? '🎄 ' : '') + me.stableName }), el('div', { style: 'font-size:11px;opacity:.75', text: S.slide.title })]));
     const m = el('div.metrics');
     m.appendChild(metric(TX('Staldkassen', 'Stable Fund'), sd(me.cash)));
     m.appendChild(metric(TX('Løbspoint', 'Race Points'), String(me.racePoints || 0)));
@@ -1351,6 +1369,7 @@
     else b.textContent = waitTxt;
     b.addEventListener('click', () => TG.emit('team:roll').then((r) => {
       check(r); if (!r.ok) return;
+      if (S.theme === 'jul') jingle(); // v3.9: bjældeklang i juletemaet
       if (r.event) toast(`${r.event.emoji || ''} ${r.event.label}! ${r.event.effect > 0 ? '+' : ''}${r.event.effect} ${TX('felter', 'spaces')}`, r.event.effect > 0 ? 'ok' : 'err');
       if (r.fanBoost) toast(`📣 Fan-boost! +${r.fanBoost} ${TX('felter', 'spaces')}`, 'ok');
       if (r.catchup) toast(`🔥 ${TX('Opløbsfight!', 'Home-stretch fight!')} +${r.catchup} ${TX('felt', 'space')}`, 'ok');
