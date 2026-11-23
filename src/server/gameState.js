@@ -100,6 +100,7 @@ function createGame(settings = {}) {
   const s = {
     format: fmtKey,
     lang: settings.lang === 'en' ? 'en' : 'da',
+    theme: settings.theme === 'jul' ? 'jul' : 'classic', // v3.9: juletema — kun kosmetik
     eventName: settings.eventName || 'The Great Team Derby',
     programItems: settings.programItems && settings.programItems.length
       ? settings.programItems
@@ -353,12 +354,20 @@ function currentRace(game) {
   return game.races.find((r) => r.id === game.currentRaceId) || null;
 }
 
+// v3.9: juletema — boosts med jule-navne/emojis (samme id, pris og effekt)
+function themedBoosts(game) {
+  const t = game.settings && game.settings.theme === 'jul' && cfg.themes && cfg.themes.jul;
+  if (!t || !t.boosts) return cfg.paddockBoosts || [];
+  return (cfg.paddockBoosts || []).map((b) => (t.boosts[b.id] ? { ...b, ...t.boosts[b.id] } : b));
+}
+
 function buildStateFor(game, role, teamId) {
   const me = teamId ? getTeam(game, teamId) : null;
   const race = currentRace(game);
   const state = {
     code: game.code,
     lang: game.settings.lang || 'da',
+    theme: (game.settings && game.settings.theme) || 'classic',
     physicalBoard: !!(game.settings && game.settings.physicalBoard),
     format: game.settings.format || '2t',
     eventName: game.settings.eventName,
@@ -377,7 +386,7 @@ function buildStateFor(game, role, teamId) {
       maxPurchasesPerOption: cfg.maxPurchasesPerOption || 0,
       roles: cfg.roles || [],
       finalBetting: cfg.finalBetting || { enabled: false },
-      paddockBoosts: cfg.paddockBoosts || [],
+      paddockBoosts: themedBoosts(game),
       raceBetting: cfg.raceBetting || { enabled: false },
       // Niveau-tærskler til progressbarer på tabletten
       horseLevelThresholds: cfg.horseLevelThresholds,
