@@ -26,6 +26,7 @@
 
   function render() {
     if (!S) return;
+    ensureSnow(S.theme === 'jul'); // v3.9: juletema — stille snefald over alle slides
     changeCardFx(); // Forandringskort: afsløring + banner (kører uafhængigt af slide)
     // Løbs-slides opdateres in-place, så hestene glider i stedet for at hoppe.
     if (['warmup-race', 'race', 'final-race'].includes(S.slide.kind) && S.race && !S.screenMessageOverride) {
@@ -606,6 +607,22 @@
     ovPrev.tops = newTops; ovPrev.places = newPlaces;
   }
 
+  // ---- juletema (v3.9): snefald + nissehue — ren kosmetik ----
+  function ensureSnow(on) {
+    let ov = document.getElementById('snowOv');
+    if (!on) { if (ov) ov.remove(); return; }
+    if (ov) return;
+    ov = el('div', { style: 'position:fixed;inset:0;pointer-events:none;z-index:6;overflow:hidden' });
+    ov.id = 'snowOv';
+    for (let i = 0; i < 34; i++) {
+      const s = el('span', { text: '❄' });
+      s.style.cssText = `position:absolute;top:-4vh;left:${Math.random() * 100}vw;font-size:${10 + Math.random() * 16}px;color:rgba(255,255,255,.9);text-shadow:0 0 5px rgba(3,47,74,.35);animation:snowfall ${8 + Math.random() * 10}s linear ${Math.random() * 10}s infinite;`;
+      ov.appendChild(s);
+    }
+    document.body.appendChild(ov);
+  }
+  const SANTA_HAT = '<svg viewBox="0 0 24 16" style="position:absolute;top:-46%;left:6%;width:72%;height:62%;transform:rotate(-14deg)"><path d="M3 12 Q10 0 20 5" fill="#B3121B" stroke="#8d0e15" stroke-width=".6"/><circle cx="20.6" cy="4.6" r="2.4" fill="#fff"/><rect x="1.4" y="10.8" width="13.6" height="3.6" rx="1.8" fill="#fff"/></svg>';
+
   // ---- race track (v2: levende løb med feed, events og konfetti) ----
   function raceTrack(title) {
     const race = S.race;
@@ -633,10 +650,12 @@
     const nTeams = S.teams.length;
     const laneH = Math.min(6.2, Math.max(2.8, 54 / nTeams));
     const horseH = Math.min(4, laneH * 0.68);
+    const xmas = S.theme === 'jul'; // v3.9: vinterbane + nissehuer
     S.teams.forEach((t) => {
-      const lane = el('div.lane', { 'data-lane': t.id, style: `height:${laneH.toFixed(2)}vh` });
-      marks.forEach((m) => lane.appendChild(el('div.marker', { style: `left:${pctFor(m, race.trackLength)}%` })));
-      lane.appendChild(el('div.tag', { text: laneLabel(t), style: nTeams > 7 ? 'font-size:1.4vh' : null }));
+      const laneStyle = `height:${laneH.toFixed(2)}vh` + (xmas ? ';background:repeating-linear-gradient(90deg,#EDF4F9 0 5vw,#DEEAF2 5vw 10vw);border-color:#AFC9D9' : '');
+      const lane = el('div.lane', { 'data-lane': t.id, style: laneStyle });
+      marks.forEach((m) => lane.appendChild(el('div.marker', { style: `left:${pctFor(m, race.trackLength)}%` + (xmas ? ';background:rgba(3,47,74,.14)' : '') })));
+      lane.appendChild(el('div.tag', { text: laneLabel(t), style: (nTeams > 7 ? 'font-size:1.4vh;' : '') + (xmas ? 'color:#032F4A;text-shadow:none' : '') || null }));
       const dots = el('div.dots');
       const prog = (race.progress || {})[t.id] || { used: 0, allowed: race.rollsPerTeam };
       for (let i = 0; i < prog.allowed; i++) dots.appendChild(el('i'));
@@ -647,6 +666,7 @@
       const sil = TG.tintedAsset('hest-markoer-silhuet', t.color.hex, { style: 'width:100%;height:100%' });
       sil.classList.add('silhouette');
       horse.appendChild(sil);
+      if (xmas) horse.appendChild(el('span', { html: SANTA_HAT })); // nissehue på jockeyen
       lane.appendChild(horse);
       track.appendChild(lane);
     });
@@ -740,13 +760,13 @@
         podium.appendChild(row);
         if ((race.settledBets || []).length) {
           const br = el('div.row', { style: 'gap:.9vw;margin-top:.8vh;justify-content:center;flex-wrap:wrap' });
-          br.appendChild(el('span', { style: 'font-size:1.2vw;font-weight:800', text: TX('🎫 Bookmakeren betaler ud:', '🎫 The bookmaker pays out:') }));
+          br.appendChild(el('span', { style: 'font-size:1.2vw;font-weight:800', text: S.theme === 'jul' ? TX('🎫 Julebookmakeren betaler ud:', '🎫 The Christmas bookmaker pays out:') : TX('🎫 Bookmakeren betaler ud:', '🎫 The bookmaker pays out:') }));
           race.settledBets.forEach((b) => br.appendChild(el('span.chip', { style: `font-size:1.1vw;padding:.4vw .9vw;${b.won ? 'border-color:#1d7a3c;color:#1d7a3c;font-weight:700' : 'opacity:.75'}`, text: `${b.stableName}: ${money(b.amount)} ${TX('på', 'on')} ${b.horseName} ${b.won ? '→ +' + money(b.payout) : TX('→ tabt', '→ lost')}` })));
           podium.appendChild(br);
         }
         if (race.cashBonus && race.cashBonus.length) {
           const cr = el('div.row', { style: 'gap:.9vw;margin-top:.8vh;justify-content:center;flex-wrap:wrap' });
-          cr.appendChild(el('span', { style: 'font-size:1.2vw;font-weight:800', text: TX('💰 Den Gyldne Staldkasse — Staldkasserne giver løbspoint:', '💰 The Golden Stable Fund — the Stable Funds earn Race Points:') }));
+          cr.appendChild(el('span', { style: 'font-size:1.2vw;font-weight:800', text: S.theme === 'jul' ? TX('💰 Den Gyldne Julekasse — Staldkasserne giver løbspoint:', '💰 The Golden Christmas Fund — the Stable Funds earn Race Points:') : TX('💰 Den Gyldne Staldkasse — Staldkasserne giver løbspoint:', '💰 The Golden Stable Fund — the Stable Funds earn Race Points:') }));
           race.cashBonus.forEach((cb) => cr.appendChild(el('span.chip', { style: 'font-size:1.1vw;padding:.4vw .9vw', text: `${cb.place}. ${cb.stableName} (${money(cb.cash)}) → +${cb.points} p` })));
           podium.appendChild(cr);
         }
@@ -772,11 +792,12 @@
   }
 
   function confetti() {
-    const colors = ['#B8A993', '#6F191E', '#032F4A', '#2A4B3B', '#6F191E', '#E9DCC8'];
+    const xmas = S && S.theme === 'jul';
+    const colors = xmas ? ['#FFFFFF', '#EAF2F7', '#B8A993', '#DCE9F2', '#FFFFFF', '#9FBFD4'] : ['#B8A993', '#6F191E', '#032F4A', '#2A4B3B', '#6F191E', '#E9DCC8'];
     for (let i = 0; i < 90; i++) {
       const p = el('div.confetti');
       const size = 6 + Math.random() * 9;
-      p.style.cssText += `left:${Math.random() * 100}vw;width:${size}px;height:${size * 0.45}px;background:${colors[i % colors.length]};animation-duration:${2.4 + Math.random() * 2.4}s;animation-delay:${Math.random() * 1.4}s;border-radius:2px;`;
+      p.style.cssText += `left:${Math.random() * 100}vw;width:${size}px;height:${xmas ? size : size * 0.45}px;background:${colors[i % colors.length]};animation-duration:${2.4 + Math.random() * 2.4}s;animation-delay:${Math.random() * 1.4}s;border-radius:${xmas ? '50%' : '2px'};`;
       document.body.appendChild(p);
       setTimeout(() => p.remove(), 7000);
     }
