@@ -106,7 +106,7 @@
         ['🎫', TX('Odds-tavlen', 'The odds board'), TX('Sæt ét væddemål pr. stald på den hest, I tror vinder — også jeres egen. Rammer I rigtigt, får I indsats × odds.', 'Place one bet per stable on the horse you think will win — including your own. Guess right and you get stake × odds.')],
       ], TX('Paddocken åbner på næste slide — 3 minutter, så gælder det!', 'The Paddock opens on the next slide — 3 minutes, then it counts!'))
       case 'race-intro': return explainCards(TX('Løbet — sådan virker det', 'The Race — how it works'), TX('Nyt element · følg med her', 'New element · follow along here'), [
-        ['🎲', TX('5 spurter — efter tur', '5 sprints — in turns'), TX('Staldene slår efter tur, runde for runde — Stald 1 starter. Jockey og pep-talk løfter BUNDEN, hest og gulerødder løfter TOPPEN.', 'The stables roll in turns, round by round — Stable 1 starts. The jockey and pep talk lift the BOTTOM, carrots lift the TOP.')],
+        ['🎲', TX('5 spurter — i fælles slag-runder', '5 sprints — in shared roll rounds'), TX('Alle stalde slår deres slag i samme tidsvindue — når vinduet lukker, slås glemte slag automatisk. Jockey og pep-talk løfter BUNDEN, hest og gulerødder løfter TOPPEN.', 'All stables roll in the same time window — when it closes, missed rolls are rolled automatically. The jockey and pep talk lift the BOTTOM, carrots lift the TOP.')],
         ['⚡', TX('Alt kan ske', 'Anything can happen'), TX('Dyrlægetjek, vind og publikum rammer tilfældigt — og heste langt bagud får en opløbsfight-bonus.', 'Vet checks, wind and the crowd strike at random — and horses far behind get a home-stretch bonus.')],
         ['🏁', TX('Målstregen', 'The finish line'), TX('Længst fremme vinder: dagens 1. præmie og flest løbspoint. Væddemål udbetales lige efter løbet.', "Furthest ahead wins: the day's 1st prize and the most Race Points. Bets pay out right after the race.")],
       ], TX('Gør jer klar — hestene føres til start!', 'Get ready — the horses are being led to the start!'))
@@ -508,12 +508,13 @@
       el('div', { style: 'font-family:var(--font-display);font-weight:800;font-size:1.5vw;color:var(--burgundy)', text: TX('🏇 Jockey-auktionen — én til hver stald', '🏇 The Jockey Auction — one per stable') }),
       el('div', { style: 'font-size:1vw;font-weight:800;color:var(--navy)', text: ja.status === 'open' ? TX('ÅBEN BUDRUNDE', 'OPEN BIDDING') : TX('AFGJORT', 'SETTLED') }),
     ]));
-    const grid = el('div', { style: 'display:grid;grid-template-columns:repeat(3,1fr);gap:.6vw;margin-top:.5vh' });
+    const many = (ja.jockeys || []).length > 6; // v3.10: 7+ jockeyer → 4 kolonner og kompakte celler, så alle er på skærmen
+    const grid = el('div', { style: `display:grid;grid-template-columns:repeat(${many ? 4 : 3},1fr);gap:.5vw;margin-top:.5vh` });
     ja.jockeys.forEach((j) => {
       const w = j.winner;
       const cell = el('div', { style: `border:1.5px solid ${w ? 'var(--gold)' : 'var(--line)'};border-radius:10px;padding:.5vw` });
-      cell.appendChild(el('div', { style: 'font-weight:800;font-size:1.1vw;color:var(--navy)', text: `${j.emoji || '🏇'} ${j.name}` }));
-      cell.appendChild(el('div', { style: 'font-size:.9vw;color:var(--text-dim)', text: `🎲 ${j.dice.min}–${j.dice.max} · min. ${j.minPrice} DD` }));
+      cell.appendChild(el('div', { style: `font-weight:800;font-size:${many ? '.95vw' : '1.1vw'};color:var(--navy)`, text: `${j.emoji || '🏇'} ${j.name}` }));
+      cell.appendChild(el('div', { style: `font-size:${many ? '.8vw' : '.9vw'};color:var(--text-dim)`, text: `🎲 ${j.dice.min}–${j.dice.max} · min. ${j.minPrice} DD` }));
       if (w) {
         cell.appendChild(el('div', { style: 'font-size:.95vw;font-weight:800;color:var(--burgundy);margin-top:.2vh', text: `→ ${w.stableName} (${Number(w.amount).toLocaleString('da-DK')} DD${w.atMinPrice ? TX(' · mindstepris', ' · minimum price') : ''})` }));
       } else if (j.topBid) {
@@ -661,7 +662,8 @@
       for (let i = 0; i < prog.allowed; i++) dots.appendChild(el('i'));
       lane.appendChild(dots);
       lane.appendChild(el('div.finish'));
-      lane.appendChild(el('div.roll-bubble'));
+      lane.appendChild(el('div.roll-bubble', { style: `font-size:${Math.max(1.8, laneH * 0.55).toFixed(2)}vh` })); // v3.10: større slag-tal
+      lane.appendChild(el('span.overdist', { style: `position:absolute;right:.5vw;top:50%;transform:translateY(-50%);font-weight:800;z-index:4;display:none;font-size:${Math.max(1.8, laneH * 0.5).toFixed(2)}vh;color:${xmas ? '#032F4A' : '#fff'};text-shadow:0 1px 3px rgba(0,0,0,.35)` })); // v3.10: position forbi mål
       const horse = el('div.horse', { style: `width:${horseH.toFixed(2)}vh;height:${horseH.toFixed(2)}vh` });
       const sil = TG.tintedAsset('hest-markoer-silhuet', t.color.hex, { style: 'width:100%;height:100%' });
       sil.classList.add('silhouette');
@@ -700,7 +702,14 @@
     if (chip) {
       chip.className = 'chip' + (race.rollingOpen ? ' turf' : '');
       chip.id = 'raceChip';
-      chip.textContent = race.rollingOpen ? (race.turnTeamId ? '🎲 ' + teamName(race.turnTeamId) + TX(' er ved terningen', ' is rolling') : TX('Løbet er i gang!', 'The race is on!')) : (race.status === 'finished' ? TX('Afsluttet', 'Finished') : TX('Afventer start', 'Awaiting start'));
+      // v3.10: interval-rul — vis slag-runde + vindues-nedtælling
+      if (race.rollingOpen && race.rollRound) {
+        chip.innerHTML = '';
+        chip.appendChild(el('span', { text: `🎲 ${TX('Slag-runde', 'Roll round')} ${race.rollRound}/${race.rollsPerTeam}` }));
+        if (race.rollRoundEndsAt) { chip.appendChild(el('span', { text: ' · ' })); chip.appendChild(el('span', { 'data-endsat': String(race.rollRoundEndsAt), text: TG.countdown(race.rollRoundEndsAt) })); }
+      } else {
+        chip.textContent = race.status === 'finished' ? TX('Afsluttet', 'Finished') : TX('Afventer start', 'Awaiting start');
+      }
     }
     // v3.4: fysisk spilleplade — status-kort pr. stald (slag, felt, seneste) i stedet for banen
     const pg = document.getElementById('physGrid');
@@ -725,6 +734,9 @@
       if (horse) horse.style.left = pct + '%';
       lane.classList.toggle('galloping', !!race.rollingOpen && race.status !== 'finished');
       const tag = lane.querySelector('.tag'); if (tag) tag.textContent = laneLabel(t);
+      // v3.10: heste forbi målstregen — vis hvor langt de nåede (banen stopper visuelt ved mål)
+      const od = lane.querySelector('.overdist');
+      if (od) { if (pos > race.trackLength) { od.textContent = '🏁 ' + pos; od.style.display = 'block'; } else { od.style.display = 'none'; } }
       const prog = (race.progress || {})[t.id];
       if (prog) lane.querySelectorAll('.dots i').forEach((d, i) => d.classList.toggle('used', i < prog.used));
       const lastRoll = t.race && t.race.lastRoll;
