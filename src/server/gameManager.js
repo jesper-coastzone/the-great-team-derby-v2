@@ -135,6 +135,17 @@ function tick(game) {
     auction.closeAuction(game);
     changed = true;
   }
+  // v3.10: interval-rul — luk slag-runden og auto-slå manglende slag, når vinduet udløber
+  const race = gs.currentRace(game);
+  if (race && race.rollingOpen && race.rollRoundEndsAt && now() >= race.rollRoundEndsAt) {
+    if (races.advanceRollRound(game).ok) changed = true;
+  }
+  // v3.10: LIVE odds i Paddocken — genberegnes løbende (før: låst før jockeyer/boosts var på plads)
+  if (game.timers.paddock && now() < game.timers.paddock.endsAt) {
+    const before = JSON.stringify(game.paddockOdds || {});
+    races.computePaddockOdds(game);
+    if (JSON.stringify(game.paddockOdds) !== before) changed = true;
+  }
   // v3.5: jockey-auktionen lukker automatisk FØR Paddocken, så tildelingerne kan ses inden væddemålene
   const jaCloseMs = (cfg.jockeyAuctionCloseBeforeSeconds || 0) * 1000;
   if (jaCloseMs && game.timers.paddock && game.jockeyAuction && game.jockeyAuction.status === 'open'
