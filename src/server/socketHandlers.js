@@ -141,7 +141,9 @@ function register(io) {
       if (!game) return ack(cb, { ok: false, error: 'Ukendt spilkode / Unknown game code.' });
       ack(cb, {
         ok: true, code: game.code,
-        teams: game.teams.map((t) => ({ id: t.id, teamNumber: t.teamNumber, stableName: t.stableName, color: t.color, joined: !!t.joined, connected: !!t.connected })),
+        teams: game.teams.map((t) => ({ id: t.id, teamNumber: t.teamNumber, stableName: t.stableName, color: t.color, joined: !!t.joined, connected: !!t.connected }))
+          .concat((game.benchedTeams || []).map((t) => ({ id: t.id, teamNumber: t.teamNumber, stableName: t.stableName, color: t.color, joined: !!t.joined, connected: false, hidden: true }))) // v3.11: skjulte vises grånet i vælgeren
+          .sort((a, b) => a.teamNumber - b.teamNumber),
       });
     });
 
@@ -312,6 +314,10 @@ function register(io) {
       gs.logEvent(g, `Host redigerede ${t.stableName}.`);
       return { ok: true };
     }, cb));
+
+    // v3.11: skjul/vis stald (overtallige teams — fx 9 oprettet, 8 mødte op)
+    socket.on('host:benchTeam', (p, cb) => hostMut((g) => gs.benchTeam(g, p.teamId), cb));
+    socket.on('host:unbenchTeam', (p, cb) => hostMut((g) => gs.unbenchTeam(g, p.teamId), cb));
 
     socket.on('host:cancelTrade', (p, cb) => hostMut((g) => trades.hostCancelTrade(g, p.tradeId), cb));
 
