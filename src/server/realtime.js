@@ -15,6 +15,10 @@ function pushState(game) {
   for (const t of game.teams) {
     io.to(`${game.code}:team:${t.id}`).emit('state', gs.buildStateFor(game, 'team', t.id));
   }
+  // v3.11: skjulte stalde får også state, så deres tablet viser pause-skærmen
+  for (const t of (game.benchedTeams || [])) {
+    io.to(`${game.code}:team:${t.id}`).emit('state', gs.buildStateFor(game, 'team', t.id));
+  }
   gs.saveGame(game);
 }
 
