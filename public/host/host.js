@@ -116,6 +116,8 @@
     const themeSel = el('select'); [['classic', 'Klassisk'], ['jul', '🎄 Jul (The Great Christmas Derby)']].forEach(([v, l]) => { const o = el('option', { text: l }); o.value = v; themeSel.appendChild(o); }); f.theme = themeSel;
     row.appendChild(el('label.field', {}, [el('span.lbl', { text: 'Tema' }), themeSel]));
     row.appendChild(txt('Rundelængde (min)', 'roundMin', '20', 'number'));
+    // v3.10: interval-rul — sekunder pr. slag-runde (alle stalde slår slag N i samme vindue)
+    row.appendChild(txt('Sek. pr. slag-runde i løb', 'rollInterval', '20', 'number'));
     row.appendChild(txt('Antal bots (0-3)', 'numBots', '0', 'number'));
     card.appendChild(row);
     const btn = el('button.btn.gold.block.lg', { text: 'Opret spil' });
@@ -128,6 +130,7 @@
         numBots: Number(f.numBots.value) || 0,
         physicalBoard: f.board.value === 'fysisk',
         theme: f.theme.value,
+        rollIntervalSeconds: Number(f.rollInterval.value) || 20,
       };
       TG.emit('host:createGame', settings).then((r) => {
         if (r.ok) { TG.save('tg_host_code', r.code); ui.expectCode = r.code; ui.creating = false; toast('Spil oprettet: ' + r.code, 'ok'); }
@@ -153,12 +156,14 @@
   // ---------- CONSOLE ----------
   function render() {
     if (!S) return;
+    const sy = window.scrollY; // v3.10: bevar scroll — konsollen hoppede en linje op ved hvert state-push
     clear(root);
     root.appendChild(hostbar());
     const wrap = el('div.wrap');
     wrap.appendChild(leftCol());
     wrap.appendChild(rightCol());
     root.appendChild(wrap);
+    if (sy) window.scrollTo(0, sy);
   }
 
   function hostbar() {
@@ -337,8 +342,17 @@
     row.appendChild(finish);
     wrap.appendChild(row);
     if (race) {
-      const turnT = race.turnTeamId ? (S.teams.find((t) => t.id === race.turnTeamId) || {}).stableName : null;
-      wrap.appendChild(el('div.mini', { text: `Status: ${race.status} · rolling ${race.rollingOpen ? 'ÅBEN' : 'lukket'} · ${race.rollsPerTeam} slag (efter tur${turnT ? ' — nu: ' + turnT : ''})` }));
+      // v3.10: interval-rul — slag-runde-status + spring frem
+      const rrRow = el('div.row.wrap', { style: 'align-items:center;gap:8px' });
+      rrRow.appendChild(el('div.mini', { text: `Status: ${race.status} · rolling ${race.rollingOpen ? 'ÅBEN' : 'lukket'} · ${race.rollsPerTeam} slag i fælles slag-runder` }));
+      if (race.rollingOpen && race.rollRound) {
+        rrRow.appendChild(el('span.chip.gold', { text: `Slag-runde ${race.rollRound}/${race.rollsPerTeam}` }));
+        if (race.rollRoundEndsAt) rrRow.appendChild(el('span.chip', {}, [el('span', { text: 'lukker om ' }), el('span', { 'data-endsat': String(race.rollRoundEndsAt), text: TG.countdown(race.rollRoundEndsAt) })]));
+        const skip = el('button.btn.sm.gold', { text: '⏭ Næste slag-runde nu' });
+        skip.addEventListener('click', () => TG.emit('host:nextRollRound', {}).then(check));
+        rrRow.appendChild(skip);
+      }
+      wrap.appendChild(rrRow);
 
       // Publikumsfavorit: engangsboost — brug det til drama eller til at hjælpe et hold bagud.
       const favRow = el('div.row.wrap', { style: 'margin-top:6px;align-items:center' });
