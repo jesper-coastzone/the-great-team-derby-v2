@@ -49,6 +49,7 @@
     const scrollYBefore = keepScroll ? window.scrollY : 0;
     clear(root);
     if (!S || !S.me) { root.appendChild(joinView()); ui.renderedMode = null; return; }
+    if (S.me.benched) { root.appendChild(benchedView()); ui.renderedMode = null; return; } // v3.11: stalden er skjult
     root.appendChild(topbar());
     if (S.activeChangeCard) root.appendChild(changeCardBar());
     const app = el('div.app');
@@ -70,6 +71,13 @@
       // v3.2: trin 2 — vælg stald (også en optaget: så fortsætter holdet på denne tablet)
       card.appendChild(el('h2', { text: 'Vælg jeres stald · Choose your stable', style: 'font-size:18px;margin:0 0 12px' }));
       joinState.teams.forEach((t) => {
+        if (t.hidden) { // v3.11: skjult stald — grånet, kan ikke vælges
+          const d = el('div', { style: 'display:flex;align-items:center;gap:10px;width:100%;opacity:.45;border:2px dashed var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px' });
+          d.appendChild(el('span', { style: `width:34px;height:34px;border-radius:50%;flex:none;display:grid;place-items:center;color:#fff;font-weight:800;background:${(t.color && t.color.hex) || '#032F4A'}`, text: String(t.teamNumber) }));
+          d.appendChild(el('span', { style: 'flex:1;min-width:0' }, [el('b', { text: t.stableName, style: 'display:block;color:var(--navy)' }), el('span', { style: 'font-size:12px;color:#5b6b7d', text: 'Skjult af løbslederen · Hidden by the race master' })]));
+          card.appendChild(d);
+          return;
+        }
         const busy = t.joined;
         const b = el('button', { style: 'display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:#fff;border:2px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px;cursor:pointer;font:inherit' });
         b.appendChild(el('span', { style: `width:34px;height:34px;border-radius:50%;flex:none;display:grid;place-items:center;color:#fff;font-weight:800;background:${(t.color && t.color.hex) || '#032F4A'}`, text: String(t.teamNumber) }));
@@ -94,6 +102,20 @@
       card.appendChild(el('label.field', {}, [inp]));
       card.appendChild(btn);
     }
+    wrap.appendChild(card);
+    return wrap;
+  }
+
+  // v3.11: stalden er skjult af løbslederen — vis en rolig besked i stedet for spillet
+  function benchedView() {
+    const wrap = el('div.big-center');
+    const card = el('div.card', { style: 'max-width:420px;width:100%;text-align:center' });
+    card.appendChild(el('div', { text: '⏸', style: 'font-size:52px;margin:6px 0' }));
+    card.appendChild(el('h2', { text: TX('Jeres stald er sat på pause', 'Your stable is paused'), style: 'margin:0 0 8px' }));
+    card.appendChild(el('p', { text: TX('Løbslederen har skjult stalden — den deltager ikke i spillet lige nu. Spørg en løbsleder, hvis det er en fejl.', 'The race master has hidden this stable — it is not part of the game right now. Ask a race master if this is a mistake.'), style: 'color:#5b6b7d' }));
+    const leave = el('button.btn.sm.ghost.block', { text: TX('⎋ Forlad / skift spil', '⎋ Leave / switch game'), style: 'margin-top:10px' });
+    leave.addEventListener('click', () => { TG.del('tg_code'); TG.del('tg_teamId'); location.reload(); });
+    card.appendChild(leave);
     wrap.appendChild(card);
     return wrap;
   }
