@@ -53,7 +53,11 @@ const gameConfig = {
   diceBaseMin: 2,               // diceMin = diceBaseMin + jockeyLevel (+ løbsdags-boosts)
   diceBaseMax: 5,               // diceMax = diceBaseMax + horseLevel (+ løbsdags-boosts)
   // v3.4: ro mellem slagene i løbet — næste stald kan først slå, når der er gået X sekunder
-  rollDelaySeconds: 6,
+  rollDelaySeconds: 6,          // (v3.4, udgået i v3.10 — erstattet af interval-rul)
+  // v3.10 (Kristians evaluering 5/11): INTERVAL-RUL — alle stalde slår slag N i samme
+  // tidsvindue; ikke-brugte slag slås automatisk, når vinduet lukker. Løbet tager
+  // dermed samme tid uanset 2 eller 12 hold. Justerbart ved spiloprettelsen.
+  rollIntervalSeconds: 20,
   normalRacePrizes: { 1: 2400, 2: 1800, 3: 1400, 4: 1000, default: 600 }, // fallback
   // v2.16: præmierne vokser pr. sæson og ANNONCERES i Paddocken før løbet
   // v3.2: alle løbspræmier FORDOBLET — løbet skal kunne mærkes i Staldkassen
