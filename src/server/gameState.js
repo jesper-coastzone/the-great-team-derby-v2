@@ -131,6 +131,7 @@ function createGame(settings = {}) {
     tabletModeOverride: null,
 
     teams: [],
+    benchedTeams: [], // v3.11: skjulte stalde (overtallige teams) — kan vises igen fra host-konsollen
     auction: null,
     auctionHistory: [],
     trades: [],
@@ -365,6 +366,8 @@ function themedBoosts(game) {
 
 function buildStateFor(game, role, teamId) {
   const me = teamId ? getTeam(game, teamId) : null;
+  // v3.11: en skjult stalds tablet får en minimal state med benched-flag
+  const meBenched = !me && teamId ? (game.benchedTeams || []).find((t) => t.id === teamId) : null;
   const race = currentRace(game);
   const state = {
     code: game.code,
@@ -403,6 +406,7 @@ function buildStateFor(game, role, teamId) {
     slide: activeSlide(game),
     screenMessageOverride: game.screenMessageOverride,
     teams: game.teams.map(publicTeam),
+    benchedTeams: (game.benchedTeams || []).map(publicTeam), // v3.11: kun host-UI'et viser dem
     auction: auctionView(game, role, teamId),
     // v3 etape 2: jockey-auktionen i Paddocken
     jockeyAuction: require('./jockeyAuction').publicAuction(game, role === 'team' ? teamId : null),
@@ -490,6 +494,9 @@ function buildStateFor(game, role, teamId) {
   }));
   if (role === 'host' || role === 'screen') state.raceBets = allBets;
 
+  if (role === 'team' && meBenched) {
+    state.me = { ...publicTeam(meBenched), benched: true }; // v3.11
+  }
   if (role === 'team' && me) {
     state.myBet = (game.raceBets || {})[me.id] || null;
     state.me = {
@@ -541,9 +548,50 @@ function collectPendingApprovals(game) {
   return list;
 }
 
+// ---------------- v3.11: Skjul/vis stald (overtallige teams) ----------------
+// Skjulte stalde flyttes til game.benchedTeams, så AL spillogik (løb, odds,
+// jockey-auktion, ranking, bots, auto-rul) automatisk kun ser de aktive.
+function benchTeam(game, teamId) {
+  game.benchedTeams = game.benchedTeams || [];
+  const t = getTeam(game, teamId);
+  if (!t) return { ok: false, error: 'Ukendt hold.' };
+  if (game.teams.length <= 1) return { ok: false, error: 'Mindst én stald skal være aktiv.' };
+  // Refundér uafgjorte væddemål, der involverer stalden (deres eget + andres bet på deres hest)
+  require('./races').refundBetsInvolving(game, t.id);
+  // Fjern staldens bud i en åben jockey-auktion (hyren betales først ved afgørelsen)
+  if (game.jockeyAuction && Array.isArray(game.jockeyAuction.bids)) {
+    game.jockeyAuction.bids = game.jockeyAuction.bids.filter((b) => b.teamId !== t.id);
+  }
+  game.teams = game.teams.filter((x) => x.id !== t.id);
+  game.benchedTeams.push(t);
+  logEvent(game, `${t.stableName} er skjult og deltager ikke.`);
+  if (game.paddockOdds) require('./races').computePaddockOdds(game);
+  return { ok: true };
+}
+
+function unbenchTeam(game, teamId) {
+  game.benchedTeams = game.benchedTeams || [];
+  const i = game.benchedTeams.findIndex((x) => x.id === teamId);
+  if (i < 0) return { ok: false, error: 'Ukendt hold.' };
+  const t = game.benchedTeams.splice(i, 1)[0];
+  game.teams.push(t);
+  game.teams.sort((a, b) => a.teamNumber - b.teamNumber);
+  // Midt i et løb: sørg for at stalden har race-felter, så den kan slå med
+  const race = currentRace(game);
+  if (race && race.status !== 'finished') {
+    race.rolls[t.id] = race.rolls[t.id] || [];
+    race.allowed[t.id] = race.allowed[t.id] || race.rollsPerTeam;
+    if (race.positions[t.id] == null) race.positions[t.id] = 0;
+  }
+  logEvent(game, `${t.stableName} er vist igen og deltager.`);
+  if (game.paddockOdds) require('./races').computePaddockOdds(game);
+  return { ok: true };
+}
+
 module.exports = {
   STABLE_COLORS, store, createGame, makeTeam, getGame, getTeam, resetGame,
   logEvent, totalStableValue, diceRange, exerciseById, currentRace,
   saveGame, exportGame, importGame, loadGamesFromDisk, pruneOldGames,
   buildStateFor, publicTeam, activeSlide, nextMoneyReward,
+  benchTeam, unbenchTeam,
 };
