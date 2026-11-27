@@ -111,6 +111,8 @@ function createGame(settings = {}) {
     auctionLengthSeconds: settings.auctionLengthSeconds || cfg.defaults.auctionLengthSeconds,
     includeWarmup: settings.includeWarmup === true, // v3: warm-up er UDGÅET (default fra)
     physicalBoard: settings.physicalBoard === true, // v3.4: fysisk spilleplade — banen vises ikke på storskærmen
+    // v3.10: sekunder pr. slag-runde i interval-rul (5-60; default fra config)
+    rollIntervalSeconds: Math.max(5, Math.min(60, Number(settings.rollIntervalSeconds) || cfg.rollIntervalSeconds || 20)),
     warmupReward: settings.warmupReward != null ? settings.warmupReward : cfg.warmupReward,
   };
 
@@ -413,10 +415,12 @@ function buildStateFor(game, role, teamId) {
       favoriteTeamId: race.favoriteTeamId || null,
       favoriteUsed: !!race.favoriteUsed,
       progress: Object.fromEntries(game.teams.map((t) => [t.id, { used: (race.rolls[t.id] || []).length, allowed: race.allowed[t.id] || race.rollsPerTeam }])),
-      // v3.3: tur-baserede slag — hvem er ved terningen lige nu?
-      turnTeamId: require('./races').turnTeamId(game, race),
-      // v3.4: ro mellem slagene — hvornår må næste slag falde?
-      nextRollAt: race.lastRollAt ? race.lastRollAt + (cfg.rollDelaySeconds || 0) * 1000 : 0,
+      // v3.10: INTERVAL-RUL — alle slår slag N i samme vindue (tur-baseret udgik)
+      turnTeamId: null,
+      nextRollAt: 0,
+      rollRound: race.rollRound || 0,
+      rollRoundEndsAt: race.rollRoundEndsAt || null,
+      rollIntervalSeconds: game.settings.rollIntervalSeconds || cfg.rollIntervalSeconds || 20,
       settledBets: race.settledBets || [],
       cashBonus: race.cashBonus || null,
       odds: race.odds || {},
