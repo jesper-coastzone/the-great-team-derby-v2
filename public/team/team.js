@@ -1038,7 +1038,7 @@
       if (mine) box.appendChild(el('p.muted', { style: 'margin-top:6px', text: TX('Afventer den anden stald…', 'Waiting for the other stable…') }));
       else {
         ui.dyst[d.id] = ui.dyst[d.id] || {};
-        d.questions.forEach((q, i) => { const inp = el('input', { type: 'number', placeholder: q.unit, value: ui.dyst[d.id][i] || '', style: 'margin-top:6px' }); inp.addEventListener('input', () => { ui.dyst[d.id][i] = inp.value; }); box.appendChild(el('div', { style: 'font-weight:600;margin-top:8px', text: (i + 1) + '. ' + q.q })); box.appendChild(inp); });
+        d.questions.forEach((q, i) => { const inp = el('input', { type: 'text', inputmode: 'none', readonly: 'true', placeholder: q.unit, value: ui.dyst[d.id][i] || '', style: 'margin-top:6px' }); inp.addEventListener('input', () => { ui.dyst[d.id][i] = inp.value; }); box.appendChild(el('div', { style: 'font-weight:600;margin-top:8px', text: (i + 1) + '. ' + q.q })); box.appendChild(inp); box.appendChild(numpadFor(inp)); }); // v3.10: numpad — tablet-tastaturets 0-tast var upålidelig
         const sb = el('button.btn.gold.block', { text: TX('Aflever svar', 'Submit answers'), style: 'margin-top:10px' });
         sb.addEventListener('click', () => TG.emit('team:duelSubmit', { duelId: d.id, answers: d.questions.map((q, i) => Number(ui.dyst[d.id][i] || 0)) }).then(check));
         box.appendChild(sb);
@@ -1312,7 +1312,7 @@
     const c = el('div.col');
     c.appendChild(head(TX('Staldkontoret', 'The Stable Office'), TX('Staldkassen, stillingen i løbspoint — og jeres værdier.', 'Your Stable Fund, the Race Points standings — and your values.')));
     // v3.1: Forlad spillet (ryd tablettens hukommelse) — diskret, med dobbelt-bekræftelse
-    const leave = el('button.btn.sm.ghost', { text: TX('Forlad spillet', 'Leave game'), style: 'position:absolute;top:14px;right:14px;opacity:.6' });
+    const leave = el('button.btn.sm.ghost', { text: TX('⎋ Forlad / skift spil', '⎋ Leave / switch game'), style: 'position:absolute;top:14px;right:14px' }); // v3.10: tydeligere — tablets der huskede et gammelt spil var svære at frigøre
     leave.addEventListener('click', () => {
       if (!confirm(TX('Forlad spillet og nulstil tabletten?', 'Leave the game and reset this tablet?'))) return;
       TG.del('tg_code'); TG.del('tg_teamId'); location.href = '/team';
@@ -1355,18 +1355,21 @@
     // v3.8: STOR terning — seneste slag skal kunne ses på afstand af hele stalden
     const dice = el('div.dice', { style: 'margin:12px 0;display:flex;align-items:center;justify-content:center;gap:18px' }); if (me.race.lastRoll) { dice.appendChild(TG.assetImg('terning', { style: 'width:110px;height:110px' })); dice.appendChild(el('span', { style: 'font-size:84px;font-weight:800;line-height:1;font-family:var(--font-num,inherit)', text: String(me.race.lastRoll) })); } else { dice.textContent = '—'; } card.appendChild(dice);
     card.appendChild(el('p.muted', { text: `${TX('Slag brugt', 'Rolls used')}: ${used}/${allowed} · ${TX('terning', 'dice')} ${me.dice.min}–${me.dice.max}` }));
-    // v3.3: tur-baserede slag — kun turens stald kan slå. v3.4: + ro mellem slagene (nedtælling på knappen)
-    const myTurn = !race.turnTeamId || race.turnTeamId === me.id;
-    const turnTeam = race.turnTeamId ? (S.teams.find((t) => t.id === race.turnTeamId) || null) : null;
-    const delayActive = race.nextRollAt && Date.now() < race.nextRollAt;
-    const canRoll = race.rollingOpen && used < allowed && myTurn && !delayActive;
-    if (race.rollingOpen && used < allowed && myTurn && race.turnTeamId === me.id) card.appendChild(el('div.chip.gold', { style: 'font-size:16px;padding:8px 16px', text: TX('🎲 Det er JERES tur!', '🎲 It is YOUR turn!') }));
-    const waitTxt = (!myTurn && turnTeam) ? TX('Vent — ' + turnTeam.stableName + ' er ved terningen…', 'Wait — ' + turnTeam.stableName + ' is rolling…') : TX('Vent…', 'Wait…');
+    // v3.10: INTERVAL-RUL — alle stalde slår slag N i samme vindue; glemte slag auto-slås
+    const rr = race.rollRound || 0;
+    const canRoll = race.rollingOpen && used < allowed && used < rr;
+    if (race.rollingOpen && rr) {
+      const row = el('div.chip', { style: 'font-size:15px;padding:7px 14px;display:inline-flex;gap:6px;align-items:center' });
+      row.appendChild(el('span', { text: TX(`Slag-runde ${rr} af ${race.rollsPerTeam}`, `Roll round ${rr} of ${race.rollsPerTeam}`) }));
+      if (race.rollRoundEndsAt) { row.appendChild(el('span', { text: TX(' · lukker om ', ' · closes in ') })); row.appendChild(el('span', { 'data-countdown': String(race.rollRoundEndsAt), style: 'font-weight:800' })); }
+      card.appendChild(row);
+    }
+    if (canRoll) card.appendChild(el('div.chip.gold', { style: 'font-size:16px;padding:8px 16px;margin-top:6px', text: TX(`🎲 Slå jeres ${used + 1}. slag nu!`, `🎲 Roll your roll #${used + 1} now!`) }));
     const b = el('button.btn.gold.xl', { disabled: canRoll ? null : 'true', style: 'margin-top:14px' });
     if (canRoll) b.textContent = TX('SLÅ TERNING', 'ROLL THE DICE');
     else if (used >= allowed) b.textContent = TX('Alle slag brugt', 'All rolls used');
-    else if (myTurn && delayActive && race.rollingOpen) { b.appendChild(el('span', { text: TX('⏱ Klar om ', '⏱ Ready in ') })); b.appendChild(el('span', { 'data-countdown': String(race.nextRollAt) })); }
-    else b.textContent = waitTxt;
+    else if (race.rollingOpen && rr && used >= rr) { b.appendChild(el('span', { text: TX('✓ Slået — næste runde om ', '✓ Rolled — next round in ') })); if (race.rollRoundEndsAt) b.appendChild(el('span', { 'data-countdown': String(race.rollRoundEndsAt) })); }
+    else b.textContent = TX('Vent…', 'Wait…');
     b.addEventListener('click', () => TG.emit('team:roll').then((r) => {
       check(r); if (!r.ok) return;
       if (S.theme === 'jul') jingle(); // v3.9: bjældeklang i juletemaet
@@ -1450,13 +1453,49 @@
   function mmss(s) { return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); }
   // v3.2: duel-popup — "Stald X har udfordret jer!" + hop til spørgsmålene når dysten starter
   const seenDuel = {};
+  // v3.10: ikke-blokerende duel-modal (confirm() undertrykkes i kiosk-mode og frøs appen)
+  function showDuelModal(d) {
+    if (document.getElementById('duelModal')) return;
+    const ov = el('div', { style: 'position:fixed;inset:0;background:rgba(2,30,48,.72);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px' });
+    ov.id = 'duelModal';
+    const box = el('div.card', { style: 'max-width:420px;width:100%;text-align:center;padding:22px' });
+    box.appendChild(el('div', { style: 'font-size:44px', text: '⚔️' }));
+    box.appendChild(el('h2', { text: TX(d.fromStable + ' udfordrer jer til Dysten!', d.fromStable + ' challenges you to The Duel!'), style: 'margin:8px 0' }));
+    box.appendChild(el('p.muted', { text: TX('Bedst af 3 estimerings-spørgsmål — vinderen får 500 DD.', 'Best of 3 estimation questions — the winner gets 500 DD.') }));
+    const respond = (accept) => { ov.remove(); TG.emit('team:duelRespond', { duelId: d.id, accept }).then((r) => { if (!r.ok) check(r); }); };
+    const yes = el('button.btn.gold.block.lg', { text: TX('⚔️ Tag imod!', '⚔️ Accept!'), style: 'margin-top:12px' });
+    yes.addEventListener('click', () => respond(true));
+    const no = el('button.btn.ghost.block', { text: TX('Afvis', 'Decline'), style: 'margin-top:8px' });
+    no.addEventListener('click', () => respond(false));
+    box.appendChild(yes); box.appendChild(no);
+    ov.appendChild(box);
+    document.body.appendChild(ov);
+  }
+
+  // v3.10: touch-numpad til Dystens talfelter — 0-tasten på tablet-tastaturet var upålidelig
+  function numpadFor(inp) {
+    const pad = el('div', { style: 'display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-top:6px' });
+    ['1','2','3','4','5','6','7','8','9','0','⌫','C'].forEach((k) => {
+      const b = el('button.btn.sm.ghost', { text: k, type: 'button', style: 'min-height:44px;font-size:18px;font-weight:800' });
+      b.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (k === '⌫') inp.value = inp.value.slice(0, -1);
+        else if (k === 'C') inp.value = '';
+        else inp.value += k;
+        inp.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+      pad.appendChild(b);
+    });
+    return pad;
+  }
+
   function duelAlerts() {
     const me = S.me;
     (S.duels || []).forEach((d) => {
       if (d.status === 'pending' && d.toTeamId === me.id && !seenDuel[d.id]) {
         seenDuel[d.id] = true;
-        const ok = confirm(TX('⚔️ ' + d.fromStable + ' har udfordret jer til Dysten!\n\nBedst af 3 estimerings-spørgsmål — vinderen får 500 DD.\n\nTager I imod?', '⚔️ ' + d.fromStable + ' has challenged you to The Duel!\n\nBest of 3 estimation questions — the winner gets 500 DD.\n\nDo you accept?'));
-        TG.emit('team:duelRespond', { duelId: d.id, accept: ok }).then((r) => { if (!r.ok) check(r); });
+        // v3.10: egen modal — window.confirm blokeres af kiosk-browsere og frøs tabletten
+        showDuelModal(d);
       }
       if (d.status === 'active' && !d.submitted[me.id] && !seenDuel['act_' + d.id]) {
         seenDuel['act_' + d.id] = true;
