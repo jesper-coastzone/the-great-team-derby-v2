@@ -517,6 +517,20 @@
       line.appendChild(info);
       line.appendChild(t.ready ? el('span.chip.turf', { text: 'Klar' }) : el('span.chip', { text: t.joined ? '—' : 'Ledig' }));
       const edit = el('button.btn.sm.ghost', { text: '✎' }); edit.addEventListener('click', () => editTeam(t)); line.appendChild(edit);
+      // v3.11: skjul stald — fx hvis der kom færre deltagere end oprettede stalde
+      const hide = el('button.btn.sm.ghost', { text: '⏸', title: 'Skjul stald (deltager ikke)' });
+      hide.addEventListener('click', () => { if (confirm(`Skjul ${t.stableName}? Stalden udgår af løb, odds, auktion og stillinger — den kan vises igen her.`)) TG.emit('host:benchTeam', { teamId: t.id }).then(check); });
+      line.appendChild(hide);
+      c.appendChild(line);
+    });
+    // v3.11: skjulte stalde — kan vises igen
+    (S.benchedTeams || []).forEach((t) => {
+      const line = el('div.teamline', { style: 'opacity:.55' });
+      line.appendChild(el('div.badge', { style: `background:${t.color.hex};width:28px;height:28px;font-size:14px`, text: String(t.teamNumber) }));
+      line.appendChild(el('div', { style: 'flex:1' }, [el('b', { text: t.stableName }), el('div.mini', { text: 'Skjult — deltager ikke' })]));
+      const show = el('button.btn.sm.ghost', { text: '👁 Vis igen' });
+      show.addEventListener('click', () => TG.emit('host:unbenchTeam', { teamId: t.id }).then(check));
+      line.appendChild(show);
       c.appendChild(line);
     });
     return c;
