@@ -23,6 +23,7 @@ function startRace(game, type, round) {
     status: 'ready', rollingOpen: false,
     rollsPerTeam: type === 'final' ? cfg.finalRaceRolls : cfg.normalRaceRolls,
     positions: {}, rolls: {}, allowed: {}, results: null, prizesApplied: false,
+    rollRound: 0, rollRoundEndsAt: null, // v3.10: interval-rul
     feed: [],                 // kronologisk hændelsesfeed (nyeste sidst)
     eventCount: {},           // antal tilfældige events pr. hold
     favoriteTeamId: null,     // publikumsfavorit (host udpeger)
@@ -69,7 +70,40 @@ function setRolling(game, open) {
   if (!race) return { ok: false, error: 'Intet aktivt løb.' };
   race.rollingOpen = open;
   race.status = open ? 'running' : race.status;
+  // v3.10: interval-rul — åbning starter 1. slag-runde; lukning stopper vinduet
+  if (open) {
+    const iv = (game.settings.rollIntervalSeconds || cfg.rollIntervalSeconds || 20) * 1000;
+    if (!race.rollRound) race.rollRound = 1;
+    race.rollRoundEndsAt = Date.now() + iv;
+  } else {
+    race.rollRoundEndsAt = null;
+  }
   return { ok: true };
+}
+
+// v3.10: luk slag-runden — slå automatisk for stalde, der ikke nåede det, og start næste vindue.
+// force=true (host-knap) springer frem med det samme uanset tid.
+function advanceRollRound(game, opts) {
+  const race = gs.currentRace(game);
+  if (!race || !race.rollingOpen || !race.rollRound) return { ok: false };
+  if (!(opts && opts.force) && (!race.rollRoundEndsAt || Date.now() < race.rollRoundEndsAt)) return { ok: false };
+  const rr = race.rollRound;
+  // Auto-slag for alle, der mangler slag i denne runde (og evt. tidligere)
+  game.teams.forEach((t) => {
+    while ((race.rolls[t.id] || []).length < Math.min(rr, race.allowed[t.id] || race.rollsPerTeam)) {
+      const r = rollForTeam(game, t, { ignoreTurn: true, auto: true });
+      if (!r || !r.ok) break;
+    }
+  });
+  const maxAllowed = Math.max(...game.teams.map((t) => race.allowed[t.id] || race.rollsPerTeam));
+  if (rr < maxAllowed) {
+    race.rollRound = rr + 1;
+    const iv = (game.settings.rollIntervalSeconds || cfg.rollIntervalSeconds || 20) * 1000;
+    race.rollRoundEndsAt = Date.now() + iv;
+  } else {
+    race.rollRoundEndsAt = null; // alle slag slået — host afslutter løbet
+  }
+  return { ok: true, rollRound: race.rollRound };
 }
 
 function setFavorite(game, teamId) {
@@ -96,7 +130,8 @@ function pushFeed(race, entry) {
 function computePaddockOdds(game) {
   const rb = cfg.raceBetting || {};
   const minOdds = rb.minOdds || 1.5, maxOdds = rb.maxOdds || 5;
-  const strengths = game.teams.map((t) => ({ id: t.id, str: t.horseLevel + t.jockeyLevel + (t.jockey ? (t.jockey.topMod + t.jockey.bottomMod) : 0) }));
+  // v3.10: styrken tæller nu OGSÅ dagsform-boosts — og odds genberegnes live i Paddocken
+  const strengths = game.teams.map((t) => { const bm = boostMods(t); return { id: t.id, str: t.horseLevel + t.jockeyLevel + (t.jockey ? (t.jockey.topMod + t.jockey.bottomMod) : 0) + bm.min + bm.max }; });
   const strMin = Math.min(...strengths.map((s) => s.str));
   const strMax = Math.max(...strengths.map((s) => s.str));
   const odds = {};
@@ -181,12 +216,8 @@ function boostMods(team) {
 // v3.3: tur-baserede slag — runde for runde i staldnummer-rækkefølge (Stald 1 starter).
 // Turen er den stald der har brugt færrest slag (og stadig har slag tilbage); ved lighed laveste staldnummer.
 function turnTeamId(game, race) {
-  if (!race || race.status === 'finished') return null;
-  const cand = game.teams.filter((t) => (race.rolls[t.id] || []).length < (race.allowed[t.id] || race.rollsPerTeam));
-  if (!cand.length) return null;
-  const minUsed = Math.min(...cand.map((t) => race.rolls[t.id].length));
-  const next = cand.find((t) => race.rolls[t.id].length === minUsed);
-  return next ? next.id : null;
+  // v3.10: tur-baseret afvikling udgik — interval-rul har ingen tur. Beholdt for kompatibilitet.
+  return null;
 }
 
 function rollForTeam(game, team, opts) {
@@ -195,18 +226,12 @@ function rollForTeam(game, team, opts) {
   if (!race.rollingOpen) return { ok: false, error: L(game, 'Der er ikke åbnet for terningerne endnu.', 'Rolling is not open yet.') };
   const used = race.rolls[team.id].length;
   if (used >= race.allowed[team.id]) return { ok: false, error: L(game, 'I har brugt alle jeres slag.', 'You have used all your rolls.') };
-  // v3.3: kun turens stald må slå (host kan slå udenom med ignoreTurn)
+  // v3.10: INTERVAL-RUL — man må slå sit N'te slag i slag-runde N (tur + pause udgik)
   if (!(opts && opts.ignoreTurn)) {
-    const turn = turnTeamId(game, race);
-    if (turn && turn !== team.id) {
-      const tt = gs.getTeam(game, turn);
-      return { ok: false, error: L(game, `Det er ${tt ? tt.stableName : 'en anden stald'}s tur — I slår om lidt.`, `It is ${tt ? tt.stableName : 'another stable'}'s turn — you roll shortly.`) };
-    }
-    // v3.4: ro mellem slagene — hesten skal nå at rykke (og speakeren at tale), før næste slag falder
-    const delayMs = (cfg.rollDelaySeconds || 0) * 1000;
-    if (delayMs && race.lastRollAt && Date.now() - race.lastRollAt < delayMs) {
-      const left = Math.ceil((race.lastRollAt + delayMs - Date.now()) / 1000);
-      return { ok: false, wait: left, error: L(game, `⏱ Vent ${left} sek. — næste slag er klar om lidt.`, `⏱ Wait ${left}s — the next roll is ready in a moment.`) };
+    const rr = race.rollRound || 0;
+    if (rr && used >= rr) {
+      const left = race.rollRoundEndsAt ? Math.max(0, Math.ceil((race.rollRoundEndsAt - Date.now()) / 1000)) : 0;
+      return { ok: false, wait: left, error: L(game, `✓ I har slået jeres slag — næste slag-runde starter om ${left} sek.`, `✓ You have rolled — the next roll round starts in ${left}s.`) };
     }
   }
 
@@ -487,7 +512,7 @@ function finishWarmupTie(game) {
   return { ok: true, results: race.results };
 }
 
-module.exports = {
+module.exports = { advanceRollRound,
   startRace, setRolling, setFavorite, placeBet, rollForTeam, hostRollForTeam: rollForTeam,
   allRolled, finishRace, prizeFor, pointsFor, computePaddockOdds, prizePreview, cancelBet, turnTeamId,
   buildWarmupPlan, applyScriptedRoll, finishWarmupTie,
