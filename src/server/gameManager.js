@@ -85,6 +85,9 @@ function joinTeam(game, requestedTeamId) {
       else gs.logEvent(game, `${t.stableName} fortsætter på en ny tablet.`);
       t.joined = true; t.connected = true; return { ok: true, team: t };
     }
+    // v3.11: en skjult stald kan ikke joines
+    const b = (game.benchedTeams || []).find((x) => x.id === requestedTeamId);
+    if (b) return { ok: false, error: `${b.stableName} er skjult af løbslederen / ${b.stableName} is hidden by the race master.` };
   }
   const free = game.teams.find((t) => !t.joined);
   if (!free) return { ok: false, error: 'Alle stalde er optaget / All stables are taken.' };
