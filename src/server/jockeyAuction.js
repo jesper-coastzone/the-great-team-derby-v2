@@ -115,6 +115,7 @@ function resolveAuction(game) {
     freeJockeys.delete(cheapest.id);
   }
   ja.status = 'resolved';
+  require('./races').computePaddockOdds(game); // v3.10: odds afspejler straks de nye jockeyer
   gs().logEvent(game, 'Jockey-auktionen er afgjort — alle stalde har en jockey.');
   return { ok: true, results: ja.results };
 }
