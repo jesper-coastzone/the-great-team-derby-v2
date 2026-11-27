@@ -512,7 +512,18 @@ function finishWarmupTie(game) {
   return { ok: true, results: race.results };
 }
 
-module.exports = { advanceRollRound,
+// v3.11: refundér uafgjorte væddemål, der involverer en stald (bruges når den skjules)
+function refundBetsInvolving(game, teamId) {
+  for (const [bettorId, bet] of Object.entries(game.raceBets || {})) {
+    if (bet.resolved) continue;
+    if (bettorId !== teamId && bet.targetTeamId !== teamId) continue;
+    const bettor = gs.getTeam(game, bettorId) || (game.benchedTeams || []).find((t) => t.id === bettorId);
+    if (bettor) econ.addTransaction(game, bettor, bet.amount, 'bet', L(game, `Væddemål annulleret — ${bet.amount} ${cfg.currencyAbbr} retur`, `Bet cancelled — ${bet.amount} ${cfg.currencyAbbr} refunded`));
+    delete game.raceBets[bettorId];
+  }
+}
+
+module.exports = { advanceRollRound, refundBetsInvolving,
   startRace, setRolling, setFavorite, placeBet, rollForTeam, hostRollForTeam: rollForTeam,
   allRolled, finishRace, prizeFor, pointsFor, computePaddockOdds, prizePreview, cancelBet, turnTeamId,
   buildWarmupPlan, applyScriptedRoll, finishWarmupTie,
