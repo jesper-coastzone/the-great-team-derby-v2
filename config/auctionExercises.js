@@ -8,7 +8,7 @@
 
 const auctionExercises = [
   {
-    id: 'cornhole',
+    id: 'cornhole', difficulty: 'nem',
     name: 'Cornhole',
     nameEn: 'Cornhole',
     shortEn: 'It all comes down to the release.',
@@ -21,11 +21,11 @@ const auctionExercises = [
       '(poser i hullet tæller også som på pladen).',
     gives: 'Derby Dollars — belønningen falder for hver succes.',
     givesEn: 'Derby Dollars — the reward decreases with every success.',
-    reward: { start: 2000, decreasePercent: 10, min: 800 }, // v3.4: -10 % pr. succes
+    reward: { start: 1500, decreasePercent: 10, min: 800 }, // v3.4: -10 % pr. succes
     cooldownSeconds: 300,
   },
   {
-    id: 'hesteskohus',
+    id: 'hesteskohus', difficulty: 'nem',
     name: 'Hesteskohus',
     nameEn: 'Horseshoe House',
     shortEn: 'One shaky hand — and it all comes crashing down.',
@@ -37,7 +37,7 @@ const auctionExercises = [
       'Succes: Mindst 25 cm højt og godkendt af en løbsleder.',
     gives: 'Derby Dollars — aftagende belønning.',
     givesEn: 'Derby Dollars — the reward decreases with every success.',
-    reward: { start: 2000, decreasePercent: 10, min: 800 }, // v3.4: -10 % pr. succes
+    reward: { start: 1500, decreasePercent: 10, min: 800 }, // v3.4: -10 % pr. succes
     cooldownSeconds: 300,
   },
   {
@@ -77,7 +77,7 @@ const auctionExercises = [
     cooldownSeconds: 300,
   },
   {
-    id: 'baleofhay',
+    id: 'baleofhay', difficulty: 'svaer',
     name: 'Stabl Høballer',
     nameEn: 'Stack the Hay Bales',
     shortEn: 'Shared control — or shared collapse.',
@@ -91,7 +91,7 @@ const auctionExercises = [
       'starter I forfra — tiden fortsætter. Succes: Alle 8 høballer stablet i højden, inden tiden er 0.',
     gives: 'Derby Dollars — belønningen falder for hver succes.',
     givesEn: 'Derby Dollars — the reward decreases with every success.',
-    reward: { start: 2000, decreasePercent: 10, min: 800 }, // v3.4: -10 % pr. succes
+    reward: { start: 2500, decreasePercent: 10, min: 800 }, // v3.4: -10 % pr. succes
     cooldownSeconds: 300,
   },
   {
